@@ -7,7 +7,7 @@ vLLM model presets. Each `.env` file is a complete set of `--serve` flags for `v
 ```bash
 rig serve qwen3-5-27b             # stable container
 rig serve qwen3-5-27b --edge      # edge container (Blackwell/sm_120)
-rig serve --list                  # show all presets with key params
+rig serve list                    # show all presets with key params
 rig presets show qwen3-5-27b      # dump full preset config
 ```
 

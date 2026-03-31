@@ -5,9 +5,11 @@ ComfyUI model presets. Each `.env` file sets the model path and ComfyUI startup 
 ## Usage
 
 ```bash
-rig comfy start                  # stable container, uses active preset
-rig presets set comfyui flux-default
-rig comfy start
+rig comfy list                   # show all presets
+rig comfy start flux2-fp8        # start with a specific preset
+rig comfy start flux2-fp8 --edge # use Blackwell edge container
+rig presets set comfyui flux2-fp8
+rig comfy start                  # uses default preset
 ```
 
 ## Presets

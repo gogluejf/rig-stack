@@ -8,8 +8,8 @@ No stable/edge split. Ollama's image ships its own CUDA stack and handles GPU se
 
 | Mode | Command | Notes |
 |---|---|---|
-| CPU (default) | `rig ollama start <model>` | Leaves GPU free for vLLM/ComfyUI |
-| GPU | `rig ollama start <model> --gpu` | Use when vLLM is stopped |
+| CPU (default) | `rig ollama start <preset>` | Leaves GPU free for vLLM/ComfyUI |
+| GPU | `rig ollama start <preset> --gpu` | Use when vLLM is stopped |
 
 ## Access
 
@@ -29,8 +29,8 @@ Models are auto-pulled by Ollama on first use and cached in `$MODELS_ROOT/ollama
 ```bash
 rig ollama start nomic-embed-text    # embeddings (used by RAG API)
 rig ollama start phi3-mini           # fast utility
-rig ollama start llava:13b           # vision
-rig ollama start deepseek-r1:7b      # reasoning
+rig ollama start llava-13b           # vision
+rig ollama start deepseek-r1-7b      # reasoning
 ```
 
 See `presets/ollama/README.md` for the full model catalogue.
@@ -49,5 +49,5 @@ For RAG to work, Ollama must be running with `nomic-embed-text` pulled.
 
 ```bash
 docker pull ollama/ollama:latest
-rig ollama stop && rig ollama start <model>
+rig ollama stop && rig ollama start <preset>
 ```

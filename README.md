@@ -75,26 +75,27 @@ rig <command> [subcommand] [flags]
 |---|---|
 | `rig serve <preset>` | Start vLLM stable with a preset |
 | `rig serve <preset> --edge` | Use Blackwell/sm_120 edge container |
-| `rig serve --list` | Table of all presets (model, context, kv-cache, gpu-util) |
-| `rig serve --stop` | Stop vLLM |
+| `rig serve list` | Table of all presets (model, context, kv-cache, gpu-util) |
+| `rig serve stop` | Stop vLLM |
 
 ### comfy — image generation
 
 | Command | Description |
 |---|---|
-| `rig comfy start` | Start ComfyUI stable |
-| `rig comfy start --edge` | Use edge container |
+| `rig comfy start <preset>` | Start ComfyUI stable with a preset |
+| `rig comfy start <preset> --edge` | Use edge container |
 | `rig comfy stop` | Stop ComfyUI |
+| `rig comfy list` | List available presets |
 | `rig comfy workflows` | List saved workflow JSON files |
 
 ### ollama — utility models
 
 | Command | Description |
 |---|---|
-| `rig ollama start <model>` | Start Ollama CPU mode |
-| `rig ollama start <model> --gpu` | Start Ollama GPU mode |
+| `rig ollama start <preset>` | Start Ollama CPU mode |
+| `rig ollama start <preset> --gpu` | Start Ollama GPU mode |
 | `rig ollama stop` | Stop Ollama |
-| `rig ollama list` | List loaded models |
+| `rig ollama list` | List available presets |
 
 ### rag — retrieval API
 
