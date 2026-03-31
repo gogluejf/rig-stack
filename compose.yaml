@@ -1,0 +1,287 @@
+# rig-stack — Docker Compose
+#
+# All services are profile-gated. Only what you start runs.
+# Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-edge,
+#           ollama, rag, observability
+#
+# Traefik always runs as the unified gateway.
+#
+# Usage via CLI (recommended):
+#   rig serve qwen3-5-27b
+#   rig comfy start
+#
+# Direct compose (advanced):
+#   docker compose --profile vllm-stable up -d
+#
+# All bind mounts use env vars from .env — set MODELS_ROOT, DATA_ROOT, DOCKER_ROOT.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+x-gpu-runtime: &gpu-runtime
+  runtime: nvidia
+  environment:
+    - NVIDIA_VISIBLE_DEVICES=all
+    - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+
+services:
+
+  # ── Traefik — unified gateway ──────────────────────────────────────────────
+  traefik:
+    image: traefik:v3.1
+    container_name: rig-traefik
+    restart: unless-stopped
+    ports:
+      - "${TRAEFIK_PORT:-80}:80"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DOCKER_ROOT}/rig-stack/config/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ${DOCKER_ROOT}/rig-stack/config/traefik/dynamic.yaml:/etc/traefik/dynamic.yaml:ro
+    networks:
+      - rig-net
+    logging: *default-logging
+
+  # ── vLLM stable ───────────────────────────────────────────────────────────
+  vllm-stable:
+    build:
+      context: ./services/vllm
+      dockerfile: Dockerfile.stable
+    image: rig-vllm-stable:latest
+    container_name: rig-vllm-stable
+    profiles: [vllm-stable]
+    restart: unless-stopped
+    <<: *gpu-runtime
+    shm_size: '16gb'
+    env_file:
+      - .env
+      - ${DOCKER_ROOT}/rig-stack/.env.active.vllm
+    volumes:
+      - ${MODELS_ROOT}:/models:ro
+      - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
+      - ${DATA_ROOT}/outputs/vllm:/outputs
+      - ${DATA_ROOT}/logs/vllm:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vllm.rule=PathPrefix(`/v1`) || PathPrefix(`/openai`)"
+      - "traefik.http.services.vllm.loadbalancer.server.port=8000"
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── vLLM edge (Blackwell/sm_120) ──────────────────────────────────────────
+  vllm-edge:
+    build:
+      context: ./services/vllm
+      dockerfile: Dockerfile.edge
+    image: rig-vllm-edge:latest
+    container_name: rig-vllm-edge
+    profiles: [vllm-edge]
+    restart: unless-stopped
+    <<: *gpu-runtime
+    shm_size: '16gb'
+    env_file:
+      - .env
+      - ${DOCKER_ROOT}/rig-stack/.env.active.vllm
+    volumes:
+      - ${MODELS_ROOT}:/models:ro
+      - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
+      - ${DATA_ROOT}/outputs/vllm:/outputs
+      - ${DATA_ROOT}/logs/vllm:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vllm.rule=PathPrefix(`/v1`) || PathPrefix(`/openai`)"
+      - "traefik.http.services.vllm.loadbalancer.server.port=8000"
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ── ComfyUI stable ────────────────────────────────────────────────────────
+  comfyui-stable:
+    build:
+      context: ./services/comfyui
+      dockerfile: Dockerfile.stable
+    image: rig-comfyui-stable:latest
+    container_name: rig-comfyui-stable
+    profiles: [comfyui-stable]
+    restart: unless-stopped
+    <<: *gpu-runtime
+    env_file:
+      - .env
+      - ${DOCKER_ROOT}/rig-stack/.env.active.comfyui
+    volumes:
+      - ${MODELS_ROOT}:/models:ro
+      - ${DATA_ROOT}/outputs/comfyui:/outputs
+      - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
+      - ${DATA_ROOT}/inputs:/inputs:ro
+      - ${DATA_ROOT}/logs/comfyui:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.comfyui.rule=PathPrefix(`/comfy`)"
+      - "traefik.http.middlewares.comfyui-strip.stripprefix.prefixes=/comfy"
+      - "traefik.http.routers.comfyui.middlewares=comfyui-strip"
+      - "traefik.http.services.comfyui.loadbalancer.server.port=8188"
+    logging: *default-logging
+
+  # ── ComfyUI edge (Blackwell/sm_120) ───────────────────────────────────────
+  comfyui-edge:
+    build:
+      context: ./services/comfyui
+      dockerfile: Dockerfile.edge
+    image: rig-comfyui-edge:latest
+    container_name: rig-comfyui-edge
+    profiles: [comfyui-edge]
+    restart: unless-stopped
+    <<: *gpu-runtime
+    env_file:
+      - .env
+      - ${DOCKER_ROOT}/rig-stack/.env.active.comfyui
+    volumes:
+      - ${MODELS_ROOT}:/models:ro
+      - ${DATA_ROOT}/outputs/comfyui:/outputs
+      - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
+      - ${DATA_ROOT}/inputs:/inputs:ro
+      - ${DATA_ROOT}/logs/comfyui:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.comfyui.rule=PathPrefix(`/comfy`)"
+      - "traefik.http.middlewares.comfyui-strip.stripprefix.prefixes=/comfy"
+      - "traefik.http.routers.comfyui.middlewares=comfyui-strip"
+      - "traefik.http.services.comfyui.loadbalancer.server.port=8188"
+    logging: *default-logging
+
+  # ── Ollama ────────────────────────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rig-ollama
+    profiles: [ollama]
+    restart: unless-stopped
+    # GPU mode: overridden at runtime by rig CLI (--gpu flag sets runtime: nvidia)
+    environment:
+      - OLLAMA_MODELS=/models/ollama
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - ${MODELS_ROOT}/ollama:/models/ollama
+      - ${DATA_ROOT}/logs/ollama:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ollama.rule=PathPrefix(`/ollama`)"
+      - "traefik.http.middlewares.ollama-strip.stripprefix.prefixes=/ollama"
+      - "traefik.http.routers.ollama.middlewares=ollama-strip"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
+    logging: *default-logging
+
+  # ── RAG API ───────────────────────────────────────────────────────────────
+  rag-api:
+    build:
+      context: ./services/rag
+      dockerfile: Dockerfile
+    image: rig-rag-api:latest
+    container_name: rig-rag-api
+    profiles: [rag]
+    restart: unless-stopped
+    environment:
+      - VLLM_BASE_URL=http://rig-vllm-stable:8000
+      - OLLAMA_BASE_URL=http://rig-ollama:11434
+      - QDRANT_HOST=rig-qdrant
+      - QDRANT_PORT=6333
+    env_file:
+      - .env
+    volumes:
+      - ${DATA_ROOT}/logs/rag:/logs
+    networks:
+      - rig-net
+    depends_on:
+      - qdrant
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rag.rule=PathPrefix(`/rag`)"
+      - "traefik.http.middlewares.rag-strip.stripprefix.prefixes=/rag"
+      - "traefik.http.routers.rag.middlewares=rag-strip"
+      - "traefik.http.services.rag.loadbalancer.server.port=8001"
+    logging: *default-logging
+
+  # ── Qdrant — vector DB for RAG ────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: rig-qdrant
+    profiles: [rag]
+    restart: unless-stopped
+    volumes:
+      - ${DATA_ROOT}/qdrant:/qdrant/storage
+      - ${DOCKER_ROOT}/rig-stack/config/qdrant/config.yaml:/qdrant/config/production.yaml:ro
+    networks:
+      - rig-net
+    logging: *default-logging
+
+  # ── Langfuse — observability ──────────────────────────────────────────────
+  langfuse:
+    image: langfuse/langfuse:latest
+    container_name: rig-langfuse
+    profiles: [observability]
+    restart: unless-stopped
+    env_file:
+      - .env
+      - config/langfuse/langfuse.env.example
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_SALT=${LANGFUSE_SALT}
+    volumes:
+      - ${DATA_ROOT}/logs/langfuse:/logs
+    networks:
+      - rig-net
+    depends_on:
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.langfuse.rule=PathPrefix(`/langfuse`)"
+      - "traefik.http.middlewares.langfuse-strip.stripprefix.prefixes=/langfuse"
+      - "traefik.http.routers.langfuse.middlewares=langfuse-strip"
+      - "traefik.http.services.langfuse.loadbalancer.server.port=3000"
+    logging: *default-logging
+
+  # ── Postgres — Langfuse backend only ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: rig-postgres
+    profiles: [observability]
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-langfuse}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-langfuse}
+    volumes:
+      - ${DATA_ROOT}/postgres:/var/lib/postgresql/data
+      - ${DATA_ROOT}/logs/postgres:/logs
+    networks:
+      - rig-net
+    logging: *default-logging
+
+networks:
+  rig-net:
+    driver: bridge
+    name: rig-net

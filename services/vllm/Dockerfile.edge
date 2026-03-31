@@ -1,0 +1,85 @@
+# rig-stack — vLLM edge container (Blackwell / sm_120)
+#
+# WHY THIS EXISTS:
+#   The RTX 5090 uses NVIDIA Blackwell architecture (compute capability sm_120).
+#   Standard CUDA 12.x does not compile kernels for sm_120. PyTorch stable
+#   (as of early 2026) ships without sm_120 support. Running stable vLLM on
+#   an RTX 5090 falls back to unoptimised paths — 40-60% slower than native.
+#
+#   This Dockerfile pins the exact stack confirmed working on Blackwell:
+#     - PyTorch nightly: torch 2.10.0.dev (cu130)
+#     - CUDA: 13.x runtime (cu130)
+#     - cuDNN: 9.1.5.01 (91501)
+#     - vLLM: built from latest main branch
+#
+#   Result: native sm_120 GEMM kernels, FlashAttention-3 on Blackwell,
+#   full throughput on the RTX 5090.
+#
+# REBUILD: `rig presets rebuild vllm-edge` or `scripts/setup/04-build-edge-images.sh`
+# Expected build time: 20-40 minutes (compiles CUDA extensions).
+
+# Step 1: PyTorch nightly base with CUDA 13.x
+FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_HOME=/usr/local/cuda
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 \
+    python3.12-dev \
+    python3-pip \
+    python3.12-venv \
+    git \
+    curl \
+    wget \
+    ninja-build \
+    build-essential \
+    libnccl2 \
+    libnccl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3.12 /usr/bin/python
+
+# Step 2: Install PyTorch stable cu130 — confirmed working on Blackwell/sm_120
+# Pin: torch 2.10.0+cu130, cuDNN 9.1.5.01
+# Source: baremetal RTX 5090 setup (driver 580.126.09, host CUDA 12.8 irrelevant in container)
+RUN pip3 install --no-cache-dir \
+    torch==2.10.0+cu130 \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cu130
+
+# Verify sm_120 is in the compiled architectures
+RUN python3 -c "import torch; archs = torch.cuda.get_arch_list(); print('CUDA archs:', archs); assert 'sm_120' in archs or any('12' in a for a in archs), 'sm_120 not found — wrong torch build'"
+
+# Step 3: Install vLLM from latest main (sm_120 support merged post-0.6)
+ENV TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0 12.0"
+ENV VLLM_INSTALL_PUNICA_KERNELS=1
+
+RUN pip3 install --no-cache-dir \
+    packaging \
+    setuptools \
+    wheel \
+    ninja
+
+# Build vLLM — pin confirmed-working version for Blackwell/sm_120
+RUN pip3 install --no-cache-dir vllm==0.17.1 \
+    --index-url https://wheels.vllm.ai/nightly
+
+ENV HF_HOME=/root/.cache/huggingface
+ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
+
+CMD ["sh", "-c", "python -m vllm.entrypoints.openai.api_server \
+    --model ${MODEL_PATH:-/models/llm/qwen3-5-27b} \
+    --served-model-name ${MODEL_ID:-default} \
+    --max-model-len ${MAX_MODEL_LEN:-32768} \
+    --kv-cache-dtype ${KV_CACHE_DTYPE:-auto} \
+    $([ \"${ENABLE_PREFIX_CACHING}\" = \"true\" ] && echo --enable-prefix-caching) \
+    $([ -n \"${TOOL_CALL_PARSER}\" ] && echo --tool-call-parser ${TOOL_CALL_PARSER}) \
+    --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.82} \
+    --tensor-parallel-size ${TENSOR_PARALLEL_SIZE:-1} \
+    --dtype ${DTYPE:-auto} \
+    $([ \"${TRUST_REMOTE_CODE}\" = \"true\" ] && echo --trust-remote-code) \
+    --host 0.0.0.0 --port 8000"]

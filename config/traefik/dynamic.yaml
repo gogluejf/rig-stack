@@ -1,0 +1,26 @@
+# Traefik dynamic configuration
+# rig-stack route definitions and middleware
+# This file is hot-reloaded — no restart needed after changes.
+
+http:
+  middlewares:
+    # Add CORS headers for local dev access from browsers
+    cors-headers:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowOriginList:
+          - "*"
+        accessControlMaxAge: 86400
+
+    # Rate limiting (adjust as needed)
+    rate-limit:
+      rateLimit:
+        average: 200
+        burst: 50

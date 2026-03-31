@@ -1,0 +1,23 @@
+# Traefik static configuration
+# rig-stack unified gateway
+
+api:
+  dashboard: true
+  insecure: true   # dashboard on :8080 — restrict to localhost in production
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    exposedByDefault: false
+    network: rig-net
+  file:
+    filename: /etc/traefik/dynamic.yaml
+    watch: true
+
+log:
+  level: INFO
+
+accessLog: {}

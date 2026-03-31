@@ -1,0 +1,79 @@
+# rig-stack — ComfyUI edge container (Blackwell / sm_120)
+#
+# WHY THIS EXISTS:
+#   Same reason as vllm/Dockerfile.edge — the RTX 5090 (sm_120) requires
+#   PyTorch nightly cu130 to run native Blackwell kernels. Standard PyTorch
+#   stable falls back to unoptimised paths on Blackwell, giving ~40-60% less
+#   throughput on diffusion workloads.
+#
+# Pinned stack (same as vllm-edge for consistency):
+#   - PyTorch nightly: torch 2.10.0.dev (cu130)
+#   - CUDA: 13.x runtime (cu130)
+#   - cuDNN: 9.1.5.01 (91501)
+#   - ComfyUI: latest main branch
+#
+# REBUILD: `rig presets rebuild comfyui-edge` or `scripts/setup/04-build-edge-images.sh`
+
+FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS base
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 \
+    python3.12-dev \
+    python3-pip \
+    python3.12-venv \
+    git \
+    curl \
+    wget \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
+    ln -sf /usr/bin/python3.12 /usr/bin/python
+
+# Install PyTorch nightly cu130 — confirmed working on Blackwell/sm_120
+# Pin: torch 2.11.0.dev20260123+cu130, cuDNN 9.1.5.01
+# Source: baremetal RTX 5090 setup (driver 580.126.09, host CUDA 12.8 irrelevant in container)
+RUN pip3 install --no-cache-dir \
+    torch==2.11.0.dev20260123+cu130 \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/nightly/cu130
+
+# Clone and install ComfyUI
+WORKDIR /comfyui
+RUN git clone https://github.com/comfyanonymous/ComfyUI.git . && \
+    pip3 install --no-cache-dir -r requirements.txt
+
+# Runtime dependencies for all supported workflows
+RUN pip3 install --no-cache-dir \
+    # FaceFusion — face swap via inswapper_128
+    onnxruntime-gpu \
+    insightface \
+    # StarVector — SVG generation
+    cairosvg \
+    # General vision/image utilities
+    opencv-python-headless \
+    Pillow \
+    scipy
+
+# Install common custom nodes
+RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager && \
+    pip3 install --no-cache-dir -r custom_nodes/ComfyUI-Manager/requirements.txt 2>/dev/null || true
+
+ENV COMFYUI_OUTPUT_DIR=/outputs
+ENV COMFYUI_INPUT_DIR=/inputs
+
+EXPOSE 8188
+
+CMD ["sh", "-c", "python main.py \
+    --listen ${COMFYUI_LISTEN:-0.0.0.0} \
+    --port ${COMFYUI_PORT:-8188} \
+    --output-directory /outputs \
+    --input-directory /inputs"]

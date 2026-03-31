@@ -1,0 +1,32 @@
+# rig-stack — vLLM stable container
+#
+# Uses the official vLLM image with PyTorch stable + CUDA 12.x runtime.
+# Suitable for all NVIDIA GPUs up to Ampere/Ada (sm_86, sm_89).
+# For Blackwell/RTX 5090 (sm_120) use Dockerfile.edge instead.
+#
+# Base image pins a known-good vLLM release.
+# To update: change the tag and rebuild with `rig presets rebuild vllm-stable`.
+
+ARG VLLM_VERSION=v0.6.6
+FROM vllm/vllm-openai:${VLLM_VERSION}
+
+# Model files are bind-mounted from $MODELS_ROOT — never copied into the image.
+# All outputs go to /outputs (bind-mounted from $DATA_ROOT/outputs/vllm).
+
+ENV HF_HOME=/root/.cache/huggingface
+ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
+
+# Entrypoint is provided by the official image.
+# vLLM flags are passed via environment variables from the active preset.
+CMD ["sh", "-c", "python -m vllm.entrypoints.openai.api_server \
+    --model ${MODEL_PATH:-/models/llm/qwen3-5-27b} \
+    --served-model-name ${MODEL_ID:-default} \
+    --max-model-len ${MAX_MODEL_LEN:-32768} \
+    --kv-cache-dtype ${KV_CACHE_DTYPE:-auto} \
+    $([ \"${ENABLE_PREFIX_CACHING}\" = \"true\" ] && echo --enable-prefix-caching) \
+    $([ -n \"${TOOL_CALL_PARSER}\" ] && echo --tool-call-parser ${TOOL_CALL_PARSER}) \
+    --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.82} \
+    --tensor-parallel-size ${TENSOR_PARALLEL_SIZE:-1} \
+    --dtype ${DTYPE:-auto} \
+    $([ \"${TRUST_REMOTE_CODE}\" = \"true\" ] && echo --trust-remote-code) \
+    --host 0.0.0.0 --port 8000"]

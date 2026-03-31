@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# rig — rig-stack CLI
+#
+# Your RTX 5090 server as a private cloud. One command away.
+#
+# Installed to /usr/local/bin/rig by scripts/setup/05-install-cli.sh
+# Source: cli/ in the rig-stack repository
+
+set -euo pipefail
+
+# ── Find repo root ─────────────────────────────────────────────────────────────
+# Follows the symlink back to the actual cli/ directory.
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+CLI_DIR="$(dirname "${SELF}")"
+export RIG_ROOT="$(dirname "${CLI_DIR}")"
+
+# ── Load env and libs ─────────────────────────────────────────────────────────
+source "${CLI_DIR}/lib/utils.sh"
+source "${CLI_DIR}/lib/vllm.sh"
+source "${CLI_DIR}/lib/comfy.sh"
+source "${CLI_DIR}/lib/ollama.sh"
+source "${CLI_DIR}/lib/rag.sh"
+source "${CLI_DIR}/lib/models.sh"
+source "${CLI_DIR}/lib/presets.sh"
+source "${CLI_DIR}/lib/status.sh"
+source "${CLI_DIR}/lib/stats.sh"
+
+load_env
+
+# ── Help ──────────────────────────────────────────────────────────────────────
+print_help() {
+    echo ""
+    echo -e "  ${BOLD}${CYAN}rig${RESET} — rig-stack control plane"
+    echo -e "  ${DIM}RTX 5090 · Ubuntu 24.04 · Your private AI cloud${RESET}"
+    echo ""
+    echo -e "  ${BOLD}USAGE${RESET}"
+    echo -e "    rig <command> [subcommand] [flags]"
+    echo ""
+    echo -e "  ${BOLD}COMMANDS${RESET}"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "vllm" "start [<preset>]" "Start vLLM with a model preset"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "start --edge" "Use Blackwell/sm_120 edge container"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "stop" "Stop vLLM"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "list" "Show available presets"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "comfy" "start [<preset>]" "Start ComfyUI (--edge for Blackwell)"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "stop" "Stop ComfyUI"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "list" "Show available presets"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "workflows" "List saved workflow files"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "ollama" "start [<preset>]" "Start Ollama (--gpu for GPU mode)"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "stop" "Stop Ollama"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "list" "List available presets"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "rag" "start" "Start RAG API + Qdrant"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "stop" "Stop RAG stack"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "models" "" "List all models with size + path"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "pull <hf-repo>" "Download from HuggingFace"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "show <name>" "Details: path, size, presets"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "remove <name>" "Delete model from disk"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "registry" "Show repo → dest → preset table"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "presets" "" "List all presets"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "show <name>" "Dump preset config"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "set <svc> <name>" "Set active preset"
+    echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "status" "" "Active services, models, presets"
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "stats" "" "GPU VRAM, watt, temp, tokens/sec"
+    echo ""
+    echo -e "  ${BOLD}FLAGS${RESET}"
+    echo -e "    --help, -h   Show help for any command"
+    echo ""
+    echo -e "  ${BOLD}EXAMPLES${RESET}"
+    echo -e "    rig vllm start qwen3-5-27b"
+    echo -e "    rig vllm start qwen3-5-27b-fast --edge"
+    echo -e "    rig vllm list"
+    echo -e "    rig comfy start --edge"
+    echo -e "    rig ollama start nomic-embed-text"
+    echo -e "    rig models show qwen3-5-27b"
+    echo -e "    rig presets show qwen3-5-27b"
+    echo -e "    rig presets set vllm qwen3-5-27b-fast"
+    echo -e "    rig status"
+    echo -e "    rig stats"
+    echo ""
+}
+
+# ── Dispatch ──────────────────────────────────────────────────────────────────
+COMMAND="${1:-}"
+[[ -n "${COMMAND}" ]] && shift || true
+
+case "${COMMAND}" in
+    vllm)       cmd_vllm "$@" ;;
+    comfy)      cmd_comfy "$@" ;;
+    ollama)     cmd_ollama "$@" ;;
+    rag)        cmd_rag "$@" ;;
+    models)     cmd_models "$@" ;;
+    presets)    cmd_presets "$@" ;;
+    status)     cmd_status "$@" ;;
+    stats)      cmd_stats "$@" ;;
+    --help|-h|help|"")  print_help ;;
+    *)
+        echo -e "${RED}Unknown command: ${COMMAND}${RESET}"
+        echo "Run 'rig --help' for usage."
+        exit 1
+        ;;
+esac

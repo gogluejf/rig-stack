@@ -1,0 +1,19 @@
+# Qdrant production configuration for rig-stack
+# Full reference: https://qdrant.tech/documentation/guides/configuration/
+
+storage:
+  # Data is bind-mounted from $DATA_ROOT/qdrant
+  storage_path: /qdrant/storage
+  snapshots_path: /qdrant/snapshots
+
+  on_disk_payload: true   # store payload on disk to conserve RAM
+  hnsw_index:
+    on_disk: false        # keep HNSW graph in RAM for fast search
+
+service:
+  host: 0.0.0.0
+  http_port: 6333
+  grpc_port: 6334
+  max_request_size_mb: 32
+
+log_level: INFO

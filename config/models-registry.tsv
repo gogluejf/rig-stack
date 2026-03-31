@@ -1,0 +1,38 @@
+# rig-stack model registry
+# Format (tab-separated, 4 columns):
+#   hf-repo-id    local-dest    default-preset    description
+#
+# - local-dest    : path under $MODELS_ROOT where weights are stored
+# - default-preset: service/name activated on first pull (- = none, set manually)
+# - description   : shown in `rig models registry` and `rig models` list
+#
+# Unknown models: `rig models pull <repo>` prompts interactively and offers to append here.
+
+# ── LLM — vLLM ───────────────────────────────────────────────────────────────
+Kbenkhaled/Qwen3.5-27B-NVFP4	llm/qwen3-5-27b	vllm/qwen3-5-27b	Qwen3.5 27B fp4 — primary LLM. Code, tools, long context (65k). Daily driver.
+Qwen/Qwen2-VL-7B-Instruct	llm/qwen2-vl-7b	comfyui/qwen-image-gen	Qwen2-VL 7B — multimodal vision-language. Powers image gen and edit workflows.
+
+# ── Diffusion — ComfyUI ───────────────────────────────────────────────────────
+black-forest-labs/FLUX.1-dev	diffusion/flux1-dev	comfyui/flux1-dev	FLUX.1-dev — battle-tested text-to-image. Best node/workflow ecosystem support.
+black-forest-labs/FLUX.1-Fill-dev	diffusion/flux1-fill	-	FLUX.1-Fill — inpainting and instruction-guided image editing.
+black-forest-labs/FLUX.2-klein	diffusion/flux2-klein	comfyui/flux2-klein	FLUX.2-klein — fastest FLUX.2 variant. Apache 2.0, no gate. Good for iteration.
+# FLUX.2-dev fp8: verify exact slug at huggingface.co/black-forest-labs then uncomment:
+# black-forest-labs/FLUX.2-dev-fp8	diffusion/flux2-fp8	comfyui/flux2-fp8	FLUX.2-dev fp8 — best quality at ~50% VRAM vs bf16. Default diffusion preset.
+
+# ── ControlNet — ComfyUI ──────────────────────────────────────────────────────
+InstantX/FLUX.1-dev-Controlnet-Canny	controlnet/canny	-	ControlNet Canny — edge-guided generation. Feed a canny edge map as condition.
+Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro	controlnet/union-pro	comfyui/controlnet	ControlNet Union Pro — multi-condition in one model (canny/depth/pose/scribble).
+Shakker-Labs/FLUX.1-dev-ControlNet-Depth	controlnet/depth	-	ControlNet Depth — depth-map conditioned generation. Use MiDaS/ZoeDepth preprocessor.
+
+# ── Upscalers — ComfyUI ───────────────────────────────────────────────────────
+TencentARC/GFPGAN	upscalers/gfpgan	comfyui/gfpgan	GFPGANv1.4 — face restoration. Repairs degraded or low-res faces with high fidelity.
+ai-forever/Real-ESRGAN	upscalers/real-esrgan	comfyui/real-esrgan	Real-ESRGAN x4plus — general image upscaling 4x. Also ships anime variant.
+
+# ── Face — ComfyUI ────────────────────────────────────────────────────────────
+ezioruan/inswapper_128.onnx	face/facefusion	comfyui/facefusion	inswapper_128 — ONNX face swap model. Core of the FaceFusion workflow.
+
+# ── StarVector — ComfyUI ──────────────────────────────────────────────────────
+starvector/starvector-8b-im2svg	starvector/starvector-8b-im2svg	comfyui/starvector	StarVector 8B — raster image to clean SVG vector. Best for logos, icons, line art.
+
+# ── Embeddings — Ollama/RAG ───────────────────────────────────────────────────
+nomic-ai/nomic-embed-text-v1.5	embeddings/nomic-embed-text	ollama/embedding	nomic-embed-text v1.5 — primary RAG embeddings. Fast, CPU-friendly, 768-dim.

@@ -1,0 +1,21 @@
+# rig-stack — ComfyUI stable container
+#
+# Uses the official ComfyUI image with PyTorch stable + CUDA 12.x.
+# Suitable for all NVIDIA GPUs up to Ada (sm_86, sm_89).
+# For Blackwell/RTX 5090 (sm_120) use Dockerfile.edge instead.
+
+FROM ghcr.io/ai-dock/comfyui:latest-cuda
+
+# Models and outputs are bind-mounted — not copied into the image.
+ENV COMFYUI_MODEL_PATH=/models
+ENV COMFYUI_OUTPUT_DIR=/outputs
+ENV COMFYUI_INPUT_DIR=/inputs
+
+EXPOSE 8188
+
+CMD ["sh", "-c", "python main.py \
+    --listen ${COMFYUI_LISTEN:-0.0.0.0} \
+    --port ${COMFYUI_PORT:-8188} \
+    --output-directory /outputs \
+    --input-directory /inputs \
+    --extra-model-paths-config /workflows/extra_model_paths.yaml 2>/dev/null || true"]
