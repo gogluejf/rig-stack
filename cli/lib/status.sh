@@ -15,7 +15,7 @@ cmd_status() {
             vllm_status="${GREEN}running${RESET} (rig-${variant})"
             local active="${RIG_ROOT}/.env.default.vllm"
             [[ -f "${active}" ]] && vllm_model=$(grep '^MODEL_ID=' "${active}" | cut -d= -f2 || echo "—")
-            [[ -f "${active}" ]] && vllm_preset=$(grep '^# Preset:' "${active}" | sed 's/^# Preset: *//' || basename "${active}" .env)
+            [[ -f "${active}" ]] && vllm_preset=$(grep '^# Preset:' "${active}" | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null || basename "${active}" .env)
             break
         fi
     done
@@ -33,13 +33,13 @@ cmd_status() {
     comfy_status="${comfy_status:-${DIM}stopped${RESET}}"
     local comfy_preset="—"
     local comfy_active="${RIG_ROOT}/.env.default.comfyui"
-    [[ -f "${comfy_active}" ]] && comfy_preset=$(grep '^# Preset:' "${comfy_active}" | sed 's/^# Preset: *//' || echo "—")
+    [[ -f "${comfy_active}" ]] && comfy_preset=$(grep '^# Preset:' "${comfy_active}" | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null || echo "—")
     printf "  %-12s ${CYAN}%-30s${RESET} %-25s %b\n" "comfyui" "—" "${comfy_preset:0:25}" "${comfy_status}"
 
     # Ollama
     local ollama_status ollama_preset="—" ollama_model="—"
     local ollama_default="${RIG_ROOT}/.env.default.ollama"
-    [[ -f "${ollama_default}" ]] && ollama_preset=$(grep '^# Preset:' "${ollama_default}" | sed 's/^# Preset: *//' || echo "—")
+    [[ -f "${ollama_default}" ]] && ollama_preset=$(grep '^# Preset:' "${ollama_default}" | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null || echo "—")
     [[ -f "${ollama_default}" ]] && ollama_model=$(grep '^OLLAMA_MODEL=' "${ollama_default}" | cut -d= -f2 || echo "—")
     if container_running "rig-ollama"; then
         ollama_status="${GREEN}running${RESET}"

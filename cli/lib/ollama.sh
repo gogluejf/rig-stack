@@ -49,7 +49,7 @@ _ollama_list() {
     local preset_dir="${RIG_ROOT}/presets/ollama"
     local default_preset=""
     local default_file="${RIG_ROOT}/.env.default.ollama"
-    [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//')
+    [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
 
     print_header "Ollama presets"
     hr
@@ -93,7 +93,7 @@ _ollama_start() {
         local default_file="${RIG_ROOT}/.env.default.ollama"
         if [[ -f "${default_file}" ]]; then
             local default_name
-            default_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//')
+            default_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
             presets=("${default_name}")
             echo -e "${DIM}  Using default preset: ${default_name}${RESET}"
         else

@@ -34,7 +34,7 @@ _serve_list() {
     local preset_dir="${RIG_ROOT}/presets/vllm"
     local default_preset=""
     local default_file="${RIG_ROOT}/.env.default.vllm"
-    [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//')
+    [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
 
     print_header "vLLM presets"
     hr
@@ -72,7 +72,7 @@ _serve_start() {
     if [[ -z "${preset_name}" ]]; then
         local default_file="${RIG_ROOT}/.env.default.vllm"
         if [[ -f "${default_file}" ]]; then
-            preset_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//')
+            preset_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
             echo -e "${DIM}  Using default preset: ${preset_name}${RESET}"
         else
             echo -e "${RED}No preset given and no default set.${RESET}"

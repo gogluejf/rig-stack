@@ -37,27 +37,9 @@ cmd_presets() {
 }
 
 _presets_list() {
-    print_header "All presets"
-    hr
-    printf "  ${BOLD}%-12s %-30s %-35s %s${RESET}\n" "SERVICE" "PRESET" "MODEL" "KEY PARAMS"
-    hr
-    for service in vllm comfyui ollama; do
-        local preset_dir="${RIG_ROOT}/presets/${service}"
-        [[ -d "${preset_dir}" ]] || continue
-        for f in "${preset_dir}"/*.env; do
-            [[ -f "${f}" ]] || continue
-            name=$(basename "${f}" .env)
-            model=$(grep '^MODEL_ID=' "${f}" 2>/dev/null | cut -d= -f2 || echo "—")
-            ctx=$(grep '^MAX_MODEL_LEN=' "${f}" 2>/dev/null | cut -d= -f2 | sed 's/^/ctx=/' || echo "")
-            gpu=$(grep '^GPU_MEMORY_UTILIZATION=' "${f}" 2>/dev/null | cut -d= -f2 | sed 's/^/gpu=/' || echo "")
-            params="${ctx} ${gpu}"
-            params=$(echo "${params}" | xargs)
-            printf "  %-12s %-30s %-35s %s\n" "${service}" "${name}" "${model}" "${params}"
-        done
-    done
-    hr
-    echo ""
-    echo -e "  ${DIM}Default presets marked with ✓ in 'rig <service> list'${RESET}"
+    _serve_list
+    _comfy_list
+    _ollama_list
 }
 
 _presets_show() {
@@ -112,5 +94,12 @@ _presets_set() {
 
     set_default_preset "${service}" "${preset_file}"
     echo -e "${GREEN}✓  Default preset for ${service} set to '${name}'${RESET}"
-    echo -e "  Restart the service to apply: rig ${service} start ${name}"
+    local start_cmd
+    case "${service}" in
+        vllm)    start_cmd="rig serve" ;;
+        comfyui) start_cmd="rig comfy start" ;;
+        ollama)  start_cmd="rig ollama start" ;;
+        *)       start_cmd="rig ${service} start" ;;
+    esac
+    echo -e "  Run: ${start_cmd}"
 }
