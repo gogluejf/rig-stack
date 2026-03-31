@@ -23,7 +23,7 @@ _rig_completions() {
     local cur prev words cword
     _init_completion || return
 
-    local commands="vllm comfy ollama rag models presets status stats --help"
+    local commands="serve comfy ollama rag models presets status stats --help"
 
     case "${cword}" in
         1)
@@ -31,8 +31,10 @@ _rig_completions() {
             ;;
         2)
             case "${prev}" in
-                vllm)
-                    COMPREPLY=($(compgen -W "start stop list --help" -- "${cur}"))
+                serve)
+                    local presets
+                    presets=$(_rig_get_presets vllm 2>/dev/null)
+                    COMPREPLY=($(compgen -W "${presets} stop list --help" -- "${cur}"))
                     ;;
                 comfy)
                     COMPREPLY=($(compgen -W "start stop list workflows --help" -- "${cur}"))
@@ -56,12 +58,8 @@ _rig_completions() {
             ;;
         3)
             case "${words[1]}" in
-                vllm)
-                    if [[ "${words[2]}" == "start" ]]; then
-                        local presets
-                        presets=$(_rig_get_presets vllm 2>/dev/null)
-                        COMPREPLY=($(compgen -W "${presets} --edge" -- "${cur}"))
-                    fi
+                serve)
+                    COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
                     ;;
                 comfy)
                     if [[ "${words[2]}" == "start" ]]; then
@@ -102,10 +100,6 @@ _rig_completions() {
                 local presets
                 presets=$(_rig_get_presets "${service}" 2>/dev/null)
                 COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
-            fi
-            # rig vllm start <preset> --edge
-            if [[ "${words[1]}" == "vllm" && "${words[2]}" == "start" ]]; then
-                COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
             fi
             # rig comfy start <preset> --edge
             if [[ "${words[1]}" == "comfy" && "${words[2]}" == "start" ]]; then

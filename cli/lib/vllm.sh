@@ -1,47 +1,36 @@
 #!/usr/bin/env bash
-# cli/lib/vllm.sh — rig vllm subcommand
+# cli/lib/vllm.sh — rig serve subcommand
 
-cmd_vllm() {
+cmd_serve() {
     case "${1:-}" in
         --help|-h)
-            echo -e "${BOLD}rig vllm${RESET} — manage vLLM inference"
+            echo -e "${BOLD}rig serve${RESET} — start vLLM inference"
             echo ""
             echo "Usage:"
-            echo "  rig vllm start [<preset>]       start vLLM (uses default preset if none given)"
-            echo "  rig vllm start <preset> --edge  use Blackwell/sm_120 edge container"
-            echo "  rig vllm stop                   stop vLLM"
-            echo "  rig vllm list                   list available presets"
+            echo "  rig serve [<preset>]            start vLLM (uses default preset if none given)"
+            echo "  rig serve <preset> --edge        use Blackwell/sm_120 edge container"
+            echo "  rig serve stop                   stop vLLM"
+            echo "  rig serve list                   list available presets"
             echo ""
             echo "Examples:"
-            echo "  rig vllm start qwen3-5-27b"
-            echo "  rig vllm start qwen3-5-27b-fast --edge"
-            echo "  rig vllm start                  # uses default preset"
-            echo "  rig vllm list"
-            ;;
-        start)
-            shift
-            _vllm_start "$@"
+            echo "  rig serve qwen3-5-27b"
+            echo "  rig serve qwen3-5-27b-fast --edge"
+            echo "  rig serve                        # uses default preset"
+            echo "  rig serve list"
             ;;
         stop)
-            _vllm_stop
+            _serve_stop
             ;;
         list)
-            _vllm_list
-            ;;
-        "")
-            echo -e "${RED}Subcommand required: start | stop | list${RESET}"
-            echo "Run 'rig vllm --help' for usage."
-            exit 1
+            _serve_list
             ;;
         *)
-            echo -e "${RED}Unknown vllm subcommand: ${1}${RESET}"
-            echo "Run 'rig vllm --help' for usage."
-            exit 1
+            _serve_start "$@"
             ;;
     esac
 }
 
-_vllm_list() {
+_serve_list() {
     local preset_dir="${RIG_ROOT}/presets/vllm"
     local default_preset=""
     local default_file="${RIG_ROOT}/.env.default.vllm"
@@ -59,7 +48,6 @@ _vllm_list() {
         ctx=$(grep '^MAX_MODEL_LEN=' "${f}" | cut -d= -f2 || echo "—")
         kv=$(grep '^KV_CACHE_DTYPE=' "${f}" | cut -d= -f2 || echo "—")
         gpu=$(grep '^GPU_MEMORY_UTILIZATION=' "${f}" | cut -d= -f2 || echo "—")
-        # Show green checkmark if this is the default
         if [[ "${name}" == "${default_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
@@ -68,12 +56,12 @@ _vllm_list() {
         printf "  ${marker} %-28s %-35s %-10s %-8s %s\n" "${name}" "${model:0:33}" "${ctx}" "${kv}" "${gpu}"
     done
     hr
-    echo -e "  ${DIM}✓ = default preset (used by: rig vllm start)${RESET}"
+    echo -e "  ${DIM}✓ = default preset (used by: rig serve)${RESET}"
     echo -e "  ${DIM}Set default: rig presets set vllm <preset>${RESET}"
     echo ""
 }
 
-_vllm_start() {
+_serve_start() {
     local preset_name="${1:-}"
     local edge=false
     [[ "${2:-}" == "--edge" || "${1:-}" == "--edge" ]] && edge=true
@@ -87,8 +75,8 @@ _vllm_start() {
             echo -e "${DIM}  Using default preset: ${preset_name}${RESET}"
         else
             echo -e "${RED}No preset given and no default set.${RESET}"
-            echo "  rig vllm start <preset>"
-            echo "  rig vllm list"
+            echo "  rig serve <preset>"
+            echo "  rig serve list"
             exit 1
         fi
     fi
@@ -96,7 +84,7 @@ _vllm_start() {
     local preset_file="${RIG_ROOT}/presets/vllm/${preset_name}.env"
     if [[ ! -f "${preset_file}" ]]; then
         echo -e "${RED}Preset '${preset_name}' not found.${RESET}"
-        echo "Run 'rig vllm list' to see available presets."
+        echo "Run 'rig serve list' to see available presets."
         exit 1
     fi
 
@@ -115,7 +103,7 @@ _vllm_start() {
     echo -e "  Container: rig-${profile}"
 }
 
-_vllm_stop() {
+_serve_stop() {
     require_docker
     echo "Stopping vLLM..."
     rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true

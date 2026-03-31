@@ -38,8 +38,8 @@ print_help() {
     echo ""
     echo -e "  ${BOLD}COMMANDS${RESET}"
     echo ""
-    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "vllm" "start [<preset>]" "Start vLLM with a model preset"
-    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "start --edge" "Use Blackwell/sm_120 edge container"
+    printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "serve" "[<preset>]" "Start vLLM with a model preset"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "<preset> --edge" "Use Blackwell/sm_120 edge container"
     printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "stop" "Stop vLLM"
     printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "list" "Show available presets"
     echo ""
@@ -73,9 +73,9 @@ print_help() {
     echo -e "    --help, -h   Show help for any command"
     echo ""
     echo -e "  ${BOLD}EXAMPLES${RESET}"
-    echo -e "    rig vllm start qwen3-5-27b"
-    echo -e "    rig vllm start qwen3-5-27b-fast --edge"
-    echo -e "    rig vllm list"
+    echo -e "    rig serve qwen3-5-27b"
+    echo -e "    rig serve qwen3-5-27b-fast --edge"
+    echo -e "    rig serve list"
     echo -e "    rig comfy start --edge"
     echo -e "    rig ollama start nomic-embed-text"
     echo -e "    rig models show qwen3-5-27b"
@@ -91,7 +91,7 @@ COMMAND="${1:-}"
 [[ -n "${COMMAND}" ]] && shift || true
 
 case "${COMMAND}" in
-    vllm)       cmd_vllm "$@" ;;
+    serve)      cmd_serve "$@" ;;
     comfy)      cmd_comfy "$@" ;;
     ollama)     cmd_ollama "$@" ;;
     rag)        cmd_rag "$@" ;;

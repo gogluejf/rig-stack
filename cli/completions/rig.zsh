@@ -36,7 +36,7 @@ _rig() {
         command)
             local -a commands
             commands=(
-                'vllm:Manage vLLM inference'
+                'serve:Start vLLM inference'
                 'comfy:Manage ComfyUI'
                 'ollama:Manage Ollama'
                 'rag:Manage RAG API'
@@ -49,17 +49,19 @@ _rig() {
             ;;
         args)
             case "${words[2]}" in
-                vllm)
+                serve)
                     case "${words[3]}" in
-                        start)
+                        stop|list) ;;
+                        *)
                             _rig_presets vllm
                             _arguments '--edge[Use edge/Blackwell container]'
                             ;;
-                        *)
-                            local -a sub=(start stop list)
-                            _describe 'vllm subcommand' sub
-                            ;;
                     esac
+                    if [[ "${#words[@]}" -eq 3 ]]; then
+                        local -a sub=(stop list)
+                        _describe 'serve subcommand' sub
+                        _rig_presets vllm
+                    fi
                     ;;
                 comfy)
                     case "${words[3]}" in
