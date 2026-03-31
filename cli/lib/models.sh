@@ -76,12 +76,10 @@ cmd_models() {
 _models_pull() {
     local repo=""
     local dest_override=""
-    local preset_override=""
 
     while [[ $# -gt 0 ]]; do
         case "${1}" in
-            --dest)   dest_override="${2}"; shift 2 ;;
-            --preset) preset_override="${2}"; shift 2 ;;
+            --dest) dest_override="${2}"; shift 2 ;;
             -*)
                 echo -e "${RED}Unknown flag: ${1}${RESET}"
                 exit 1
@@ -98,8 +96,6 @@ _models_pull() {
     }
 
     local dest="${dest_override}"
-    local preset="${preset_override}"
-    local from_registry=false
 
     # ── Registry lookup ───────────────────────────────────────────────────────
     if [[ -z "${dest}" ]]; then
@@ -109,27 +105,20 @@ _models_pull() {
         if [[ -n "${registry_hit}" ]]; then
             dest="${registry_hit%%|*}"
             local _rest="${registry_hit#*|}"
-            local registry_preset="${_rest%%|*}"
             local registry_desc="${_rest##*|}"
-            [[ -z "${preset}" && "${registry_preset}" != "-" ]] && preset="${registry_preset}"
-            from_registry=true
-            echo -e "${DIM}  Registry: ${repo} → ${dest}${preset:+ | preset: ${preset}}${RESET}"
+            echo -e "${DIM}  Registry: ${repo} → ${dest}${RESET}"
             [[ -n "${registry_desc}" ]] && echo -e "${DIM}  ${registry_desc}${RESET}"
         else
             # ── Unknown model: interactive registration ───────────────────────
             _models_interactive_register "${repo}"
-            # After registration, re-read the registry to get the new entry
             local new_hit
             new_hit=$(_registry_lookup "${repo}")
             if [[ -n "${new_hit}" ]]; then
                 dest="${new_hit%%|*}"
-                local new_preset="${new_hit##*|}"
-                [[ "${new_preset}" != "-" ]] && preset="${new_preset}"
             else
-                # User declined to register — use what they gave us interactively
                 dest="${_INTERACTIVE_DEST:-}"
-                preset="${_INTERACTIVE_PRESET:-}"
             fi
+            unset _INTERACTIVE_DEST
             [[ -z "${dest}" ]] && { echo -e "${RED}No destination set. Aborting.${RESET}"; exit 1; }
         fi
     fi
@@ -137,20 +126,14 @@ _models_pull() {
     # ── Confirm and pull ──────────────────────────────────────────────────────
     echo ""
     echo -e "${CYAN}Pulling: ${repo}${RESET}"
-    echo -e "  Destination   : \$MODELS_ROOT/${dest}"
-    if [[ -n "${preset}" && "${preset}" != "-" ]]; then
-        echo -e "  Service       : $(_preset_service "${preset}")"
-        echo -e "  Default preset: ${preset}"
-    else
-        echo -e "  Default preset: none  (set later: rig presets set <service> <name>)"
-    fi
+    echo -e "  Destination: \$MODELS_ROOT/${dest}"
     echo ""
 
-    bash "${RIG_ROOT}/scripts/models/pull-model.sh" "${repo}" "${dest}" "${preset}"
+    bash "${RIG_ROOT}/scripts/models/pull-model.sh" "${repo}" "${dest}"
 }
 
 # ── Interactive registration for unknown models ───────────────────────────────
-# Sets _INTERACTIVE_DEST and _INTERACTIVE_PRESET as fallback if user skips registry write.
+# Sets _INTERACTIVE_DEST as fallback if user skips registry write.
 _models_interactive_register() {
     local repo="${1}"
     local basename
@@ -194,30 +177,18 @@ _models_interactive_register() {
     local dest="${dest_input:-${suggested_dest}}"
     export _INTERACTIVE_DEST="${dest}"
 
-    # Step 3: default preset
-    local preset="-"
-    echo ""
-    echo -e "Default preset? (activates on first pull, skipped if one already active)"
-    echo -e "Available ${service} presets:"
-    local available
-    available=$(ls "${RIG_ROOT}/presets/${service}/"*.env 2>/dev/null | xargs -n1 basename | sed 's/\.env$//' | tr '\n' ' ')
-    echo -e "  ${DIM}${available:-none}${RESET}"
-    read -rp "Preset name (or Enter to skip): " preset_input
-    [[ -n "${preset_input}" ]] && preset="${service}/${preset_input}"
-    export _INTERACTIVE_PRESET="${preset}"
-
-    # Step 4: description
+    # Step 3: description
     echo ""
     read -rp "One-line description (shown in registry/list): " desc_input
     local desc="${desc_input:-}"
 
-    # Step 5: write to registry?
+    # Step 4: write to registry?
     echo ""
     read -rp "Save to registry for future pulls? [Y/n]: " save_choice
     if [[ "${save_choice,,}" != "n" ]]; then
-        printf "%s\t%s\t%s\t%s\n" "${repo}" "${dest}" "${preset}" "${desc}" >> "${REGISTRY}"
+        printf "%s\t%s\t-\t%s\n" "${repo}" "${dest}" "${desc}" >> "${REGISTRY}"
         echo -e "${GREEN}✓  Added to config/models-registry.tsv${RESET}"
-        echo -e "${DIM}  ${repo}  →  ${dest}  |  ${preset}${RESET}"
+        echo -e "${DIM}  ${repo}  →  ${dest}${RESET}"
         [[ -n "${desc}" ]] && echo -e "${DIM}  ${desc}${RESET}"
     fi
 }

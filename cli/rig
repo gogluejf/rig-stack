@@ -64,7 +64,7 @@ print_help() {
     echo ""
     printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "presets" "" "List all presets"
     printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "show <name>" "Dump preset config"
-    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "set <svc> <name>" "Set active preset"
+    printf "  ${DIM}%-12s  %-18s  %s${RESET}\n" "" "set <svc> <name>" "Set default preset"
     echo ""
     printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "status" "" "Active services, models, presets"
     printf "  ${CYAN}%-12s${RESET}  %-18s  %s\n" "stats" "" "GPU VRAM, watt, temp, tokens/sec"
