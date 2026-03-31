@@ -114,7 +114,7 @@ section_llm() {
 
     pull "Qwen/Qwen2-VL-7B-Instruct" \
          "llm/qwen2-vl-7b" \
-         ""
+         "comfyui/qwen-image-gen"
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -170,10 +170,9 @@ section_controlnet() {
 
     pull_file "InstantX/FLUX.1-dev-Controlnet-Canny" \
               "diffusion_pytorch_model.safetensors" \
-              "controlnet"
-    # rename for clarity
-    mv "${MODELS_ROOT}/controlnet/diffusion_pytorch_model.safetensors" \
-       "${MODELS_ROOT}/controlnet/flux-controlnet-canny.safetensors" 2>/dev/null || true
+              "controlnet/canny"
+    mv "${MODELS_ROOT}/controlnet/canny/diffusion_pytorch_model.safetensors" \
+       "${MODELS_ROOT}/controlnet/canny/flux-controlnet-canny.safetensors" 2>/dev/null || true
 
     pull "Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro" \
          "controlnet/union-pro" \
