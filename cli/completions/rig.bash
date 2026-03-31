@@ -105,9 +105,11 @@ _rig_completions() {
             if [[ "${words[1]}" == "comfy" && "${words[2]}" == "start" ]]; then
                 COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
             fi
-            # rig ollama start <preset> --gpu
+            # rig ollama start <p1> <p2> [--gpu] — keep suggesting presets up to 3
             if [[ "${words[1]}" == "ollama" && "${words[2]}" == "start" ]]; then
-                COMPREPLY=($(compgen -W "--gpu" -- "${cur}"))
+                local presets
+                presets=$(_rig_get_presets ollama 2>/dev/null)
+                COMPREPLY=($(compgen -W "${presets} --gpu" -- "${cur}"))
             fi
             ;;
     esac

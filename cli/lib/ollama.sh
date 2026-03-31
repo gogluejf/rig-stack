@@ -7,15 +7,19 @@ cmd_ollama() {
             echo -e "${BOLD}rig ollama${RESET} — manage Ollama"
             echo ""
             echo "Usage:"
-            echo "  rig ollama start [<preset>]       start Ollama (uses default preset if none given)"
-            echo "  rig ollama start <preset> --gpu   start with GPU"
+            echo "  rig ollama start [<preset>...]    start Ollama and preload up to 3 models in VRAM"
+            echo "  rig ollama start <p1> <p2> --gpu  start with GPU"
             echo "  rig ollama stop                   stop Ollama"
             echo "  rig ollama list                   list available presets"
             echo ""
+            echo "  Presets are optional — Ollama loads any model on first request."
+            echo "  Passing presets pre-warms VRAM so the first call has no cold start."
+            echo "  Up to 3 models stay loaded concurrently (LRU eviction when full)."
+            echo ""
             echo "Examples:"
             echo "  rig ollama start nomic-embed-text"
-            echo "  rig ollama start phi3-mini"
-            echo "  rig ollama start deepseek-r1-14b --gpu"
+            echo "  rig ollama start nomic-embed-text phi3-mini"
+            echo "  rig ollama start nomic-embed-text phi3-mini deepseek-r1-7b --gpu"
             echo "  rig ollama list"
             ;;
         start)
@@ -72,59 +76,83 @@ _ollama_list() {
 }
 
 _ollama_start() {
-    local preset_name="${1:-}"
     local gpu=false
-    [[ "${2:-}" == "--gpu" || "${1:-}" == "--gpu" ]] && gpu=true
-    [[ "${preset_name}" == "--gpu" ]] && preset_name=""
+    local presets=()
+
+    # Parse args: collect preset names, detect --gpu
+    for arg in "$@"; do
+        if [[ "${arg}" == "--gpu" ]]; then
+            gpu=true
+        else
+            presets+=("${arg}")
+        fi
+    done
 
     # Fall back to default preset if none given
-    if [[ -z "${preset_name}" ]]; then
+    if [[ ${#presets[@]} -eq 0 ]]; then
         local default_file="${RIG_ROOT}/.env.default.ollama"
         if [[ -f "${default_file}" ]]; then
-            preset_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//')
-            echo -e "${DIM}  Using default preset: ${preset_name}${RESET}"
+            local default_name
+            default_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//')
+            presets=("${default_name}")
+            echo -e "${DIM}  Using default preset: ${default_name}${RESET}"
         else
             echo -e "${RED}No preset given and no default set.${RESET}"
-            echo "  rig ollama start <preset>"
+            echo "  rig ollama start <preset> [<preset2>] [<preset3>]"
             echo "  rig ollama list"
             exit 1
         fi
     fi
 
-    local preset_file="${RIG_ROOT}/presets/ollama/${preset_name}.env"
-    if [[ ! -f "${preset_file}" ]]; then
-        echo -e "${RED}Preset '${preset_name}' not found.${RESET}"
-        echo "Run 'rig ollama list' to see available presets."
-        exit 1
+    # Cap at 3
+    if [[ ${#presets[@]} -gt 3 ]]; then
+        echo -e "${YELLOW}  Max 3 presets — ignoring: ${presets[@]:3}${RESET}"
+        presets=("${presets[@]:0:3}")
     fi
 
-    # Read model name from preset
-    local model
-    model=$(grep '^OLLAMA_MODEL=' "${preset_file}" | cut -d= -f2)
+    # Validate all presets and collect model names
+    local models=()
+    for preset_name in "${presets[@]}"; do
+        local preset_file="${RIG_ROOT}/presets/ollama/${preset_name}.env"
+        if [[ ! -f "${preset_file}" ]]; then
+            echo -e "${RED}Preset '${preset_name}' not found.${RESET}"
+            echo "Run 'rig ollama list' to see available presets."
+            exit 1
+        fi
+        models+=("$(grep '^OLLAMA_MODEL=' "${preset_file}" | cut -d= -f2)")
+    done
+
+    # Default preset = first one passed
+    set_default_preset "ollama" "${RIG_ROOT}/presets/ollama/${presets[0]}.env"
 
     require_docker
-    set_default_preset "ollama" "${preset_file}"
+
+    # Always allow 3 models in VRAM — Ollama handles LRU eviction automatically
+    export OLLAMA_MAX_LOADED_MODELS=3
 
     if $gpu; then
         export OLLAMA_RUNTIME="nvidia"
-        echo -e "${CYAN}Starting Ollama with GPU — preset '${preset_name}'...${RESET}"
+        echo -e "${CYAN}Starting Ollama with GPU...${RESET}"
     else
-        echo -e "${CYAN}Starting Ollama (CPU) — preset '${preset_name}'...${RESET}"
+        echo -e "${CYAN}Starting Ollama (CPU)...${RESET}"
     fi
 
     rig_compose --profile ollama up -d
 
-    # Pull model if not present
+    # Preload each model into VRAM
     sleep 2
-    echo -e "  Pulling model ${model} (if not cached)..."
-    docker exec rig-ollama ollama pull "${model}" 2>/dev/null || \
-        echo -e "${YELLOW}  Model pull may be in progress — check: docker logs rig-ollama${RESET}"
+    for i in "${!presets[@]}"; do
+        local model="${models[$i]}"
+        echo -e "  Preloading ${model}..."
+        docker exec rig-ollama ollama pull "${model}" 2>/dev/null || \
+            echo -e "${YELLOW}  Pull may be in progress — check: docker logs rig-ollama${RESET}"
+    done
 
     echo -e "${GREEN}✓  Ollama running${RESET}"
-    echo -e "  Model    : ${model}"
-    echo -e "  Preset   : ${preset_name}"
-    echo -e "  Endpoint : http://localhost:${OLLAMA_PORT:-11434}"
-    echo -e "  Via proxy: http://localhost:${TRAEFIK_PORT:-80}/ollama"
+    echo -e "  Preloaded : ${models[*]}"
+    echo -e "  VRAM slots: 3 (LRU eviction when full)"
+    echo -e "  Endpoint  : http://localhost:${OLLAMA_PORT:-11434}"
+    echo -e "  Via proxy : http://localhost:${TRAEFIK_PORT:-80}/ollama"
 }
 
 _ollama_stop() {

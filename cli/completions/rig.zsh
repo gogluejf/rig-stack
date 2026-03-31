@@ -78,6 +78,7 @@ _rig() {
                 ollama)
                     case "${words[3]}" in
                         start)
+                            # Up to 3 presets + --gpu flag
                             _rig_presets ollama
                             _arguments '--gpu[Use GPU]'
                             ;;
@@ -86,6 +87,11 @@ _rig() {
                             _describe 'ollama subcommand' sub
                             ;;
                     esac
+                    # Keep completing presets for 2nd and 3rd position
+                    if [[ "${words[3]}" == "start" && "${#words[@]}" -ge 5 ]]; then
+                        _rig_presets ollama
+                        _arguments '--gpu[Use GPU]'
+                    fi
                     ;;
                 rag)
                     local -a sub=(start stop status)

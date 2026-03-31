@@ -92,10 +92,12 @@ rig <command> [subcommand] [flags]
 
 | Command | Description |
 |---|---|
-| `rig ollama start <preset>` | Start Ollama CPU mode |
-| `rig ollama start <preset> --gpu` | Start Ollama GPU mode |
+| `rig ollama start [<preset>...]` | Start Ollama and preload up to 3 models in VRAM |
+| `rig ollama start <p1> <p2> --gpu` | Start with GPU |
 | `rig ollama stop` | Stop Ollama |
 | `rig ollama list` | List available presets |
+
+Presets are optional — Ollama loads any model on first request. Passing presets pre-warms VRAM to eliminate cold starts. Up to 3 models stay loaded simultaneously; Ollama evicts the least recently used when a new one is requested beyond the limit.
 
 ### rag — retrieval API
 
