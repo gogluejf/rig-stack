@@ -1,19 +1,15 @@
 #!/usr/bin/env bash
 # scripts/models/init-models.sh
 #
-# What it does: Downloads the full rig-stack model set to $MODELS_ROOT,
-#               and pulls all Ollama utility models into the running Ollama container.
-#               Creates model subdirs before each download.
-#               Sets default presets for models that have one (first-run only).
+# Downloads the full rig-stack model set to $MODELS_ROOT and registers each
+# model in the registry. Ollama models are pulled into the running container.
 #
-# What it expects:
-#   - .env with MODELS_ROOT and HF_TOKEN set
-#   - scripts/setup/00-init-dirs.sh already run (category dirs exist)
-#   - Docker running (for HF downloads via container)
-#   - For --ollama: Ollama container running (rig ollama start nomic-embed-text)
+# Each call passes explicit dest and description — the registry is populated
+# as a side effect of each download.
 #
 # Usage:
 #   init-models.sh                   # everything
+#   init-models.sh --minimal         # embeddings + primary LLM only
 #   init-models.sh --llm             # LLM models only
 #   init-models.sh --diffusion       # diffusion models only
 #   init-models.sh --upscalers       # upscaler models only
@@ -21,8 +17,7 @@
 #   init-models.sh --facefusion      # FaceFusion models only
 #   init-models.sh --starvector      # StarVector only
 #   init-models.sh --embeddings      # HF embedding models only
-#   init-models.sh --ollama          # Ollama util models only (requires running container)
-#   init-models.sh --minimal         # embeddings + primary LLM only
+#   init-models.sh --ollama          # Ollama models only (requires running container)
 
 set -euo pipefail
 
@@ -42,16 +37,18 @@ BOLD='\033[1m'
 DIM='\033[2m'
 RESET='\033[0m'
 
-# ── Helper: pull from HuggingFace ─────────────────────────────────────────────
+# ── Helper: pull a model (HF or ollama) ───────────────────────────────────────
 pull() {
-    local repo="$1"
-    local dest="$2"       # relative to $MODELS_ROOT
-    local preset="${3:-}" # optional default preset (service/name)
-    mkdir -p "${MODELS_ROOT}/${dest}"
-    bash "${PULL}" "${repo}" "${dest}" "${preset}"
+    local source="$1"
+    local dest="$2"
+    local descr="$3"
+    if [[ "${source}" != ollama/* ]]; then
+        mkdir -p "${MODELS_ROOT}/${dest}"
+    fi
+    bash "${PULL}" "${source}" "${dest}" "${descr}"
 }
 
-# ── Helper: pull a single file from HuggingFace ───────────────────────────────
+# ── Helper: pull a single file from HuggingFace (no registry entry) ──────────
 pull_file() {
     local repo="$1"
     local filename="$2"
@@ -68,19 +65,6 @@ pull_file() {
     echo -e "${GREEN}✓  ${filename} → ${MODELS_ROOT}/${dest}${RESET}"
 }
 
-# ── Helper: pull Ollama model into running container ──────────────────────────
-ollama_pull() {
-    local model="$1"
-    if ! docker ps --format '{{.Names}}' | grep -q "^rig-ollama$"; then
-        echo -e "${YELLOW}  Ollama not running — skipping ${model}${RESET}"
-        echo -e "${DIM}  Start first: rig ollama start nomic-embed-text${RESET}"
-        return 0
-    fi
-    echo -e "${CYAN}▶  ollama pull ${model}${RESET}"
-    docker exec rig-ollama ollama pull "${model}"
-    echo -e "${GREEN}✓  ${model}${RESET}"
-}
-
 # ── Summary header ─────────────────────────────────────────────────────────────
 echo -e "${BOLD}rig-stack — model initialisation${RESET}"
 echo -e "  Mode        : ${MODE}"
@@ -95,7 +79,7 @@ section_embeddings() {
     echo -e "\n${BOLD}── Embeddings ────────────────────────────────────${RESET}"
     pull "nomic-ai/nomic-embed-text-v1.5" \
          "embeddings/nomic-embed-text" \
-         "ollama/embedding"
+         "nomic-embed-text v1.5 — primary RAG embeddings. Fast, CPU-friendly, 768-dim."
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -106,15 +90,14 @@ section_llm() {
 
     pull "Kbenkhaled/Qwen3.5-27B-NVFP4" \
          "llm/qwen3-5-27b" \
-         "vllm/qwen3-5-27b"
+         "Qwen3.5 27B fp4 — primary LLM. Code, tools, long context (65k). Daily driver."
 
-    # Distilled variant — confirm exact HF slug before enabling
     echo -e "${YELLOW}  qwen3-5-27b-distilled: verify HF repo slug, then run:${RESET}"
-    echo -e "${DIM}  bash scripts/models/pull-model.sh <repo> llm/qwen3-5-27b-distilled vllm/qwen3-5-27b-distilled${RESET}"
+    echo -e "${DIM}  rig models pull <repo> --dest llm/qwen3-5-27b-distilled --descr \"Qwen3.5 27B distilled v2\"${RESET}"
 
     pull "Qwen/Qwen2-VL-7B-Instruct" \
          "llm/qwen2-vl-7b" \
-         "comfyui/qwen-image-gen"
+         "Qwen2-VL 7B — multimodal vision-language. Powers image gen and edit workflows."
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -123,24 +106,20 @@ section_llm() {
 section_diffusion() {
     echo -e "\n${BOLD}── Diffusion models ──────────────────────────────${RESET}"
 
-    # FLUX.2 fp8 — verify repo slug before pull
     echo -e "${YELLOW}  FLUX.2 fp8: verify repo slug at huggingface.co/black-forest-labs, then:${RESET}"
-    echo -e "${DIM}  bash scripts/models/pull-model.sh <repo> diffusion/flux2-fp8 comfyui/flux2-fp8${RESET}"
+    echo -e "${DIM}  rig models pull <repo> --dest diffusion/flux2-fp8 --descr \"FLUX.2-dev fp8 — best quality, low VRAM\"${RESET}"
 
-    # FLUX.2-klein — Apache 2.0, no gate
     pull "black-forest-labs/FLUX.2-klein" \
          "diffusion/flux2-klein" \
-         ""
+         "FLUX.2-klein — fastest FLUX.2 variant. Apache 2.0, no gate. Good for iteration."
 
-    # FLUX.1-dev — gated, needed for ControlNet and image editing workflows
     pull "black-forest-labs/FLUX.1-dev" \
          "diffusion/flux1-dev" \
-         "comfyui/flux1-dev"
+         "FLUX.1-dev — battle-tested text-to-image. Best node/workflow ecosystem support."
 
-    # FLUX.1-Fill-dev — inpainting / image editing
     pull "black-forest-labs/FLUX.1-Fill-dev" \
          "diffusion/flux1-fill" \
-         ""
+         "FLUX.1-Fill — inpainting and instruction-guided image editing."
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -149,17 +128,10 @@ section_diffusion() {
 section_upscalers() {
     echo -e "\n${BOLD}── Upscalers ─────────────────────────────────────${RESET}"
 
-    pull_file "TencentARC/GFPGAN" \
-              "GFPGANv1.4.pth" \
-              "upscalers/gfpgan"
+    pull_file "TencentARC/GFPGAN" "GFPGANv1.4.pth" "upscalers/gfpgan"
 
-    pull_file "ai-forever/Real-ESRGAN" \
-              "RealESRGAN_x4plus.pth" \
-              "upscalers/real-esrgan"
-
-    pull_file "ai-forever/Real-ESRGAN" \
-              "RealESRGAN_x4plus_anime_6B.pth" \
-              "upscalers/real-esrgan"
+    pull_file "ai-forever/Real-ESRGAN" "RealESRGAN_x4plus.pth" "upscalers/real-esrgan"
+    pull_file "ai-forever/Real-ESRGAN" "RealESRGAN_x4plus_anime_6B.pth" "upscalers/real-esrgan"
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -176,11 +148,11 @@ section_controlnet() {
 
     pull "Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro" \
          "controlnet/union-pro" \
-         ""
+         "ControlNet Union Pro — multi-condition in one model (canny/depth/pose/scribble)."
 
     pull "Shakker-Labs/FLUX.1-dev-ControlNet-Depth" \
          "controlnet/depth" \
-         ""
+         "ControlNet Depth — depth-map conditioned generation. Use MiDaS/ZoeDepth preprocessor."
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -189,14 +161,8 @@ section_controlnet() {
 section_facefusion() {
     echo -e "\n${BOLD}── FaceFusion models ─────────────────────────────${RESET}"
 
-    pull_file "ezioruan/inswapper_128.onnx" \
-              "inswapper_128.onnx" \
-              "face/facefusion"
-
-    pull_file "TencentARC/GFPGAN" \
-              "GFPGANv1.4.pth" \
-              "upscalers/gfpgan"
-
+    pull_file "ezioruan/inswapper_128.onnx" "inswapper_128.onnx" "face/facefusion"
+    pull_file "TencentARC/GFPGAN" "GFPGANv1.4.pth" "upscalers/gfpgan"
     echo -e "${DIM}  ArcFace buffalo_l: auto-downloaded by insightface on first ComfyUI run.${RESET}"
 }
 
@@ -208,48 +174,48 @@ section_starvector() {
 
     pull "starvector/starvector-8b-im2svg" \
          "starvector/starvector-8b-im2svg" \
-         "comfyui/starvector"
+         "StarVector 8B — raster image to clean SVG vector. Best for logos, icons, line art."
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
-# OLLAMA UTIL MODELS
-# Pulled into the running Ollama container — not HuggingFace downloads.
-# Requires: rig ollama start nomic-embed-text
+# OLLAMA MODELS
+# Pulled into the running Ollama container via ollama/<model> source prefix.
+# Requires: rig ollama start
 # ══════════════════════════════════════════════════════════════════════════════
 section_ollama() {
-    echo -e "\n${BOLD}── Ollama util models ────────────────────────────${RESET}"
-    echo -e "${DIM}  Requires Ollama container running: rig ollama start nomic-embed-text${RESET}\n"
+    echo -e "\n${BOLD}── Ollama models ─────────────────────────────────${RESET}"
+    echo -e "${DIM}  Requires Ollama container running: rig ollama start${RESET}\n"
 
     # Embeddings
-    ollama_pull "nomic-embed-text"
-    ollama_pull "mxbai-embed-large"
-    ollama_pull "all-minilm"
+    pull "ollama/nomic-embed-text"  "ollama/nomic-embed-text"  "Primary RAG embeddings. Fast, CPU-friendly, 768-dim."
+    pull "ollama/mxbai-embed-large" "ollama/mxbai-embed-large" "Higher-quality embeddings option."
+    pull "ollama/all-minilm"        "ollama/all-minilm"        "Ultra-fast minimal embeddings."
 
     # Vision
-    ollama_pull "llava:13b"
-    ollama_pull "moondream"
-    ollama_pull "llava-phi3"
+    pull "ollama/llava:13b"   "ollama/llava-13b"   "Multimodal image description."
+    pull "ollama/moondream"   "ollama/moondream"   "Lightweight vision model."
+    pull "ollama/llava-phi3"  "ollama/llava-phi3"  "Vision + reasoning combo."
 
-    # Language — general (CPU-optimised)
-    ollama_pull "phi3-mini"
-    ollama_pull "phi3:medium"
-    ollama_pull "gemma2:2b"
-    ollama_pull "gemma2:9b"
-    ollama_pull "mistral:7b"
-    ollama_pull "mistral-nemo"
-    ollama_pull "qwen2.5:7b"
-    ollama_pull "qwen2.5:14b"
-    ollama_pull "llama3.2:1b"
-    ollama_pull "llama3.2:3b"
+    # Language
+    pull "ollama/phi3:mini"     "ollama/phi3-mini"     "Fast summarization and classification."
+    pull "ollama/phi3:medium"   "ollama/phi3-medium"   "Mid-range reasoning on CPU."
+    pull "ollama/gemma2:2b"     "ollama/gemma2-2b"     "Ultra-fast compact tasks."
+    pull "ollama/gemma2:9b"     "ollama/gemma2-9b"     "Balanced reasoning on CPU."
+    pull "ollama/mistral:7b"    "ollama/mistral-7b"    "Strong instruction following."
+    pull "ollama/mistral-nemo"  "ollama/mistral-nemo"  "Longer context utility."
+    pull "ollama/qwen2.5:7b"    "ollama/qwen2.5-7b"    "Multilingual utility."
+    pull "ollama/qwen2.5:14b"   "ollama/qwen2.5-14b"   "Stronger multilingual reasoning."
+    pull "ollama/llama3.2:1b"   "ollama/llama3.2-1b"   "Minimal footprint tasks."
+    pull "ollama/llama3.2:3b"   "ollama/llama3.2-3b"   "Compact, capable chat."
 
     # Code
-    ollama_pull "codellama:7b"
-    ollama_pull "codegemma:7b"
-    ollama_pull "deepseek-coder:6.7b"
+    pull "ollama/codellama:7b"       "ollama/codellama-7b"       "Code generation on CPU."
+    pull "ollama/codegemma:7b"       "ollama/codegemma-7b"       "Code + instruction following."
+    pull "ollama/deepseek-coder:6.7b" "ollama/deepseek-coder-6.7b" "Strong code completion."
 
     # Reasoning
-    ollama_pull "deepseek-r1:7b"
-    ollama_pull "deepseek-r1:14b"
+    pull "ollama/deepseek-r1:7b"   "ollama/deepseek-r1-7b"   "Chain-of-thought reasoning on CPU."
+    pull "ollama/deepseek-r1:14b"  "ollama/deepseek-r1-14b"  "Stronger reasoning, GPU recommended."
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -258,16 +224,16 @@ section_ollama() {
 case "${MODE}" in
     --minimal)
         section_embeddings
-        pull "Kbenkhaled/Qwen3.5-27B-NVFP4" "llm/qwen3-5-27b" "vllm/qwen3-5-27b"
+        pull "Kbenkhaled/Qwen3.5-27B-NVFP4" "llm/qwen3-5-27b" "Qwen3.5 27B fp4 — primary LLM."
         ;;
-    --llm)           section_llm ;;
-    --diffusion)     section_diffusion ;;
-    --upscalers)     section_upscalers ;;
-    --controlnet)    section_controlnet ;;
-    --facefusion)    section_facefusion ;;
-    --starvector)    section_starvector ;;
-    --embeddings)    section_embeddings ;;
-    --ollama)        section_ollama ;;
+    --llm)          section_llm ;;
+    --diffusion)    section_diffusion ;;
+    --upscalers)    section_upscalers ;;
+    --controlnet)   section_controlnet ;;
+    --facefusion)   section_facefusion ;;
+    --starvector)   section_starvector ;;
+    --embeddings)   section_embeddings ;;
+    --ollama)       section_ollama ;;
     --all)
         section_embeddings
         section_llm
@@ -289,6 +255,6 @@ echo -e "\n${GREEN}${BOLD}Done.${RESET}"
 echo ""
 echo "Next steps:"
 echo "  rig models              # verify all models listed"
-echo "  rig presets             # see active presets"
-echo "  rig serve qwen3-5-27b   # start LLM serving"
-echo "  rig comfy start --edge  # start ComfyUI"
+echo "  rig presets set vllm qwen3-5-27b"
+echo "  rig serve qwen3-5-27b"
+echo "  rig comfy start flux2-fp8 --edge"

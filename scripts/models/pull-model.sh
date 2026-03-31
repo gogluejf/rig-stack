@@ -1,26 +1,23 @@
 #!/usr/bin/env bash
 # scripts/models/pull-model.sh
 #
-# What it does: Downloads a HuggingFace model to $MODELS_ROOT/<subdir>.
-#               Creates the subdir if it doesn't exist.
-#               Uses huggingface-cli inside a temporary Docker container —
-#               no host Python or huggingface-hub install required.
+# Downloads a model and registers it in the model registry.
 #
-# What it expects:
-#   - Docker running
-#   - .env with MODELS_ROOT and optionally HF_TOKEN
+# Source can be:
+#   - HuggingFace repo:  org/model-name  → downloads to $MODELS_ROOT/<dest>
+#   - Ollama model:      ollama/<model>  → pulls via `docker exec rig-ollama ollama pull`
 #
 # Usage:
-#   pull-model.sh <hf-repo-id> <local-subdir>
+#   pull-model.sh <source> <dest> <description>
 #
 # Arguments:
-#   hf-repo-id  : HuggingFace repo, e.g. Kbenkhaled/Qwen3.5-27B-NVFP4
-#   local-subdir: path under $MODELS_ROOT, e.g. llm/qwen3-5-27b
+#   source     : HF repo (e.g. Kbenkhaled/Qwen3.5-27B-NVFP4) or ollama/<model>
+#   dest       : path under $MODELS_ROOT for HF models, or "ollama/<model>" for Ollama
+#   description: one-line description written to the registry
 #
 # Examples:
-#   pull-model.sh Kbenkhaled/Qwen3.5-27B-NVFP4 llm/qwen3-5-27b
-#   pull-model.sh black-forest-labs/FLUX.1-dev diffusion/flux1-dev
-#   pull-model.sh nomic-ai/nomic-embed-text-v1.5 embeddings/nomic-embed-text
+#   pull-model.sh Kbenkhaled/Qwen3.5-27B-NVFP4 llm/qwen3-5-27b "Qwen3.5 27B fp4 — primary LLM"
+#   pull-model.sh ollama/nomic-embed-text ollama/nomic-embed-text "Primary RAG embeddings"
 
 set -euo pipefail
 
@@ -30,41 +27,68 @@ source "${ROOT_DIR}/.env" 2>/dev/null || true
 
 MODELS_ROOT="${MODELS_ROOT:-/models}"
 HF_TOKEN="${HF_TOKEN:-}"
+REGISTRY="${ROOT_DIR}/config/models-registry.tsv"
 
-HF_REPO="${1:-}"
-LOCAL_DIR="${2:-}"
+SOURCE="${1:-}"
+DEST="${2:-}"
+DESCR="${3:-}"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
 
-if [[ -z "${HF_REPO}" || -z "${LOCAL_DIR}" ]]; then
-    echo "Usage: $0 <hf-repo-id> <local-subdir>"
+if [[ -z "${SOURCE}" || -z "${DEST}" ]]; then
+    echo "Usage: $0 <source> <dest> <description>"
     echo ""
-    echo "  hf-repo-id  : HuggingFace repo (e.g. Kbenkhaled/Qwen3.5-27B-NVFP4)"
-    echo "  local-subdir: path under \$MODELS_ROOT (e.g. llm/qwen3-5-27b)"
+    echo "  source: HF repo (org/model) or ollama/<model>"
+    echo "  dest  : path under \$MODELS_ROOT (or ollama/<model> for Ollama)"
     exit 1
 fi
 
-DEST="${MODELS_ROOT}/${LOCAL_DIR}"
-mkdir -p "${DEST}"
+# ── Ollama path ───────────────────────────────────────────────────────────────
+if [[ "${SOURCE}" == ollama/* ]]; then
+    local_model="${SOURCE#ollama/}"
+    echo -e "${CYAN}Pulling Ollama model: ${local_model}${RESET}"
 
-echo -e "${CYAN}Downloading: ${HF_REPO}${RESET}"
-echo -e "  Destination: ${DEST}"
-[[ -z "${HF_TOKEN}" ]] && echo -e "  ${YELLOW}HF_TOKEN not set — gated models will fail${RESET}"
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^rig-ollama$"; then
+        echo -e "${RED}Ollama container is not running.${RESET}"
+        echo -e "  Start it first: rig ollama start"
+        exit 1
+    fi
 
-HF_TOKEN_FLAGS=""
-if [[ -n "${HF_TOKEN}" ]]; then
-    HF_TOKEN_FLAGS="-e HUGGING_FACE_HUB_TOKEN=${HF_TOKEN} -e HF_TOKEN=${HF_TOKEN}"
+    docker exec rig-ollama ollama pull "${local_model}"
+    echo -e "${GREEN}${BOLD}✓  ollama/${local_model} pulled${RESET}"
+
+# ── HuggingFace path ──────────────────────────────────────────────────────────
+else
+    DEST_PATH="${MODELS_ROOT}/${DEST}"
+    mkdir -p "${DEST_PATH}"
+
+    echo -e "${CYAN}Downloading: ${SOURCE}${RESET}"
+    echo -e "  Destination: ${DEST_PATH}"
+    [[ -z "${HF_TOKEN}" ]] && echo -e "  ${YELLOW}HF_TOKEN not set — gated models will fail${RESET}"
+
+    HF_TOKEN_FLAGS=""
+    if [[ -n "${HF_TOKEN}" ]]; then
+        HF_TOKEN_FLAGS="-e HUGGING_FACE_HUB_TOKEN=${HF_TOKEN} -e HF_TOKEN=${HF_TOKEN}"
+    fi
+
+    docker run --rm \
+        -v "${DEST_PATH}:/dest" \
+        ${HF_TOKEN_FLAGS} \
+        -e HF_HUB_ENABLE_HF_TRANSFER=1 \
+        python:3.12-slim \
+        sh -c "pip install -q huggingface_hub[hf_transfer] hf_transfer && \
+               huggingface-cli download '${SOURCE}' \
+                   --local-dir /dest \
+                   --local-dir-use-symlinks False"
+
+    echo -e "${GREEN}${BOLD}✓  ${SOURCE} → ${DEST_PATH}${RESET}"
 fi
 
-docker run --rm \
-    -v "${DEST}:/dest" \
-    ${HF_TOKEN_FLAGS} \
-    -e HF_HUB_ENABLE_HF_TRANSFER=1 \
-    python:3.12-slim \
-    sh -c "pip install -q huggingface_hub[hf_transfer] hf_transfer && \
-           huggingface-cli download '${HF_REPO}' \
-               --local-dir /dest \
-               --local-dir-use-symlinks False"
-
-echo -e "\n${GREEN}${BOLD}✓  ${HF_REPO} → ${DEST}${RESET}"
-echo -e "  To set a default preset: rig presets set <service> <preset>"
+# ── Write to registry ─────────────────────────────────────────────────────────
+# Remove existing entry for this source (avoid duplicates), then append.
+if grep -q "^${SOURCE}	" "${REGISTRY}" 2>/dev/null; then
+    # Use a temp file for portability (sed -i differs between GNU/BSD)
+    grep -v "^${SOURCE}	" "${REGISTRY}" > "${REGISTRY}.tmp" && mv "${REGISTRY}.tmp" "${REGISTRY}"
+fi
+printf "%s\t%s\t%s\n" "${SOURCE}" "${DEST}" "${DESCR}" >> "${REGISTRY}"
+echo -e "  ${RESET}Registered: ${SOURCE} → ${DEST}"

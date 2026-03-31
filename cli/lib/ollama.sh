@@ -53,21 +53,21 @@ _ollama_list() {
 
     print_header "Ollama presets"
     hr
-    printf "  ${BOLD}  %-28s %-20s %-10s %s${RESET}\n" "PRESET" "MODEL" "CTX" "USE"
+    printf "  ${BOLD}  %-28s %-20s %-10s %s${RESET}\n" "PRESET" "MODEL" "CTX" "DESCRIPTION"
     hr
     for f in "${preset_dir}"/*.env; do
         [[ -f "${f}" ]] || continue
-        local name model ctx use marker
+        local name model ctx desc marker
         name=$(basename "${f}" .env)
         model=$(grep '^OLLAMA_MODEL=' "${f}" | cut -d= -f2)
         ctx=$(grep '^OLLAMA_NUM_CTX=' "${f}" | cut -d= -f2 || echo "—")
-        use=$(grep '^# Use:' "${f}" | sed 's/^# Use: *//')
+        desc=$(grep '^# Use:' "${f}" | sed 's/^# Use: *//')
         if [[ "${name}" == "${default_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
             marker=" "
         fi
-        printf "  ${marker} %-28s %-20s %-10s %s\n" "${name}" "${model:0:18}" "${ctx}" "${use:0:40}"
+        printf "  ${marker} %-28s %-20s %-10s %s\n" "${name}" "${model:0:18}" "${ctx}" "${desc:0:45}"
     done
     hr
     echo -e "  ${DIM}✓ = default preset (used by: rig ollama start)${RESET}"

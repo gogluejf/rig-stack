@@ -53,20 +53,21 @@ _comfy_list() {
 
     print_header "ComfyUI presets"
     hr
-    printf "  ${BOLD}  %-28s %-35s %s${RESET}\n" "PRESET" "MODEL" "WORKFLOW"
+    printf "  ${BOLD}  %-28s %-25s %-20s %s${RESET}\n" "PRESET" "MODEL" "WORKFLOW" "DESCRIPTION"
     hr
     for f in "${preset_dir}"/*.env; do
         [[ -f "${f}" ]] || continue
-        local name model workflow marker
+        local name model workflow desc marker
         name=$(basename "${f}" .env)
         model=$(grep '^MODEL_ID=' "${f}" 2>/dev/null | cut -d= -f2 || echo "—")
         workflow=$(grep '^COMFYUI_WORKFLOW=' "${f}" 2>/dev/null | cut -d= -f2 || echo "—")
+        desc=$(grep '^# Use:' "${f}" 2>/dev/null | head -1 | sed 's/^# Use: *//')
         if [[ "${name}" == "${default_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
             marker=" "
         fi
-        printf "  ${marker} %-28s %-35s %s\n" "${name}" "${model:0:33}" "${workflow}"
+        printf "  ${marker} %-28s %-25s %-20s %s\n" "${name}" "${model:0:23}" "${workflow:0:18}" "${desc:0:45}"
     done
     hr
     echo -e "  ${DIM}✓ = default preset (used by: rig comfy start)${RESET}"

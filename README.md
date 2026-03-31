@@ -9,7 +9,6 @@ The motivation is practical. An RTX 5090 is a serious machine. Getting the most 
 - **Running the right build for the job.** vLLM and ComfyUI ship both a stable release and a nightly edge build compiled for Blackwell (sm_120, CUDA 13.0). Edge unlocks the full performance of the card — stable keeps you unblocked when nightly breaks.
 - **Splitting the GPU intelligently.** Load your large LLM on the GPU via vLLM, and offload utility models — embeddings, small chat, vision — to Ollama running on CPU. No context switching, no reloading.
 - **Tuning without rewriting configs.** Every service is driven by preset files. Switch from a high-throughput quantized build to a quality full-precision run with one command. Presets live in the repo and are version-controlled.
-- **Sharing models across services.** vLLM, ComfyUI and Ollama all read from the same `$MODELS_ROOT` mount. Download once, use everywhere.
 - **A CLI that feels native.** `rig` follows Debian UX conventions — subcommands, consistent flags, tab completion, clean output. No YAML archaeology, no Docker command memorisation.
 
 Drop it on Ubuntu 24.04, run `./install.sh`, and the full stack — LLM serving, image generation, RAG, observability — is one `rig` command away.

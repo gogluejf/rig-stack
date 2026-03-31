@@ -38,22 +38,23 @@ _serve_list() {
 
     print_header "vLLM presets"
     hr
-    printf "  ${BOLD}  %-28s %-35s %-10s %-8s %s${RESET}\n" "PRESET" "MODEL" "CONTEXT" "KV" "GPU"
+    printf "  ${BOLD}  %-28s %-20s %-10s %-6s %-6s %s${RESET}\n" "PRESET" "MODEL" "CTX" "KV" "GPU" "DESCRIPTION"
     hr
     for f in "${preset_dir}"/*.env; do
         [[ -f "${f}" ]] || continue
-        local name model ctx kv gpu marker
+        local name model ctx kv gpu desc marker
         name=$(basename "${f}" .env)
         model=$(grep '^MODEL_ID=' "${f}" | cut -d= -f2)
         ctx=$(grep '^MAX_MODEL_LEN=' "${f}" | cut -d= -f2 || echo "—")
         kv=$(grep '^KV_CACHE_DTYPE=' "${f}" | cut -d= -f2 || echo "—")
         gpu=$(grep '^GPU_MEMORY_UTILIZATION=' "${f}" | cut -d= -f2 || echo "—")
+        desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
         if [[ "${name}" == "${default_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
             marker=" "
         fi
-        printf "  ${marker} %-28s %-35s %-10s %-8s %s\n" "${name}" "${model:0:33}" "${ctx}" "${kv}" "${gpu}"
+        printf "  ${marker} %-28s %-20s %-10s %-6s %-6s %s\n" "${name}" "${model:0:18}" "${ctx}" "${kv}" "${gpu}" "${desc:0:45}"
     done
     hr
     echo -e "  ${DIM}✓ = default preset (used by: rig serve)${RESET}"
