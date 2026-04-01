@@ -14,8 +14,8 @@ interprets the edit, generates a mask or conditioning signal, and FLUX applies i
 ## Download
 
 ```bash
-rig models install Qwen/Qwen2-VL-7B-Instruct --path llm/qwen2-vl-7b
-rig models install black-forest-labs/FLUX.1-Fill-dev --path diffusion/flux1-fill
+rig models install Qwen/Qwen2-VL-7B-Instruct --path llm/qwen2-vl-7b --descr "Understands the scene and turns edit instructions into guidance"
+rig models install black-forest-labs/FLUX.1-Fill-dev --path diffusion/flux1-fill --descr "Performs localized inpainting and instruction-based image edits"
 ```
 
 ## Required ComfyUI nodes

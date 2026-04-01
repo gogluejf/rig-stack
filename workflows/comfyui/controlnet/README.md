@@ -15,10 +15,10 @@ Uses FLUX.1-dev + ControlNet Union for multi-condition support.
 ## Download
 
 ```bash
-rig models install black-forest-labs/FLUX.1-dev --path diffusion/flux1-dev
-rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro --path controlnet/union-pro
-rig models install InstantX/FLUX.1-dev-Controlnet-Canny --file diffusion_pytorch_model.safetensors --path controlnet/flux-controlnet-canny.safetensors
-rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Depth --path controlnet/depth
+rig models install black-forest-labs/FLUX.1-dev --path diffusion/flux1-dev --descr "Base diffusion model for conditioned image generation"
+rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro --path controlnet/union-pro --descr "Applies multiple control signals like pose, depth, and scribble"
+rig models install InstantX/FLUX.1-dev-Controlnet-Canny --file diffusion_pytorch_model.safetensors --path controlnet/flux-controlnet-canny.safetensors --descr "Guides generation from canny edge maps"
+rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Depth --path controlnet/depth --descr "Guides generation from scene depth maps"
 ```
 
 ## Required ComfyUI nodes

@@ -15,6 +15,15 @@ Text-to-image generation using FLUX.2-dev fp8 (default) or FLUX.2-klein.
 - Built-in UNet/VAE nodes (ComfyUI ≥ 0.2.x supports FLUX natively)
 - [ComfyUI-Manager](https://github.com/ltdrdata/ComfyUI-Manager) — install from within ComfyUI
 
+## Download
+
+```bash
+rig models install black-forest-labs/FLUX.2-klein --path diffusion/flux2-klein --descr "Generates images quickly for fast iteration"
+rig models install black-forest-labs/FLUX.1-dev --path diffusion/flux1-dev --descr "Provides a stable fallback image model with broad workflow support"
+# If you have the FLUX.2 fp8 repo slug available:
+rig models install <flux2-fp8-repo> --path diffusion/flux2-fp8 --descr "Generates the highest-quality FLUX.2 images with lower VRAM usage"
+```
+
 ## Start
 
 ```bash

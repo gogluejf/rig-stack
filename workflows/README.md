@@ -16,7 +16,7 @@ These are **documentation**, not runtime files. Actual ComfyUI workflow JSON exp
 cat workflows/comfyui/<workflow>/README.md
 
 # 2. Install required artifacts
-rig models install <hf-repo> --path <artifact-path>
+rig models install <hf-repo> --path <artifact-path> --descr "Artificat utility description"
 
 # 3. Set the preset
 rig presets set comfyui <preset>

@@ -272,13 +272,14 @@ $DATA_ROOT/                 # default: /data
 
 ```bash
 # Install a full Hugging Face repository artifact
-rig models install <huggingface-repo-id> --path <artifact-path>
+rig models install <huggingface-repo-id> --path <artifact-path> --descr "Explain what the artifact does for your workflow"
 
 # Install a single file from a Hugging Face repository
-rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --path upscalers/gfpgan/GFPGANv1.4.pth
+rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --path upscalers/gfpgan/GFPGANv1.4.pth --descr "GFPGAN face restoration"
 
-# Or use the script directly
-bash scripts/models/install-model.sh --type hf-repo --source black-forest-labs/FLUX.1-schnell --path diffusion/flux-schnell --descr "FLUX.1 schnell"
+## Install an Ollama model
+rig models install ollama/phi3:mini --path ollama/phi3-mini --descr "Fast utility model"
+
 ```
 
 For gated artifacts (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.

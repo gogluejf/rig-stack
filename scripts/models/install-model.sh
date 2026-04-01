@@ -40,8 +40,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -z "${TYPE}" || -z "${SOURCE}" || -z "${ARTIFACT_PATH}" ]]; then
-    echo "Usage: $0 --type <hf-repo|hf-file|ollama> --source <source> --path <artifact-path> [--file <remote-file>] [--descr <text>]"
+if [[ -z "${TYPE}" || -z "${SOURCE}" || -z "${ARTIFACT_PATH}" || -z "${DESCR}" ]]; then
+    echo "Usage: $0 --type <hf-repo|hf-file|ollama> --source <source> --path <artifact-path> [--file <remote-file>] --descr <text>"
     exit 1
 fi
 
@@ -89,6 +89,7 @@ _hf_env_flags() {
 if [[ "${TYPE}" == "ollama" ]]; then
     local_model="${SOURCE#ollama/}"
     echo -e "${CYAN}Installing Ollama artifact: ${local_model}${RESET}"
+    [[ -n "${DESCR}" ]] && echo -e "  Description: ${DESCR}"
 
     if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
         echo -e "${RED}Ollama container is not running.${RESET}"
@@ -109,6 +110,7 @@ else
             mkdir -p "${target_path}"
             echo -e "${CYAN}Installing HF repo: ${SOURCE}${RESET}"
             echo -e "  Target: ${target_path}"
+            [[ -n "${DESCR}" ]] && echo -e "  Description: ${DESCR}"
 
             docker run --rm \
                 -v "${target_path}:/dest" \
@@ -130,6 +132,7 @@ else
 
             echo -e "${CYAN}Installing HF file: ${SOURCE} — ${REMOTE_FILE}${RESET}"
             echo -e "  Target: ${target_path}"
+            [[ -n "${DESCR}" ]] && echo -e "  Description: ${DESCR}"
 
             docker run --rm \
                 -v "${target_dir}:/dest" \

@@ -14,7 +14,7 @@ Face swapping, face enhancement, and identity transfer via ComfyUI.
 ## Download
 
 ```bash
-rig models install ezioruan/inswapper_128.onnx --file inswapper_128.onnx --path face/facefusion/inswapper_128.onnx
+rig models install ezioruan/inswapper_128.onnx --file inswapper_128.onnx --path face/facefusion/inswapper_128.onnx --descr "Swaps the source identity onto the target face"
 # ArcFace buffalo_l is auto-downloaded by insightface on first run
 ```
 

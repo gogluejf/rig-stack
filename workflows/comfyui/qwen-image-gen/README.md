@@ -14,7 +14,7 @@ reformulates them for optimal diffusion output.
 ## Download
 
 ```bash
-rig models install Qwen/Qwen2-VL-7B-Instruct --path llm/qwen2-vl-7b
+rig models install Qwen/Qwen2-VL-7B-Instruct --path llm/qwen2-vl-7b --descr "Understands prompts and expands them into better image instructions"
 ```
 
 ## Required ComfyUI nodes
