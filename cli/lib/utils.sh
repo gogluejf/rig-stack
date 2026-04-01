@@ -24,7 +24,7 @@ load_env() {
     fi
     # Load default preset if set
     for svc in vllm comfyui ollama; do
-        local active="${RIG_ROOT}/.env.default.${svc}"
+        local active="${RIG_ROOT}/presets/.env.default.${svc}"
         if [[ -f "${active}" ]]; then
             set -a; source "${active}"; set +a
         fi
@@ -61,23 +61,13 @@ rig_compose() {
 set_default_preset() {
     local service="$1"
     local preset_file="$2"
-    cp "${preset_file}" "${RIG_ROOT}/.env.default.${service}"
+    cp "${preset_file}" "${RIG_ROOT}/presets/.env.default.${service}"
 }
 
-default_preset_name() {
+set_active_preset() {
     local service="$1"
-    local default="${RIG_ROOT}/.env.default.${service}"
-    if [[ -f "${default}" ]]; then
-        grep -m1 '^# Preset:' "${default}" 2>/dev/null | sed 's/^# Preset: *//' || basename "${default}"
-    else
-        echo "(none)"
-    fi
-}
-
-default_model_name() {
-    local service="$1"
-    local default="${RIG_ROOT}/.env.default.${service}"
-    [[ -f "${default}" ]] && grep '^MODEL_ID=' "${default}" 2>/dev/null | cut -d= -f2 || echo "—"
+    local preset_file="$2"
+    cp "${preset_file}" "${RIG_ROOT}/presets/.env.active.${service}"
 }
 
 # ── Print helpers ─────────────────────────────────────────────────────────────

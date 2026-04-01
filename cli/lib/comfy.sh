@@ -48,7 +48,7 @@ cmd_comfy() {
 _comfy_list() {
     local preset_dir="${RIG_ROOT}/presets/comfyui"
     local default_preset=""
-    local default_file="${RIG_ROOT}/.env.default.comfyui"
+    local default_file="${RIG_ROOT}/presets/.env.default.comfyui"
     [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
 
     print_header "ComfyUI presets"
@@ -83,7 +83,7 @@ _comfy_start() {
 
     # Fall back to default preset if none given
     if [[ -z "${preset_name}" ]]; then
-        local default_file="${RIG_ROOT}/.env.default.comfyui"
+        local default_file="${RIG_ROOT}/presets/.env.default.comfyui"
         if [[ -f "${default_file}" ]]; then
             preset_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
             echo -e "${DIM}  Using default preset: ${preset_name}${RESET}"
@@ -103,7 +103,7 @@ _comfy_start() {
     fi
 
     require_docker
-    set_default_preset "comfyui" "${preset_file}"
+    set_active_preset "comfyui" "${preset_file}"
 
     local profile="comfyui-stable"
     $edge && profile="comfyui-edge"

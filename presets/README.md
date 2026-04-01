@@ -23,11 +23,13 @@ The model weights live in `$MODELS_ROOT`. The preset is just a text file — no 
 ## How presets are applied
 
 When you run `rig serve qwen3-5-27b`, the CLI:
-1. Copies `presets/vllm/qwen3-5-27b.env` → `.env.active.vllm`
-2. Starts the vLLM container with that env file loaded
+1. Copies `presets/vllm/qwen3-5-27b.env` → `presets/.env.active.vllm`
+2. Starts the vLLM container — `compose.yaml` loads `presets/.env.active.vllm` as `env_file`
 3. vLLM reads the env vars and launches with those parameters
 
-`rig presets set vllm qwen3-5-27b-fast` does step 1 without starting the container — useful to pre-stage a preset before a manual `docker compose up`.
+`presets/.env.active.*` is gitignored (runtime state).
+
+`rig presets set vllm qwen3-5-27b-fast` writes `presets/.env.default.vllm` — the remembered preset used when you run `rig serve` with no argument. Also gitignored.
 
 ---
 

@@ -48,7 +48,7 @@ cmd_ollama() {
 _ollama_list() {
     local preset_dir="${RIG_ROOT}/presets/ollama"
     local default_preset=""
-    local default_file="${RIG_ROOT}/.env.default.ollama"
+    local default_file="${RIG_ROOT}/presets/.env.default.ollama"
     [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
 
     print_header "Ollama presets"
@@ -90,7 +90,7 @@ _ollama_start() {
 
     # Fall back to default preset if none given
     if [[ ${#presets[@]} -eq 0 ]]; then
-        local default_file="${RIG_ROOT}/.env.default.ollama"
+        local default_file="${RIG_ROOT}/presets/.env.default.ollama"
         if [[ -f "${default_file}" ]]; then
             local default_name
             default_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
@@ -122,8 +122,7 @@ _ollama_start() {
         models+=("$(grep '^OLLAMA_MODEL=' "${preset_file}" | cut -d= -f2)")
     done
 
-    # Default preset = first one passed
-    set_default_preset "ollama" "${RIG_ROOT}/presets/ollama/${presets[0]}.env"
+    set_active_preset "ollama" "${RIG_ROOT}/presets/ollama/${presets[0]}.env"
 
     require_docker
 
