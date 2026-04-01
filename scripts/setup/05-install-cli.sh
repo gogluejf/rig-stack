@@ -18,6 +18,13 @@ CLI="${ROOT_DIR}/cli/rig"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RESET='\033[0m'
 
+# Ensure zsh is installed (needed for zsh completions)
+if ! command -v zsh &>/dev/null; then
+    echo "Installing zsh..."
+    sudo apt-get install -y zsh
+    echo -e "${GREEN}✓  zsh installed${RESET}"
+fi
+
 chmod +x "${CLI}"
 sudo ln -sf "${CLI}" /usr/local/bin/rig
 echo -e "${GREEN}✓  rig → /usr/local/bin/rig${RESET}"

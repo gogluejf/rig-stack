@@ -3,136 +3,311 @@
 # Install: sudo cp rig.zsh /usr/local/share/zsh/site-functions/_rig
 # Then run: autoload -Uz compinit && compinit
 
-_rig_presets() {
-    local service="${1:-}"
-    local rig_root
-    rig_root="$(dirname "$(dirname "$(readlink -f "$(which rig)")")")" 2>/dev/null || return
-    if [[ -n "${service}" ]]; then
-        local -a presets
-        presets=("${rig_root}/presets/${service}/"*.env(N:t:r))
-        compadd -a presets
-    else
-        local -a presets
-        presets=("${rig_root}/presets/"**/*.env(N:t:r))
-        compadd -a presets
-    fi
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+_rig_root() {
+    local bin
+    bin="$(command -v rig 2>/dev/null)" || return 1
+    echo "$(dirname "$(dirname "$(readlink -f "${bin}")")")"
 }
 
-_rig_models() {
-    local models_root="${MODELS_ROOT:-/models}"
-    local -a models
-    models=($(find "${models_root}" -mindepth 2 -maxdepth 2 -type d 2>/dev/null | xargs -n1 basename 2>/dev/null))
-    compadd -a models
+_rig_preset_items() {
+    # _rig_preset_items <service>
+    # Emits "name:description" pairs; marks the default preset.
+    local root service="$1"
+    root="$(_rig_root)" || return
+    local default_name=""
+    local def_file="${root}/presets/.env.default.${service}"
+    [[ -f "${def_file}" ]] && \
+        default_name="$(grep -m1 '^# Preset:' "${def_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')"
+
+    local f name desc
+    local -a items=()
+    for f in "${root}/presets/${service}/"*.env; do
+        [[ -f "${f}" ]] || continue
+        name="$(basename "${f}" .env)"
+        desc="$(grep -m1 '^# Use:' "${f}" 2>/dev/null | sed 's/^# Use: *//')"
+        [[ -z "${desc}" ]] && desc="$(grep -m1 '^# Preset:' "${f}" 2>/dev/null | sed 's/^# Preset: *//')"
+        [[ "${name}" == "${default_name}" ]] && desc="(default) ${desc}"
+        items+=("${name}:${desc}")
+    done
+    printf '%s\n' "${items[@]}"
 }
 
-_rig() {
-    local state
+_rig_complete_presets() {
+    # _rig_complete_presets <service>  — call from within a completion function
+    local service="$1"
+    local -a items=()
+    local line
+    while IFS= read -r line; do
+        [[ -n "${line}" ]] && items+=("${line}")
+    done < <(_rig_preset_items "${service}")
+    _describe "preset" items
+}
 
-    _arguments \
-        '1: :->command' \
-        '*: :->args'
+_rig_complete_all_presets() {
+    local svc
+    local -a all=()
+    local line
+    for svc in vllm comfyui ollama; do
+        while IFS= read -r line; do
+            [[ -n "${line}" ]] && all+=("${line}")
+        done < <(_rig_preset_items "${svc}")
+    done
+    _describe "preset" all
+}
+
+_rig_complete_models() {
+    local root
+    root="$(_rig_root)" || return
+    local reg="${root}/config/models-registry.tsv"
+    [[ -f "${reg}" ]] || return
+
+    local -a items=()
+    local line name dest desc
+    while IFS=$'\t' read -r src dest desc; do
+        [[ "${src}" =~ ^# ]] && continue
+        [[ -z "${src}" ]] && continue
+        name="${dest##*/}"
+        items+=("${name}:${desc}")
+    done < "${reg}"
+    _describe "model" items
+}
+
+# ── Top-level commands ────────────────────────────────────────────────────────
+
+_rig_commands() {
+    local -a cmds=(
+        'serve:Start vLLM inference server'
+        'comfy:Manage ComfyUI image generation'
+        'ollama:Manage Ollama (local models)'
+        'rag:Manage RAG API and Qdrant'
+        'models:Download and manage models'
+        'presets:Manage service presets'
+        'status:Show active services and presets'
+        'stats:Show GPU stats and container metrics'
+    )
+    _describe 'command' cmds
+}
+
+# ── Per-command completions ───────────────────────────────────────────────────
+
+_rig_serve() {
+    # rig serve [<preset>|stop|list] [--edge] [--help]
+    local -a subcmds=(
+        'stop:Stop vLLM container'
+        'list:List available presets'
+    )
+    local -a opts=(
+        '--edge[Use Blackwell/sm_120 edge container]'
+        '--help[Show help]'
+    )
+    _arguments -C \
+        "${opts[@]}" \
+        '1: :->arg1' \
+        '*: :'
 
     case "${state}" in
-        command)
-            local -a commands
-            commands=(
-                'serve:Start vLLM inference'
-                'comfy:Manage ComfyUI'
-                'ollama:Manage Ollama'
-                'rag:Manage RAG API'
-                'models:Model management'
-                'presets:Preset management'
-                'status:Active services and models'
-                'stats:GPU stats'
-            )
-            _describe 'rig command' commands
-            ;;
-        args)
-            case "${words[2]}" in
-                serve)
-                    case "${words[3]}" in
-                        stop|list) ;;
-                        *)
-                            _rig_presets vllm
-                            _arguments '--edge[Use edge/Blackwell container]'
-                            ;;
-                    esac
-                    if [[ "${#words[@]}" -eq 3 ]]; then
-                        local -a sub=(stop list)
-                        _describe 'serve subcommand' sub
-                        _rig_presets vllm
-                    fi
-                    ;;
-                comfy)
-                    case "${words[3]}" in
-                        start)
-                            _rig_presets comfyui
-                            _arguments '--edge[Use edge/Blackwell container]'
-                            ;;
-                        *)
-                            local -a sub=(start stop list workflows)
-                            _describe 'comfy subcommand' sub
-                            ;;
-                    esac
-                    ;;
-                ollama)
-                    case "${words[3]}" in
-                        start)
-                            # Up to 3 presets + --gpu flag
-                            _rig_presets ollama
-                            _arguments '--gpu[Use GPU]'
-                            ;;
-                        *)
-                            local -a sub=(start stop list)
-                            _describe 'ollama subcommand' sub
-                            ;;
-                    esac
-                    # Keep completing presets for 2nd and 3rd position
-                    if [[ "${words[3]}" == "start" && "${#words[@]}" -ge 5 ]]; then
-                        _rig_presets ollama
-                        _arguments '--gpu[Use GPU]'
-                    fi
-                    ;;
-                rag)
-                    local -a sub=(start stop status)
-                    _describe 'rag subcommand' sub
-                    ;;
-                models)
-                    case "${words[3]}" in
-                        show|remove)
-                            _rig_models
-                            ;;
-                        *)
-                            local -a sub=(pull show remove registry)
-                            _describe 'models subcommand' sub
-                            ;;
-                    esac
-                    ;;
-                presets)
-                    case "${words[3]}" in
-                        show)
-                            _rig_presets
-                            ;;
-                        set)
-                            case "${#words[@]}" in
-                                4)
-                                    local -a services=(vllm comfyui ollama)
-                                    _describe 'service' services
-                                    ;;
-                                5)
-                                    _rig_presets "${words[4]}"
-                                    ;;
-                            esac
-                            ;;
-                        *)
-                            local -a sub=(show set)
-                            _describe 'presets subcommand' sub
-                            ;;
-                    esac
-                    ;;
-            esac
-            ;;
+    arg1)
+        _describe 'subcommand' subcmds
+        _rig_complete_presets vllm
+        ;;
     esac
 }
 
-_rig
+_rig_comfy() {
+    # rig comfy start [<preset>] [--edge] | stop | list | workflows
+    local -a subcmds=(
+        'start:Start ComfyUI with a preset'
+        'stop:Stop ComfyUI container'
+        'list:List available presets'
+        'workflows:List saved workflow JSON files'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*:: :->args'
+
+    case "${state}" in
+    subcmd)
+        _describe 'subcommand' subcmds
+        ;;
+    args)
+        if [[ "${words[1]}" == "start" ]]; then
+            _arguments \
+                '--edge[Use Blackwell/sm_120 edge container]' \
+                '1: :_rig_comfy_preset' \
+                '*: :'
+        fi
+        ;;
+    esac
+}
+
+_rig_comfy_preset() { _rig_complete_presets comfyui }
+
+_rig_ollama() {
+    # rig ollama start [<preset> [<preset> [<preset>]]] [--gpu] | stop | list
+    local -a subcmds=(
+        'start:Start Ollama (preload up to 3 models into VRAM)'
+        'stop:Stop Ollama container'
+        'list:List available presets'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*:: :->args'
+
+    case "${state}" in
+    subcmd)
+        _describe 'subcommand' subcmds
+        ;;
+    args)
+        if [[ "${words[1]}" == "start" ]]; then
+            # Count non-flag words already given (= preset positions filled)
+            local count=0 w
+            for w in "${words[@]:2}"; do [[ "${w}" != --* ]] && (( count++ )); done
+            if [[ "${count}" -lt 3 ]]; then
+                _arguments \
+                    '--gpu[Enable GPU/NVIDIA runtime]' \
+                    "*: :_rig_ollama_preset"
+            else
+                _arguments '--gpu[Enable GPU/NVIDIA runtime]'
+            fi
+        fi
+        ;;
+    esac
+}
+
+_rig_ollama_preset() { _rig_complete_presets ollama }
+
+_rig_rag() {
+    local -a subcmds=(
+        'start:Start RAG API + Qdrant'
+        'stop:Stop RAG API + Qdrant'
+        'status:Show RAG API health'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd'
+
+    case "${state}" in
+    subcmd) _describe 'subcommand' subcmds ;;
+    esac
+}
+
+_rig_models_cmd() {
+    # rig models [list] | init <mode> | pull <src> [--dest] [--descr] | show <model> | remove <model>
+    local -a subcmds=(
+        'list:List downloaded models'
+        'init:Download a set of models by category'
+        'pull:Download a single model from HuggingFace or Ollama'
+        'show:Show path, size, and presets for a model'
+        'remove:Delete a model from disk and registry'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*:: :->args'
+
+    case "${state}" in
+    subcmd)
+        _describe 'subcommand' subcmds
+        ;;
+    args)
+        case "${words[1]}" in
+        init)
+            local -a modes=(
+                '--minimal:Embeddings + primary LLM only'
+                '--llm:All LLM models'
+                '--diffusion:All diffusion models'
+                '--upscalers:GFPGAN + Real-ESRGAN'
+                '--controlnet:ControlNet variants'
+                '--facefusion:FaceFusion model dependencies'
+                '--starvector:StarVector 8B SVG model'
+                '--embeddings:Embedding models only'
+                '--ollama:All Ollama models'
+                '--all:Everything'
+            )
+            _describe 'mode' modes
+            ;;
+        pull)
+            _arguments \
+                '--dest[Destination path under $MODELS_ROOT]:dest:' \
+                '--descr[One-line description]:description:'
+            ;;
+        show|remove)
+            _rig_complete_models
+            ;;
+        esac
+        ;;
+    esac
+}
+
+_rig_presets_cmd() {
+    # rig presets [list] | show <preset> | set <service> <preset>
+    local -a subcmds=(
+        'list:List all presets (all services)'
+        'show:Dump a preset config'
+        'set:Set the default preset for a service'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*:: :->args'
+
+    case "${state}" in
+    subcmd)
+        _describe 'subcommand' subcmds
+        ;;
+    args)
+        case "${words[1]}" in
+        show)
+            _rig_complete_all_presets
+            ;;
+        set)
+            case "${#words[@]}" in
+            2)
+                local -a services=(
+                    'vllm:vLLM inference server'
+                    'comfyui:ComfyUI image generation'
+                    'ollama:Ollama local models'
+                )
+                _describe 'service' services
+                ;;
+            3)
+                _rig_complete_presets "${words[2]}"
+                ;;
+            esac
+            ;;
+        esac
+        ;;
+    esac
+}
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+
+_rig() {
+    local context state line
+    typeset -A opt_args
+
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :_rig_commands' \
+        '*:: :->subcmd'
+
+    case "${state}" in
+    subcmd)
+        case "${words[1]}" in
+        serve)   _rig_serve ;;
+        comfy)   _rig_comfy ;;
+        ollama)  _rig_ollama ;;
+        rag)     _rig_rag ;;
+        models)  _rig_models_cmd ;;
+        presets) _rig_presets_cmd ;;
+        status|stats) ;;
+        esac
+        ;;
+    esac
+}
+
+_rig "$@"
