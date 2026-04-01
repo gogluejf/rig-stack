@@ -175,7 +175,7 @@ services:
     container_name: rig-ollama
     profiles: [ollama]
     restart: unless-stopped
-    # GPU mode: overridden at runtime by rig CLI (--gpu flag sets runtime: nvidia)
+    runtime: ${OLLAMA_RUNTIME:-runc}
     environment:
       - OLLAMA_MODELS=/models/ollama
       - OLLAMA_HOST=0.0.0.0

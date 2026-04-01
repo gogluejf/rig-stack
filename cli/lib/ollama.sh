@@ -126,31 +126,46 @@ _ollama_start() {
 
     require_docker
 
-    # Always allow 3 models in VRAM — Ollama handles LRU eviction automatically
-    export OLLAMA_MAX_LOADED_MODELS=3
-
     if $gpu; then
         export OLLAMA_RUNTIME="nvidia"
-        echo -e "${CYAN}Starting Ollama with GPU...${RESET}"
+        echo -e "${CYAN}Starting Ollama (GPU)...${RESET}"
     else
         echo -e "${CYAN}Starting Ollama (CPU)...${RESET}"
     fi
 
     rig_compose --profile ollama up -d
 
-    # Preload each model into VRAM
-    sleep 2
-    for i in "${!presets[@]}"; do
-        local model="${models[$i]}"
-        echo -e "  Preloading ${model}..."
-        docker exec rig-ollama ollama pull "${model}" 2>/dev/null || \
-            echo -e "${YELLOW}  Pull may be in progress — check: docker logs rig-ollama${RESET}"
+    # Wait for Ollama to be ready
+    local port="${OLLAMA_PORT:-11434}"
+    local attempts=0
+    echo -e "  Waiting for Ollama..."
+    until curl -sf "http://localhost:${port}" > /dev/null 2>&1; do
+        (( attempts++ ))
+        if [[ ${attempts} -ge 30 ]]; then
+            echo -e "${YELLOW}  Ollama not responding after 30s — skipping VRAM preload${RESET}"
+            break
+        fi
+        sleep 1
     done
 
+    # Warm each model into VRAM via the HTTP API (keep_alive: -1 = keep indefinitely)
+    if [[ ${attempts} -lt 30 ]]; then
+        for i in "${!models[@]}"; do
+            local model="${models[$i]}"
+            echo -e "  Warming ${model} into VRAM..."
+            curl -sf --max-time 120 \
+                -X POST "http://localhost:${port}/api/generate" \
+                -H "Content-Type: application/json" \
+                -d "{\"model\":\"${model}\",\"prompt\":\"\",\"keep_alive\":-1}" > /dev/null \
+                && echo -e "${GREEN}  ✓  ${model}${RESET}" \
+                || echo -e "${YELLOW}  ⚠  ${model} not loaded — run: rig models init --ollama${RESET}"
+        done
+    fi
+
     echo -e "${GREEN}✓  Ollama running${RESET}"
-    echo -e "  Preloaded : ${models[*]}"
+    echo -e "  Warmed    : ${models[*]:-none}"
     echo -e "  VRAM slots: 3 (LRU eviction when full)"
-    echo -e "  Endpoint  : http://localhost:${OLLAMA_PORT:-11434}"
+    echo -e "  Endpoint  : http://localhost:${port}"
     echo -e "  Via proxy : http://localhost:${TRAEFIK_PORT:-80}/ollama"
 }
 
