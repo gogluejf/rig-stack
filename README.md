@@ -110,10 +110,11 @@ Presets are optional — Ollama loads any model on first request. Passing preset
 
 | Command | Description |
 |---|---|
-| `rig models` | List all models: name, category, size |
-| `rig models pull <hf-repo>` | Download from HuggingFace |
-| `rig models show <name>` | Path, size, associated presets |
-| `rig models remove <name>` | Delete from disk |
+| `rig models` | List installed artifacts: type, name, path, size |
+| `rig models init <bundle>` | Install a curated artifact bundle |
+| `rig models install <source>` | Install one artifact from HuggingFace or Ollama |
+| `rig models show <name\|path>` | Type, source, path, size |
+| `rig models remove <name\|path>` | Delete an artifact |
 
 ### presets — configuration management
 
@@ -267,19 +268,20 @@ $DATA_ROOT/                 # default: /data
 
 ---
 
-## How to add a model
+## How to add an artifact
 
 ```bash
-# Download directly
-rig models pull <huggingface-repo-id>
+# Install a full Hugging Face repository artifact
+rig models install <huggingface-repo-id> --path <artifact-path>
 
-# Or use the script with explicit destination
-bash scripts/models/pull-model.sh <hf-repo> <local-subdir>
-# e.g.
-bash scripts/models/pull-model.sh black-forest-labs/FLUX.1-schnell diffusion/flux-schnell
+# Install a single file from a Hugging Face repository
+rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --path upscalers/gfpgan/GFPGANv1.4.pth
+
+# Or use the script directly
+bash scripts/models/install-model.sh --type hf-repo --source black-forest-labs/FLUX.1-schnell --path diffusion/flux-schnell --descr "FLUX.1 schnell"
 ```
 
-For gated models (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
+For gated artifacts (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
 
 ---
 

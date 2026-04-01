@@ -21,8 +21,8 @@ Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them
 # 1. Read the workflow README for required models
 cat workflows/comfyui/<workflow>/README.md
 
-# 2. Download required models
-rig models pull <hf-repo> <local-path>
+# 2. Install required artifacts
+rig models install <hf-repo> --path <artifact-path>
 
 # 3. Set the preset
 rig presets set comfyui <preset>

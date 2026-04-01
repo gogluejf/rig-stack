@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# scripts/models/show-model.sh — show details for a specific model.
-# Called by: rig models show <name>
+# scripts/models/show-model.sh — show details for a specific artifact.
+# Called by: rig models show <name|path>
 
 set -euo pipefail
 
@@ -9,38 +9,67 @@ ROOT_DIR="${SCRIPT_DIR}/../.."
 source "${ROOT_DIR}/.env" 2>/dev/null || true
 
 MODELS_ROOT="${MODELS_ROOT:-/models}"
-PRESETS_DIR="${ROOT_DIR}/presets"
-MODEL_NAME="${1:-}"
+REGISTRY="${ROOT_DIR}/config/models-registry.tsv"
+QUERY="${1:-}"
 
-RED='\033[0;31m'; BOLD='\033[1m'; CYAN='\033[0;36m'; GREEN='\033[0;32m'; RESET='\033[0m'
+RED='\033[0;31m'; BOLD='\033[1m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; RESET='\033[0m'
 
-[[ -z "${MODEL_NAME}" ]] && { echo "Usage: $0 <model-name>"; exit 1; }
+[[ -z "${QUERY}" ]] && { echo "Usage: $0 <artifact-name|artifact-path>"; exit 1; }
+[[ ! -f "${REGISTRY}" ]] && { echo -e "${RED}No artifact registry found.${RESET}"; exit 1; }
 
-# Find the model directory
-MODEL_DIR=$(find "${MODELS_ROOT}" -mindepth 2 -maxdepth 2 -type d -name "${MODEL_NAME}" | head -1)
+matches=()
+exact_match=""
+while IFS=$'\t' read -r type source path remote_file desc; do
+    [[ "${type}" =~ ^#.*$ ]] && continue
+    [[ -z "${type}" ]] && continue
 
-if [[ -z "${MODEL_DIR}" ]]; then
-    echo -e "${RED}Model '${MODEL_NAME}' not found in ${MODELS_ROOT}.${RESET}"
-    echo "Run 'rig models' to list available models."
+    row="${type}\t${source}\t${path}\t${remote_file}\t${desc}"
+    if [[ "${path}" == "${QUERY}" ]]; then
+        exact_match="${row}"
+        break
+    fi
+    if [[ "${path##*/}" == "${QUERY}" ]]; then
+        matches+=("${row}")
+    fi
+done < "${REGISTRY}"
+
+if [[ -n "${exact_match}" ]]; then
+    matches=("${exact_match}")
+fi
+
+if [[ ${#matches[@]} -eq 0 ]]; then
+    echo -e "${RED}Artifact '${QUERY}' not found.${RESET}"
+    echo "Run 'rig models' to list available artifacts."
     exit 1
 fi
 
-echo -e "\n${BOLD}${CYAN}${MODEL_NAME}${RESET}"
-echo -e "  Path     : ${MODEL_DIR}"
-echo -e "  Size     : $(du -sh "${MODEL_DIR}" 2>/dev/null | cut -f1)"
-echo -e "  Category : $(basename "$(dirname "${MODEL_DIR}")")"
-echo -e "  Files    : $(find "${MODEL_DIR}" -type f | wc -l)"
+if [[ ${#matches[@]} -gt 1 ]]; then
+    echo -e "${YELLOW}Artifact name '${QUERY}' is ambiguous.${RESET}"
+    echo "Use one of these paths instead:"
+    for row in "${matches[@]}"; do
+        IFS=$'\t' read -r _type _source _path _remote _desc <<< "${row}"
+        echo "  ${_path}"
+    done
+    exit 1
+fi
 
-# Find associated presets
-echo -e "\n${BOLD}Associated presets:${RESET}"
-found=false
-for preset_file in "${PRESETS_DIR}"/**/*.env; do
-    if grep -q "${MODEL_NAME}" "${preset_file}" 2>/dev/null; then
-        service=$(basename "$(dirname "${preset_file}")")
-        preset=$(basename "${preset_file}" .env)
-        echo -e "  ${GREEN}${service}/${preset}${RESET}  →  $(grep '^#' "${preset_file}" | head -3 | sed 's/^# //')"
-        found=true
-    fi
-done
-$found || echo "  (none found)"
+IFS=$'\t' read -r type source path remote_file desc <<< "${matches[0]}"
+name="${path##*/}"
+
+if [[ "${type}" == "ollama" ]]; then
+    target_path="rig-ollama:${source#ollama/}"
+    size="—"
+else
+    target_path="${MODELS_ROOT}/${path}"
+    size=$(du -sh "${target_path}" 2>/dev/null | cut -f1 || echo "missing")
+fi
+
+echo -e "\n${BOLD}${CYAN}${name}${RESET}"
+echo -e "  Type        : ${type}"
+echo -e "  Source      : ${source}"
+echo -e "  Artifact    : ${path}"
+echo -e "  Target      : ${target_path}"
+[[ -n "${remote_file}" ]] && echo -e "  Remote file : ${remote_file}"
+echo -e "  Size        : ${size}"
+[[ -n "${desc}" ]] && echo -e "  Description : ${desc}"
 echo ""

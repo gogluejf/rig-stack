@@ -8,17 +8,17 @@ Uses FLUX.1-dev + ControlNet Union for multi-condition support.
 | Model | Path | HF |
 |---|---|---|
 | FLUX.1-dev | `$MODELS_ROOT/diffusion/flux1-dev` | black-forest-labs/FLUX.1-dev |
-| ControlNet Union Pro | `$MODELS_ROOT/controlnet/flux-controlnet-union-pro.safetensors` | [Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro](https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro) |
+| ControlNet Union Pro | `$MODELS_ROOT/controlnet/union-pro` | [Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro](https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro) |
 | ControlNet Canny | `$MODELS_ROOT/controlnet/flux-controlnet-canny.safetensors` | [InstantX/FLUX.1-dev-Controlnet-Canny](https://huggingface.co/InstantX/FLUX.1-dev-Controlnet-Canny) |
-| ControlNet Depth | `$MODELS_ROOT/controlnet/flux-controlnet-depth.safetensors` | [Shakker-Labs/FLUX.1-dev-ControlNet-Depth](https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Depth) |
+| ControlNet Depth | `$MODELS_ROOT/controlnet/depth` | [Shakker-Labs/FLUX.1-dev-ControlNet-Depth](https://huggingface.co/Shakker-Labs/FLUX.1-dev-ControlNet-Depth) |
 
 ## Download
 
 ```bash
-rig models pull black-forest-labs/FLUX.1-dev diffusion/flux1-dev
-rig models pull Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro controlnet/union-pro
-rig models pull InstantX/FLUX.1-dev-Controlnet-Canny controlnet/canny
-rig models pull Shakker-Labs/FLUX.1-dev-ControlNet-Depth controlnet/depth
+rig models install black-forest-labs/FLUX.1-dev --path diffusion/flux1-dev
+rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro --path controlnet/union-pro
+rig models install InstantX/FLUX.1-dev-Controlnet-Canny --file diffusion_pytorch_model.safetensors --path controlnet/flux-controlnet-canny.safetensors
+rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Depth --path controlnet/depth
 ```
 
 ## Required ComfyUI nodes

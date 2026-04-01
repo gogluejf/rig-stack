@@ -14,8 +14,8 @@ interprets the edit, generates a mask or conditioning signal, and FLUX applies i
 ## Download
 
 ```bash
-rig models pull Qwen/Qwen2-VL-7B-Instruct llm/qwen2-vl-7b
-rig models pull black-forest-labs/FLUX.1-Fill-dev diffusion/flux1-fill
+rig models install Qwen/Qwen2-VL-7B-Instruct --path llm/qwen2-vl-7b
+rig models install black-forest-labs/FLUX.1-Fill-dev --path diffusion/flux1-fill
 ```
 
 ## Required ComfyUI nodes

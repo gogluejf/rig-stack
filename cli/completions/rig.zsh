@@ -64,11 +64,11 @@ _rig_complete_models() {
     [[ -f "${reg}" ]] || return
 
     local -a items=()
-    local line name dest desc
-    while IFS=$'\t' read -r src dest desc; do
-        [[ "${src}" =~ ^# ]] && continue
-        [[ -z "${src}" ]] && continue
-        name="${dest##*/}"
+    local line name type source path remote_file desc
+    while IFS=$'\t' read -r type source path remote_file desc; do
+        [[ "${type}" =~ ^# ]] && continue
+        [[ -z "${type}" ]] && continue
+        name="${path##*/}"
         items+=("${name}:${desc}")
     done < "${reg}"
     _describe "model" items
@@ -82,7 +82,7 @@ _rig_commands() {
         'comfy:Manage ComfyUI image generation'
         'ollama:Manage Ollama (local models)'
         'rag:Manage RAG API and Qdrant'
-        'models:Download and manage models'
+        'models:Install and manage artifacts'
         'presets:Manage service presets'
         'status:Show active services and presets'
         'stats:Show GPU stats and container metrics'
@@ -196,13 +196,13 @@ _rig_rag() {
 }
 
 _rig_models_cmd() {
-    # rig models [list] | init <mode> | pull <src> [--dest] [--descr] | show <model> | remove <model>
+    # rig models [list] | init <mode> | install <src> [--path] [--file] [--descr] | show <artifact> | remove <artifact>
     local -a subcmds=(
-        'list:List downloaded models'
-        'init:Download a set of models by category'
-        'pull:Download a single model from HuggingFace or Ollama'
-        'show:Show path, size, and presets for a model'
-        'remove:Delete a model from disk and registry'
+        'list:List installed artifacts'
+        'init:Install a curated artifact bundle'
+        'install:Install a single artifact from HuggingFace or Ollama'
+        'show:Show type, source, path, and size for an artifact'
+        'remove:Delete an artifact from disk and registry'
     )
     _arguments -C \
         '--help[Show help]' \
@@ -230,9 +230,10 @@ _rig_models_cmd() {
             )
             _describe 'mode' modes
             ;;
-        pull)
+        install)
             _arguments \
-                '--dest[Destination path under $MODELS_ROOT]:dest:' \
+                '--path[Artifact path under $MODELS_ROOT or ollama/*]:path:' \
+                '--file[Remote filename inside a Hugging Face repo]:remote-file:' \
                 '--descr[One-line description]:description:'
             ;;
         show|remove)

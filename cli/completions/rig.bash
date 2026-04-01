@@ -29,12 +29,12 @@ _rig_all_presets() {
 }
 
 _rig_models() {
-    # Read dest basenames from the registry TSV (col 2)
+    # Read artifact basenames from the registry TSV (col 3)
     local root
     root="$(_rig_root)" || return
     local reg="${root}/config/models-registry.tsv"
     [[ -f "${reg}" ]] || return
-    awk -F'\t' '!/^#/ && NF>=2 { n=split($2,a,"/"); print a[n] }' "${reg}" | sort -u
+    awk -F'\t' '!/^#/ && NF>=3 { n=split($3,a,"/"); print a[n] }' "${reg}" | sort -u
 }
 
 _rig_default_preset() {
@@ -167,7 +167,7 @@ _rig_completions() {
     # ── rig models ────────────────────────────────────────────────────────────
     models)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "init pull show remove list --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "init install show remove list --help" -- "${cur}"))
             return
         fi
 
@@ -177,10 +177,11 @@ _rig_completions() {
                 local modes="--minimal --llm --diffusion --upscalers --controlnet --facefusion --starvector --embeddings --ollama --all"
                 COMPREPLY=($(compgen -W "${modes}" -- "${cur}"))
                 ;;
-            pull)
-                # After the source arg: offer --dest and --descr if not already present
+            install)
+                # After the source arg: offer --path, --file, and --descr if not already present
                 local flags=""
-                _rig_contains "--dest"  "${words[@]}" || flags+="--dest "
+                _rig_contains "--path"  "${words[@]}" || flags+="--path "
+                _rig_contains "--file"  "${words[@]}" || flags+="--file "
                 _rig_contains "--descr" "${words[@]}" || flags+="--descr "
                 [[ -n "${flags}" ]] && COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
                 ;;

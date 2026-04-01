@@ -15,8 +15,8 @@ These are **documentation**, not runtime files. Actual ComfyUI workflow JSON exp
 # 1. Read the setup doc
 cat workflows/comfyui/<workflow>/README.md
 
-# 2. Download required models
-rig models pull <hf-repo>
+# 2. Install required artifacts
+rig models install <hf-repo> --path <artifact-path>
 
 # 3. Set the preset
 rig presets set comfyui <preset>

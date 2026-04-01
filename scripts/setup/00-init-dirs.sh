@@ -4,7 +4,7 @@
 # What it does: Creates the runtime directory trees for $DATA_ROOT and
 #               category-level directories in $MODELS_ROOT.
 #               Model-specific subdirs (e.g. llm/qwen3-5-27b/) are created
-#               by scripts/models/init-models.sh and pull-model.sh — not here.
+#               by `rig models init` and scripts/models/install-model.sh — not here.
 #               Idempotent — safe to re-run, never overwrites existing data.
 #
 # What it expects: .env loaded with MODELS_ROOT and DATA_ROOT set.
@@ -37,7 +37,7 @@ create_dirs() {
 }
 
 # ── $MODELS_ROOT — category dirs only ─────────────────────────────────────────
-# Model subdirs (e.g. llm/qwen3-5-27b/) are created by init-models.sh / pull-model.sh
+# Model subdirs (e.g. llm/qwen3-5-27b/) are created by `rig models init` / install-model.sh
 echo "Initialising $MODELS_ROOT (category structure)..."
 create_dirs "${MODELS_ROOT}" \
     llm \
