@@ -53,21 +53,19 @@ _ollama_list() {
 
     print_header "Ollama presets"
     hr
-    printf "  ${BOLD}  %-28s %-20s %-10s %s${RESET}\n" "PRESET" "MODEL" "CTX" "DESCRIPTION"
+    printf "  ${BOLD}  %-28s %s${RESET}\n" "PRESET" "DESCRIPTION"
     hr
     for f in "${preset_dir}"/*.env; do
         [[ -f "${f}" ]] || continue
-        local name model ctx desc marker
+        local name desc marker
         name=$(basename "${f}" .env)
-        model=$(grep '^OLLAMA_MODEL=' "${f}" | cut -d= -f2)
-        ctx=$(grep '^OLLAMA_NUM_CTX=' "${f}" | cut -d= -f2 || echo "—")
-        desc=$(grep '^# Use:' "${f}" | sed 's/^# Use: *//')
+        desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
         if [[ "${name}" == "${default_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
             marker=" "
         fi
-        printf "  ${marker} %-28s %-20s %-10s %s\n" "${name}" "${model:0:18}" "${ctx}" "${desc:0:45}"
+        printf "  ${marker} %-28s %s\n" "${name}" "${desc:0:60}"
     done
     hr
     echo -e "  ${DIM}✓ = default preset (used by: rig ollama start)${RESET}"
@@ -121,8 +119,6 @@ _ollama_start() {
         fi
         models+=("$(grep '^OLLAMA_MODEL=' "${preset_file}" | cut -d= -f2)")
     done
-
-    set_active_preset "ollama" "${RIG_ROOT}/presets/ollama/${presets[0]}.env"
 
     require_docker
 
