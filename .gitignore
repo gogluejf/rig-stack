@@ -6,6 +6,11 @@
 *.pid
 *.lock
 
+# Generated at runtime — not committed
+config/models-registry.tsv
+.env.default.*
+.env.active.*
+
 # OS
 .DS_Store
 Thumbs.db

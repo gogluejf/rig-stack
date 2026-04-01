@@ -1,22 +1,6 @@
 #!/usr/bin/env bash
 # cli/lib/models.sh — rig models subcommand
 
-REGISTRY="${RIG_ROOT}/config/models-registry.tsv"
-
-# ── Registry lookup ───────────────────────────────────────────────────────────
-# Given a source ID, returns "dest|description". Empty string if not found.
-_registry_lookup() {
-    local source="${1}"
-    while IFS=$'\t' read -r reg_source reg_dest reg_desc; do
-        [[ "${reg_source}" =~ ^#.*$ ]] && continue
-        [[ -z "${reg_source}" ]] && continue
-        if [[ "${reg_source}" == "${source}" ]]; then
-            echo "${reg_dest}|${reg_desc}"
-            return 0
-        fi
-    done < "${REGISTRY}"
-    echo ""
-}
 
 cmd_models() {
     case "${1:-}" in
@@ -30,7 +14,6 @@ cmd_models() {
             echo "  rig models pull ollama/<model> [--descr \"text\"]"
             echo "  rig models show <name>                  path, size, presets"
             echo "  rig models remove <name>                delete from disk + registry"
-            echo "  rig models registry                     show the full registry"
             echo ""
             echo "Examples:"
             echo "  rig models init --minimal               # embeddings + primary LLM"
@@ -58,9 +41,6 @@ cmd_models() {
         remove)
             shift
             bash "${RIG_ROOT}/scripts/models/remove-model.sh" "$@"
-            ;;
-        registry)
-            _models_registry
             ;;
         *)
             echo -e "${RED}Unknown models subcommand: ${1}${RESET}"
@@ -314,24 +294,3 @@ _models_init() {
     echo "  rig comfy start flux2-fp8 --edge"
 }
 
-_models_registry() {
-    print_header "Model registry"
-    hr
-    printf "  ${BOLD}%-45s %-25s %s${RESET}\n" "SOURCE" "DEST" "DESCRIPTION"
-    hr
-    local found=false
-    while IFS=$'\t' read -r source dest desc; do
-        [[ "${source}" =~ ^#.*$ ]] && continue
-        [[ -z "${source}" ]] && continue
-        found=true
-        local short_source="${source}"
-        (( ${#source} > 43 )) && short_source="${source:0:41}.."
-        printf "  %-45s %-25s %s\n" "${short_source}" "${dest##*/}" "${desc:0:50}"
-    done < "${REGISTRY}"
-    if ! $found; then
-        echo -e "  ${DIM}No models registered yet.${RESET}"
-        echo -e "  ${DIM}Pull a model: rig models pull <hf-repo> or rig models pull ollama/<model>${RESET}"
-    fi
-    hr
-    echo ""
-}

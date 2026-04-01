@@ -35,6 +35,13 @@ printf "\n${BOLD}  %-10s %-25s %-25s %-8s %-8s %s${RESET}\n" \
     "SERVICE" "NAME" "DEST" "SIZE" "PRESETS" "DESCRIPTION"
 printf '%s\n' "$(printf '─%.0s' {1..100})"
 
+if [[ ! -f "${REGISTRY}" ]]; then
+    echo -e "  ${DIM}No models registered yet.${RESET}"
+    echo -e "  ${DIM}Run: rig models init --minimal${RESET}"
+    echo ""
+    exit 0
+fi
+
 found=false
 while IFS=$'\t' read -r source dest desc; do
     [[ "${source}" =~ ^#.*$ ]] && continue
@@ -65,7 +72,7 @@ done < "${REGISTRY}"
 
 if [[ "${found}" == "false" ]]; then
     echo -e "  ${DIM}No models registered yet.${RESET}"
-    echo -e "  ${DIM}Run: rig models pull <hf-repo> or init-models.sh${RESET}"
+    echo -e "  ${DIM}Run: rig models init --minimal${RESET}"
 fi
 
 echo ""

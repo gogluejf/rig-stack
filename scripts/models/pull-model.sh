@@ -85,6 +85,16 @@ else
 fi
 
 # ── Write to registry ─────────────────────────────────────────────────────────
+# Create registry with header if it doesn't exist yet.
+if [[ ! -f "${REGISTRY}" ]]; then
+    mkdir -p "$(dirname "${REGISTRY}")"
+    printf '# rig-stack model registry\n' > "${REGISTRY}"
+    printf '# Format (tab-separated, 3 columns):\n' >> "${REGISTRY}"
+    printf '#   source\tlocal-dest\tdescription\n' >> "${REGISTRY}"
+    printf '#\n' >> "${REGISTRY}"
+    printf '# Written by: rig models pull / rig models init\n' >> "${REGISTRY}"
+fi
+
 # Remove existing entry for this source (avoid duplicates), then append.
 if grep -q "^${SOURCE}	" "${REGISTRY}" 2>/dev/null; then
     # Use a temp file for portability (sed -i differs between GNU/BSD)
