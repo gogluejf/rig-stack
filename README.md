@@ -52,7 +52,7 @@ cp .env.example .env
 ./install.sh
 
 # 3. Download models
-bash scripts/models/init-models.sh --minimal
+rig models init --minimal
 
 # 4. Start serving
 rig serve qwen3-5-27b
