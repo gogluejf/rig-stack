@@ -10,6 +10,8 @@ The motivation is practical. An RTX 5090 is a serious machine. Getting the most 
 - **Splitting the GPU intelligently.** Load your large LLM on the GPU via vLLM, and offload utility models — embeddings, small chat, vision — to Ollama running on CPU. No context switching, no reloading.
 - **Tuning without rewriting configs.** Every service is driven by preset files. Switch from a high-throughput quantized build to a quality full-precision run with one command. Presets live in the repo and are version-controlled.
 - **A CLI that feels native.** `rig` follows Debian UX conventions — subcommands, consistent flags, tab completion, clean output. No YAML archaeology, no Docker command memorisation.
+- **One place to manage all model artifacts.** A single registry covers every model across all services — with descriptions, sizes, and categories. Download, inspect, and remove anything with one command. No hunting across service configs to find what lives where.
+- **A single endpoint for everything.** Every service — LLM, image generation, embeddings, RAG — sits behind one Traefik gateway on port 80. Clients point at one host and one port; routing is handled transparently. No per-service ports to remember, no firewall rules to maintain per workload.
 
 Drop it on Ubuntu 24.04, run `./install.sh`, and the full stack — LLM serving, image generation, RAG, observability — is one `rig` command away.
 
