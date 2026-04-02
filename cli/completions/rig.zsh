@@ -111,7 +111,7 @@ _rig_serve() {
                 _describe 'preset subcommand' preset_subcmds
                 ;;
             3)
-                if [[ "${words[2]}" == "set" ]]; then
+                if [[ "${words[2]}" == "set" || "${words[2]}" == "show" ]]; then
                     _rig_complete_presets vllm
                 fi
                 ;;

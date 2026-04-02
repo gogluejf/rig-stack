@@ -88,7 +88,7 @@ _rig_completions() {
             preset)
                 if [[ "${cword}" -eq 3 ]]; then
                     COMPREPLY=($(compgen -W "set show" -- "${cur}"))
-                elif [[ "${cword}" -eq 4 && "${words[3]}" == "set" ]]; then
+                elif [[ "${cword}" -eq 4 && ( "${words[3]}" == "set" || "${words[3]}" == "show" ) ]]; then
                     COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
                 fi
                 ;;

@@ -57,7 +57,7 @@ cp .env.example .env
 rig models init --minimal
 
 # 4. Start serving
-rig serve qwen3-5-27b
+rig serve qwen3-5-27b --edge
 ```
 
 The LLM endpoint is live at `http://localhost/v1`.
@@ -79,7 +79,7 @@ rig <command> [subcommand] [flags]
 | `rig serve list` | Table of all presets (model, context, kv-cache, gpu-util) |
 | `rig serve stop` | Stop vLLM |
 | `rig serve preset set <name>` | Set active preset (used on next start, without starting) |
-| `rig serve preset show` | Show active preset config |
+| `rig serve preset show [<name>]` | Show preset config (active if no name given) |
 
 ### comfy — image generation
 

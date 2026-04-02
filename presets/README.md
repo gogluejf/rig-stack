@@ -8,20 +8,6 @@ One model can have multiple presets for different workloads.
 
 ---
 
-## How presets work
-
-```
-presets/vllm/qwen3-5-27b.env        ← preset file
-  MODEL_PATH=/models/llm/qwen3-5-27b  ← points to the model on disk
-  MAX_MODEL_LEN=65536                  ← operational param
-  GPU_MEMORY_UTILIZATION=0.82         ← operational param
-  ...
-```
-
-The model weights live in `$MODELS_ROOT`. The preset is just a text file — no weights, no binaries. You can have as many presets as you want for the same model.
-
----
-
 ## How presets are applied
 
 When you run `rig serve qwen3-5-27b`, the CLI:
@@ -29,9 +15,9 @@ When you run `rig serve qwen3-5-27b`, the CLI:
 2. Starts the vLLM container — `compose.yaml` loads `presets/.env.active.vllm` as `env_file`
 3. vLLM reads the env vars and launches with those parameters
 
-`presets/.env.active.vllm` is the single remembered state — it's both "what is running now" and "what will start next time".
+`presets/.env.active.vllm` is the single remembered state — it's both "what is running now" and "what will start next time". It is gitignored (runtime state).
 
-`rig serve preset set qwen3-5-27b-fast` sets the active preset without starting the server (used on next `rig serve`).
+`rig serve preset set qwen3-5-27b-fast` sets the active preset without starting the server.
 
 ---
 
@@ -52,3 +38,5 @@ rig serve preset set qwen3-5-27b-custom
 ```
 
 The preset name is the filename without `.env`.
+
+See `presets/vllm/README.md` for the parameter reference and available presets.

@@ -12,7 +12,7 @@ cmd_serve() {
             echo "  rig serve stop                     stop vLLM"
             echo "  rig serve list                     list available presets"
             echo "  rig serve preset set <name>        set active preset (used on next start)"
-            echo "  rig serve preset show              show active preset config"
+            echo "  rig serve preset show [<name>]     show preset config (active if no name given)"
             echo ""
             echo "Examples:"
             echo "  rig serve qwen3-5-27b"
@@ -20,6 +20,7 @@ cmd_serve() {
             echo "  rig serve                          # uses active preset"
             echo "  rig serve list"
             echo "  rig serve preset set qwen3-5-27b-fast"
+            echo "  rig serve preset show qwen3-5-27b"
             ;;
         stop)
             _serve_stop
@@ -125,12 +126,13 @@ _serve_preset() {
             _serve_preset_set "$@"
             ;;
         show)
-            _serve_preset_show
+            shift
+            _serve_preset_show "$@"
             ;;
         --help|-h|"")
             echo "Usage:"
-            echo "  rig serve preset set <name>   set active preset (used on next start)"
-            echo "  rig serve preset show          show active preset config"
+            echo "  rig serve preset set <name>        set active preset (used on next start)"
+            echo "  rig serve preset show [<name>]     show preset config (active if no name given)"
             ;;
         *)
             echo -e "${RED}Unknown preset subcommand: ${1}${RESET}"
@@ -158,18 +160,32 @@ _serve_preset_set() {
 }
 
 _serve_preset_show() {
-    local active_file="${RIG_ROOT}/presets/.env.active.vllm"
-    if [[ ! -f "${active_file}" ]]; then
-        echo -e "${DIM}No active preset set. Run: rig serve <preset>${RESET}"
-        exit 0
+    local name="${1:-}"
+    local source_file header
+
+    if [[ -n "${name}" ]]; then
+        source_file="${RIG_ROOT}/presets/vllm/${name}.env"
+        if [[ ! -f "${source_file}" ]]; then
+            echo -e "${RED}Preset '${name}' not found.${RESET}"
+            echo "Run 'rig serve list' to see available presets."
+            exit 1
+        fi
+        header="vLLM preset: ${name}"
+    else
+        source_file="${RIG_ROOT}/presets/.env.active.vllm"
+        if [[ ! -f "${source_file}" ]]; then
+            echo -e "${DIM}No active preset set. Run: rig serve <preset>${RESET}"
+            exit 0
+        fi
+        name=$(grep '^# Preset:' "${source_file}" | sed 's/^# Preset: *//' | awk '{print $1}')
+        header="Active vLLM preset: ${name}"
     fi
-    local name
-    name=$(grep '^# Preset:' "${active_file}" | sed 's/^# Preset: *//' | awk '{print $1}')
-    print_header "Active vLLM preset: ${name}"
+
+    print_header "${header}"
     hr
-    grep '^#' "${active_file}" | head -5 | sed 's/^#/  /'
+    grep '^#' "${source_file}" | head -5 | sed 's/^#/  /'
     hr
-    grep -v '^#' "${active_file}" | grep -v '^$' | while IFS= read -r line; do
+    grep -v '^#' "${source_file}" | grep -v '^$' | while IFS= read -r line; do
         key="${line%%=*}"; val="${line#*=}"
         printf "  ${CYAN}%-35s${RESET} %s\n" "${key}" "${val}"
     done

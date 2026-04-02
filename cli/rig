@@ -41,7 +41,7 @@ print_help() {
     printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "stop" "Stop vLLM"
     printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "list" "Show available presets"
     printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "preset set <name>" "Set active preset (no start)"
-    printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "preset show" "Show active preset config"
+    printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "preset show [<name>]" "Show preset config"
     echo ""
     printf "  ${CYAN}%-12s${RESET}  %-22s  %s\n" "comfy" "start [--edge]" "Start ComfyUI (--edge for Blackwell/sm_120)"
     printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "stop" "Stop ComfyUI"
