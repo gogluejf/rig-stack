@@ -297,7 +297,7 @@ _models_init() {
     echo ""
     echo "Next steps:"
     echo "  rig models"
-    echo "  rig presets set vllm qwen3-5-27b"
+    echo "  rig serve preset set qwen3-5-27b"
     echo "  rig serve qwen3-5-27b"
-    echo "  rig comfy start flux2-fp8 --edge"
+    echo "  rig comfy start --edge"
 }

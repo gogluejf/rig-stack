@@ -20,4 +20,5 @@ rig presets show qwen3-5-27b      # dump full preset config
 | `qwen3-5-27b-low.env` | Qwen3.5-27B-NVFP4 | 32768 | Reduced VRAM — co-run with ComfyUI |
 | `qwen3-5-27b-distilled.env` | Qwen3.5-27B distilled v2 | 65536 | Distilled, faster throughput |
 
+
 See `presets/README.md` for the full parameter reference.

@@ -13,13 +13,13 @@ _rig_root() {
 
 _rig_preset_items() {
     # _rig_preset_items <service>
-    # Emits "name:description" pairs; marks the default preset.
+    # Emits "name:description" pairs; marks the active preset.
     local root service="$1"
     root="$(_rig_root)" || return
-    local default_name=""
-    local def_file="${root}/presets/.env.default.${service}"
-    [[ -f "${def_file}" ]] && \
-        default_name="$(grep -m1 '^# Preset:' "${def_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')"
+    local active_name=""
+    local active_file="${root}/presets/.env.active.${service}"
+    [[ -f "${active_file}" ]] && \
+        active_name="$(grep -m1 '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')"
 
     local f name desc
     local -a items=()
@@ -28,7 +28,7 @@ _rig_preset_items() {
         name="$(basename "${f}" .env)"
         desc="$(grep -m1 '^# Use:' "${f}" 2>/dev/null | sed 's/^# Use: *//')"
         [[ -z "${desc}" ]] && desc="$(grep -m1 '^# Preset:' "${f}" 2>/dev/null | sed 's/^# Preset: *//')"
-        [[ "${name}" == "${default_name}" ]] && desc="(default) ${desc}"
+        [[ "${name}" == "${active_name}" ]] && desc="(active) ${desc}"
         items+=("${name}:${desc}")
     done
     printf '%s\n' "${items[@]}"
@@ -43,18 +43,6 @@ _rig_complete_presets() {
         [[ -n "${line}" ]] && items+=("${line}")
     done < <(_rig_preset_items "${service}")
     _describe "preset" items
-}
-
-_rig_complete_all_presets() {
-    local svc
-    local -a all=()
-    local line
-    for svc in vllm comfyui ollama; do
-        while IFS= read -r line; do
-            [[ -n "${line}" ]] && all+=("${line}")
-        done < <(_rig_preset_items "${svc}")
-    done
-    _describe "preset" all
 }
 
 _rig_complete_models() {
@@ -83,8 +71,7 @@ _rig_commands() {
         'ollama:Manage Ollama (local models)'
         'rag:Manage RAG API and Qdrant'
         'models:Install and manage artifacts'
-        'presets:Manage service presets'
-        'status:Show active services and presets'
+        'status:Show active services and models'
         'stats:Show GPU stats and container metrics'
     )
     _describe 'command' cmds
@@ -93,10 +80,11 @@ _rig_commands() {
 # ── Per-command completions ───────────────────────────────────────────────────
 
 _rig_serve() {
-    # rig serve [<preset>|stop|list] [--edge] [--help]
+    # rig serve [<preset>|stop|list|preset] [--edge] [--help]
     local -a subcmds=(
         'stop:Stop vLLM container'
         'list:List available presets'
+        'preset:Manage active preset'
     )
     local -a opts=(
         '--edge[Use Blackwell/sm_120 edge container]'
@@ -105,22 +93,39 @@ _rig_serve() {
     _arguments -C \
         "${opts[@]}" \
         '1: :->arg1' \
-        '*: :'
+        '*:: :->args'
 
     case "${state}" in
     arg1)
         _describe 'subcommand' subcmds
         _rig_complete_presets vllm
         ;;
+    args)
+        if [[ "${words[1]}" == "preset" ]]; then
+            local -a preset_subcmds=(
+                'set:Set active preset (used on next start)'
+                'show:Show active preset config'
+            )
+            case "${#words[@]}" in
+            2)
+                _describe 'preset subcommand' preset_subcmds
+                ;;
+            3)
+                if [[ "${words[2]}" == "set" ]]; then
+                    _rig_complete_presets vllm
+                fi
+                ;;
+            esac
+        fi
+        ;;
     esac
 }
 
 _rig_comfy() {
-    # rig comfy start [<preset>] [--edge] | stop | list | workflows
+    # rig comfy start [--edge] | stop | workflows
     local -a subcmds=(
-        'start:Start ComfyUI with a preset'
+        'start:Start ComfyUI'
         'stop:Stop ComfyUI container'
-        'list:List available presets'
         'workflows:List saved workflow JSON files'
     )
     _arguments -C \
@@ -134,23 +139,18 @@ _rig_comfy() {
         ;;
     args)
         if [[ "${words[1]}" == "start" ]]; then
-            _arguments \
-                '--edge[Use Blackwell/sm_120 edge container]' \
-                '1: :_rig_comfy_preset' \
-                '*: :'
+            _arguments '--edge[Use Blackwell/sm_120 edge container]'
         fi
         ;;
     esac
 }
 
-_rig_comfy_preset() { _rig_complete_presets comfyui }
-
 _rig_ollama() {
-    # rig ollama start [<preset> [<preset> [<preset>]]] [--gpu] | stop | list
+    # rig ollama start [--gpu] | stop | list
     local -a subcmds=(
-        'start:Start Ollama (preload up to 3 models into VRAM)'
+        'start:Start Ollama server'
         'stop:Stop Ollama container'
-        'list:List available presets'
+        'list:List installed Ollama models'
     )
     _arguments -C \
         '--help[Show help]' \
@@ -163,22 +163,11 @@ _rig_ollama() {
         ;;
     args)
         if [[ "${words[1]}" == "start" ]]; then
-            # Count non-flag words already given (= preset positions filled)
-            local count=0 w
-            for w in "${words[@]:2}"; do [[ "${w}" != --* ]] && (( count++ )); done
-            if [[ "${count}" -lt 3 ]]; then
-                _arguments \
-                    '--gpu[Enable GPU/NVIDIA runtime]' \
-                    "*: :_rig_ollama_preset"
-            else
-                _arguments '--gpu[Enable GPU/NVIDIA runtime]'
-            fi
+            _arguments '--gpu[Enable GPU/NVIDIA runtime]'
         fi
         ;;
     esac
 }
-
-_rig_ollama_preset() { _rig_complete_presets ollama }
 
 _rig_rag() {
     local -a subcmds=(
@@ -244,47 +233,6 @@ _rig_models_cmd() {
     esac
 }
 
-_rig_presets_cmd() {
-    # rig presets [list] | show <preset> | set <service> <preset>
-    local -a subcmds=(
-        'list:List all presets (all services)'
-        'show:Dump a preset config'
-        'set:Set the default preset for a service'
-    )
-    _arguments -C \
-        '--help[Show help]' \
-        '1: :->subcmd' \
-        '*:: :->args'
-
-    case "${state}" in
-    subcmd)
-        _describe 'subcommand' subcmds
-        ;;
-    args)
-        case "${words[1]}" in
-        show)
-            _rig_complete_all_presets
-            ;;
-        set)
-            case "${#words[@]}" in
-            2)
-                local -a services=(
-                    'vllm:vLLM inference server'
-                    'comfyui:ComfyUI image generation'
-                    'ollama:Ollama local models'
-                )
-                _describe 'service' services
-                ;;
-            3)
-                _rig_complete_presets "${words[2]}"
-                ;;
-            esac
-            ;;
-        esac
-        ;;
-    esac
-}
-
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 _rig() {
@@ -304,7 +252,6 @@ _rig() {
         ollama)  _rig_ollama ;;
         rag)     _rig_rag ;;
         models)  _rig_models_cmd ;;
-        presets) _rig_presets_cmd ;;
         status|stats) ;;
         esac
         ;;

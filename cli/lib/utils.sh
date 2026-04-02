@@ -22,13 +22,6 @@ load_env() {
         echo -e "${YELLOW}Warning: .env not found at ${env_file}${RESET}" >&2
         echo -e "Run: cp ${RIG_ROOT}/.env.example ${RIG_ROOT}/.env" >&2
     fi
-    # Load default preset if set
-    for svc in vllm comfyui ollama; do
-        local active="${RIG_ROOT}/presets/.env.default.${svc}"
-        if [[ -f "${active}" ]]; then
-            set -a; source "${active}"; set +a
-        fi
-    done
 }
 
 # ── Docker helpers ────────────────────────────────────────────────────────────
@@ -58,12 +51,6 @@ rig_compose() {
 }
 
 # ── Preset helpers ────────────────────────────────────────────────────────────
-set_default_preset() {
-    local service="$1"
-    local preset_file="$2"
-    cp "${preset_file}" "${RIG_ROOT}/presets/.env.default.${service}"
-}
-
 set_active_preset() {
     local service="$1"
     local preset_file="$2"

@@ -23,7 +23,6 @@ rig models install ai-forever/Real-ESRGAN --file RealESRGAN_x4plus.pth --path up
 ## Start
 
 ```bash
-rig presets set comfyui gfpgan
 rig comfy start --edge
 ```
 

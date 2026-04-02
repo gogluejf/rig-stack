@@ -7,22 +7,29 @@ cmd_serve() {
             echo -e "${BOLD}rig serve${RESET} — start vLLM inference"
             echo ""
             echo "Usage:"
-            echo "  rig serve [<preset>]            start vLLM (uses default preset if none given)"
-            echo "  rig serve <preset> --edge        use Blackwell/sm_120 edge container"
-            echo "  rig serve stop                   stop vLLM"
-            echo "  rig serve list                   list available presets"
+            echo "  rig serve [<preset>]              start vLLM (uses active preset if none given)"
+            echo "  rig serve <preset> --edge          use Blackwell/sm_120 edge container"
+            echo "  rig serve stop                     stop vLLM"
+            echo "  rig serve list                     list available presets"
+            echo "  rig serve preset set <name>        set active preset (used on next start)"
+            echo "  rig serve preset show              show active preset config"
             echo ""
             echo "Examples:"
             echo "  rig serve qwen3-5-27b"
             echo "  rig serve qwen3-5-27b-fast --edge"
-            echo "  rig serve                        # uses default preset"
+            echo "  rig serve                          # uses active preset"
             echo "  rig serve list"
+            echo "  rig serve preset set qwen3-5-27b-fast"
             ;;
         stop)
             _serve_stop
             ;;
         list)
             _serve_list
+            ;;
+        preset)
+            shift
+            _serve_preset "$@"
             ;;
         *)
             _serve_start "$@"
@@ -32,9 +39,9 @@ cmd_serve() {
 
 _serve_list() {
     local preset_dir="${RIG_ROOT}/presets/vllm"
-    local default_preset=""
-    local default_file="${RIG_ROOT}/presets/.env.default.vllm"
-    [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
+    local active_preset=""
+    local active_file="${RIG_ROOT}/presets/.env.active.vllm"
+    [[ -f "${active_file}" ]] && active_preset=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
 
     print_header "vLLM presets"
     hr
@@ -49,7 +56,7 @@ _serve_list() {
         kv=$(grep '^KV_CACHE_DTYPE=' "${f}" | cut -d= -f2 || echo "—")
         gpu=$(grep '^GPU_MEMORY_UTILIZATION=' "${f}" | cut -d= -f2 || echo "—")
         desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
-        if [[ "${name}" == "${default_preset}" ]]; then
+        if [[ "${name}" == "${active_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
             marker=" "
@@ -57,8 +64,8 @@ _serve_list() {
         printf "  ${marker} %-28s %-20s %-10s %-6s %-6s %s\n" "${name}" "${model:0:18}" "${ctx}" "${kv}" "${gpu}" "${desc:0:45}"
     done
     hr
-    echo -e "  ${DIM}✓ = default preset (used by: rig serve)${RESET}"
-    echo -e "  ${DIM}Set default: rig presets set vllm <preset>${RESET}"
+    echo -e "  ${DIM}✓ = active preset (used on next start)${RESET}"
+    echo -e "  ${DIM}Set: rig serve preset set <preset>${RESET}"
     echo ""
 }
 
@@ -68,14 +75,14 @@ _serve_start() {
     [[ "${2:-}" == "--edge" || "${1:-}" == "--edge" ]] && edge=true
     [[ "${preset_name}" == "--edge" ]] && preset_name=""
 
-    # Fall back to default preset if none given
+    # Fall back to active preset if none given
     if [[ -z "${preset_name}" ]]; then
-        local default_file="${RIG_ROOT}/presets/.env.default.vllm"
-        if [[ -f "${default_file}" ]]; then
-            preset_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
-            echo -e "${DIM}  Using default preset: ${preset_name}${RESET}"
+        local active_file="${RIG_ROOT}/presets/.env.active.vllm"
+        if [[ -f "${active_file}" ]]; then
+            preset_name=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
+            echo -e "${DIM}  Using active preset: ${preset_name}${RESET}"
         else
-            echo -e "${RED}No preset given and no default set.${RESET}"
+            echo -e "${RED}No preset given and no active preset set.${RESET}"
             echo "  rig serve <preset>"
             echo "  rig serve list"
             exit 1
@@ -109,4 +116,63 @@ _serve_stop() {
     echo "Stopping vLLM..."
     rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
     echo -e "${GREEN}✓  vLLM stopped.${RESET}"
+}
+
+_serve_preset() {
+    case "${1:-}" in
+        set)
+            shift
+            _serve_preset_set "$@"
+            ;;
+        show)
+            _serve_preset_show
+            ;;
+        --help|-h|"")
+            echo "Usage:"
+            echo "  rig serve preset set <name>   set active preset (used on next start)"
+            echo "  rig serve preset show          show active preset config"
+            ;;
+        *)
+            echo -e "${RED}Unknown preset subcommand: ${1}${RESET}"
+            exit 1
+            ;;
+    esac
+}
+
+_serve_preset_set() {
+    local name="${1:-}"
+    if [[ -z "${name}" ]]; then
+        echo -e "${RED}Preset name required.${RESET}"
+        echo "Run 'rig serve list' to see available presets."
+        exit 1
+    fi
+    local preset_file="${RIG_ROOT}/presets/vllm/${name}.env"
+    if [[ ! -f "${preset_file}" ]]; then
+        echo -e "${RED}Preset '${name}' not found.${RESET}"
+        echo "Run 'rig serve list' to see available presets."
+        exit 1
+    fi
+    set_active_preset "vllm" "${preset_file}"
+    echo -e "${GREEN}✓  Active vLLM preset set to '${name}'${RESET}"
+    echo -e "  Run: rig serve"
+}
+
+_serve_preset_show() {
+    local active_file="${RIG_ROOT}/presets/.env.active.vllm"
+    if [[ ! -f "${active_file}" ]]; then
+        echo -e "${DIM}No active preset set. Run: rig serve <preset>${RESET}"
+        exit 0
+    fi
+    local name
+    name=$(grep '^# Preset:' "${active_file}" | sed 's/^# Preset: *//' | awk '{print $1}')
+    print_header "Active vLLM preset: ${name}"
+    hr
+    grep '^#' "${active_file}" | head -5 | sed 's/^#/  /'
+    hr
+    grep -v '^#' "${active_file}" | grep -v '^$' | while IFS= read -r line; do
+        key="${line%%=*}"; val="${line#*=}"
+        printf "  ${CYAN}%-35s${RESET} %s\n" "${key}" "${val}"
+    done
+    hr
+    echo ""
 }

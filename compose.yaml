@@ -123,7 +123,6 @@ services:
     <<: *gpu-runtime
     env_file:
       - .env
-      - ${DOCKER_ROOT}/rig-stack/presets/.env.active.comfyui
     volumes:
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/outputs/comfyui:/outputs
@@ -152,7 +151,6 @@ services:
     <<: *gpu-runtime
     env_file:
       - .env
-      - ${DOCKER_ROOT}/rig-stack/presets/.env.active.comfyui
     volumes:
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/outputs/comfyui:/outputs

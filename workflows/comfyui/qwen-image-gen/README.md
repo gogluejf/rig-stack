@@ -25,7 +25,6 @@ rig models install Qwen/Qwen2-VL-7B-Instruct --path llm/qwen2-vl-7b --descr "Und
 ## Start
 
 ```bash
-rig presets set comfyui qwen-image-gen
 rig comfy start --edge
 ```
 

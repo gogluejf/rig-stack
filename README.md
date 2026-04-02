@@ -8,7 +8,7 @@ The motivation is practical. An RTX 5090 is a serious machine. Getting the most 
 
 - **Running the right build for the job.** vLLM and ComfyUI ship both a stable release and a nightly edge build compiled for Blackwell (sm_120, CUDA 13.0). Edge unlocks the full performance of the card — stable keeps you unblocked when nightly breaks.
 - **Splitting the GPU intelligently.** Load your large LLM on the GPU via vLLM, and offload utility models — embeddings, small chat, vision — to Ollama running on CPU. No context switching, no reloading.
-- **Tuning without rewriting configs.** Every service is driven by preset files. Switch from a high-throughput quantized build to a quality full-precision run with one command. Presets live in the repo and are version-controlled.
+- **Tuning without rewriting configs.** vLLM is driven by preset files. Switch from a high-throughput quantized build to a quality full-precision run with one command. Presets live in the repo and are version-controlled.
 - **A CLI that feels native.** `rig` follows Debian UX conventions — subcommands, consistent flags, tab completion, clean output. No YAML archaeology, no Docker command memorisation.
 - **One place to manage all model artifacts.** A single registry covers every model across all services — with descriptions, sizes, and categories. Download, inspect, and remove anything with one command. No hunting across service configs to find what lives where.
 - **A single endpoint for everything.** Every service — LLM, image generation, embeddings, RAG — sits behind one Traefik gateway on port 80. Clients point at one host and one port; routing is handled transparently. No per-service ports to remember, no firewall rules to maintain per workload.
@@ -78,27 +78,24 @@ rig <command> [subcommand] [flags]
 | `rig serve <preset> --edge` | Use Blackwell/sm_120 edge container |
 | `rig serve list` | Table of all presets (model, context, kv-cache, gpu-util) |
 | `rig serve stop` | Stop vLLM |
+| `rig serve preset set <name>` | Set active preset (used on next start, without starting) |
+| `rig serve preset show` | Show active preset config |
 
 ### comfy — image generation
 
 | Command | Description |
 |---|---|
-| `rig comfy start <preset>` | Start ComfyUI stable with a preset |
-| `rig comfy start <preset> --edge` | Use edge container |
+| `rig comfy start [--edge]` | Start ComfyUI (--edge for Blackwell/sm_120) |
 | `rig comfy stop` | Stop ComfyUI |
-| `rig comfy list` | List available presets |
 | `rig comfy workflows` | List saved workflow JSON files |
 
 ### ollama — utility models
 
 | Command | Description |
 |---|---|
-| `rig ollama start [<preset>...]` | Start Ollama and preload up to 3 models in VRAM |
-| `rig ollama start <p1> <p2> --gpu` | Start with GPU |
+| `rig ollama start [--gpu]` | Start Ollama (--gpu for GPU mode) |
 | `rig ollama stop` | Stop Ollama |
-| `rig ollama list` | List available presets |
-
-Presets are optional — Ollama loads any model on first request. Passing presets pre-warms VRAM to eliminate cold starts. Up to 3 models stay loaded simultaneously; Ollama evicts the least recently used when a new one is requested beyond the limit.
+| `rig ollama list` | List installed Ollama models |
 
 ### rag — retrieval API
 
@@ -117,14 +114,6 @@ Presets are optional — Ollama loads any model on first request. Passing preset
 | `rig models install <source>` | Install one artifact from HuggingFace or Ollama |
 | `rig models show <name\|path>` | Type, source, path, size |
 | `rig models remove <name\|path>` | Delete an artifact |
-
-### presets — configuration management
-
-| Command | Description |
-|---|---|
-| `rig presets` | List all presets: service, name, model, key params |
-| `rig presets show <name>` | Full preset config dump |
-| `rig presets set <service> <preset>` | Set active preset (picked up on next start) |
 
 ### observability
 
@@ -199,10 +188,8 @@ rig-stack/
     qdrant/
     langfuse/
 
-  presets/           ← model + operational params per service
+  presets/           ← vLLM operational configuration presets
     vllm/            ← qwen3-5-27b.env, qwen3-5-27b-fast.env, ...
-    comfyui/
-    ollama/
 
   cli/               ← rig CLI source
     rig              ← entrypoint
@@ -290,7 +277,7 @@ For gated artifacts (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
 
 ## How to add a preset
 
-A **preset** is an env file in `presets/<service>/` with operational parameters for the model server. Create one by copying an existing preset and adjusting the values:
+A **preset** is an env file in `presets/vllm/` with operational parameters for vLLM. Create one by copying an existing preset and adjusting the values:
 
 ```bash
 cp presets/vllm/qwen3-5-27b.env presets/vllm/my-preset.env

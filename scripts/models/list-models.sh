@@ -12,6 +12,18 @@ REGISTRY="${ROOT_DIR}/config/models-registry.tsv"
 
 BOLD='\033[1m'; DIM='\033[2m'; RESET='\033[0m'
 
+FILTER_TYPE=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --filter)
+            [[ "${2:-}" =~ ^type=(.+)$ ]] && FILTER_TYPE="${BASH_REMATCH[1]}" || {
+                echo "Usage: --filter type=<value>" >&2; exit 1
+            }
+            shift 2 ;;
+        *) shift ;;
+    esac
+done
+
 printf "\n${BOLD}  %-10s %-28s %-42s %-8s %s${RESET}\n" \
     "TYPE" "NAME" "PATH" "SIZE" "DESCRIPTION"
 printf '%s\n' "$(printf '─%.0s' {1..120})"
@@ -27,6 +39,7 @@ found=false
 while IFS=$'\t' read -r type source path remote_file desc; do
     [[ "${type}" =~ ^#.*$ ]] && continue
     [[ -z "${type}" ]] && continue
+    [[ -n "${FILTER_TYPE}" && "${type}" != "${FILTER_TYPE}" ]] && continue
     found=true
 
     name="${path##*/}"

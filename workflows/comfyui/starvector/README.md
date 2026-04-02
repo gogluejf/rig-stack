@@ -23,7 +23,6 @@ rig models install starvector/starvector-8b-im2svg --path starvector/starvector-
 ## Start
 
 ```bash
-rig presets set comfyui starvector
 rig comfy start --edge
 ```
 

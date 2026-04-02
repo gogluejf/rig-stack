@@ -4,11 +4,11 @@ Text-to-image generation using FLUX.2-dev fp8 (default) or FLUX.2-klein.
 
 ## Required models
 
-| Model | Path | Preset |
-|---|---|---|
-| FLUX.2-dev fp8 | `$MODELS_ROOT/diffusion/flux2-fp8` | `comfyui/flux2-fp8` |
-| FLUX.2-klein | `$MODELS_ROOT/diffusion/flux2-klein` | `comfyui/flux2-klein` |
-| FLUX.1-dev | `$MODELS_ROOT/diffusion/flux1-dev` | `comfyui/flux1-dev` |
+| Model | Path |
+|---|---|
+| FLUX.2-dev fp8 | `$MODELS_ROOT/diffusion/flux2-fp8` |
+| FLUX.2-klein | `$MODELS_ROOT/diffusion/flux2-klein` |
+| FLUX.1-dev | `$MODELS_ROOT/diffusion/flux1-dev` |
 
 ## Required ComfyUI nodes
 
@@ -27,7 +27,6 @@ rig models install <flux2-fp8-repo> --path diffusion/flux2-fp8 --descr "Generate
 ## Start
 
 ```bash
-rig presets set comfyui flux2-fp8
 rig comfy start --edge
 ```
 

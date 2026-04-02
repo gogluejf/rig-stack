@@ -29,7 +29,6 @@ rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Depth --path controlnet/de
 ## Start
 
 ```bash
-rig presets set comfyui controlnet
 rig comfy start --edge
 ```
 

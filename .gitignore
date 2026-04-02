@@ -8,7 +8,6 @@
 
 # Generated at runtime — not committed
 config/models-registry.tsv
-presets/.env.default.*
 presets/.env.active.*
 
 # OS

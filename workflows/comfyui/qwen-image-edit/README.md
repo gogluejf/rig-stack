@@ -26,7 +26,6 @@ rig models install black-forest-labs/FLUX.1-Fill-dev --path diffusion/flux1-fill
 ## Start
 
 ```bash
-rig presets set comfyui qwen-image-edit
 rig comfy start --edge
 ```
 

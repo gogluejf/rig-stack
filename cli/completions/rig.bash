@@ -21,13 +21,6 @@ _rig_presets() {
     done
 }
 
-_rig_all_presets() {
-    local svc
-    for svc in vllm comfyui ollama; do
-        _rig_presets "${svc}"
-    done | sort -u
-}
-
 _rig_models() {
     # Read artifact basenames from the registry TSV (col 3)
     local root
@@ -37,11 +30,11 @@ _rig_models() {
     awk -F'\t' '!/^#/ && NF>=3 { n=split($3,a,"/"); print a[n] }' "${reg}" | sort -u
 }
 
-_rig_default_preset() {
-    # _rig_default_preset <service>  — name of the current default preset
+_rig_active_preset() {
+    # _rig_active_preset <service>  — name of the current active preset
     local root
     root="$(_rig_root)" || return
-    local f="${root}/presets/.env.default.${1}"
+    local f="${root}/presets/.env.active.${1}"
     [[ -f "${f}" ]] || return
     grep -m1 '^# Preset:' "${f}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}'
 }
@@ -65,7 +58,7 @@ _rig_completions() {
 
     # ── Level 1: top-level command ────────────────────────────────────────────
     if [[ "${cword}" -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "serve comfy ollama rag models presets status stats --help" -- "${cur}"))
+        COMPREPLY=($(compgen -W "serve comfy ollama rag models status stats --help" -- "${cur}"))
         return
     fi
 
@@ -78,20 +71,27 @@ _rig_completions() {
         presets="$(_rig_presets vllm 2>/dev/null)"
 
         if [[ "${cword}" -eq 2 ]]; then
-            # Mark the default preset with a * suffix in the list
-            local default
-            default="$(_rig_default_preset vllm 2>/dev/null)"
+            # Mark the active preset with a * suffix in the list
+            local active
+            active="$(_rig_active_preset vllm 2>/dev/null)"
             local marked=""
             local p
             for p in ${presets}; do
-                [[ "${p}" == "${default}" ]] && marked+="${p}* " || marked+="${p} "
+                [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
             done
-            COMPREPLY=($(compgen -W "${marked} stop list --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${marked} stop list preset --help" -- "${cur}"))
             return
         fi
 
         case "${sub}" in
             stop|list|--help) ;;
+            preset)
+                if [[ "${cword}" -eq 3 ]]; then
+                    COMPREPLY=($(compgen -W "set show" -- "${cur}"))
+                elif [[ "${cword}" -eq 4 && "${words[3]}" == "set" ]]; then
+                    COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
+                fi
+                ;;
             *)
                 # Preset already given — offer --edge if not yet present
                 _rig_contains "--edge" "${words[@]}" || \
@@ -103,30 +103,13 @@ _rig_completions() {
     # ── rig comfy ─────────────────────────────────────────────────────────────
     comfy)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop list workflows --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop workflows --help" -- "${cur}"))
             return
         fi
 
         if [[ "${sub}" == "start" ]]; then
-            local presets
-            presets="$(_rig_presets comfyui 2>/dev/null)"
-            # Check if a preset (non-flag word) already appears after "start"
-            local has_preset=false w
-            for w in "${words[@]:3}"; do
-                [[ "${w}" != --* ]] && has_preset=true && break
-            done
-            if ! $has_preset; then
-                local default
-                default="$(_rig_default_preset comfyui 2>/dev/null)"
-                local marked="" p
-                for p in ${presets}; do
-                    [[ "${p}" == "${default}" ]] && marked+="${p}* " || marked+="${p} "
-                done
-                COMPREPLY=($(compgen -W "${marked} --edge" -- "${cur}"))
-            else
-                _rig_contains "--edge" "${words[@]}" || \
-                    COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
-            fi
+            _rig_contains "--edge" "${words[@]}" || \
+                COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
         fi
         ;;
 
@@ -138,23 +121,8 @@ _rig_completions() {
         fi
 
         if [[ "${sub}" == "start" ]]; then
-            # Count non-flag preset words already in the command
-            local count=0 w
-            for w in "${words[@]:3}"; do
-                [[ "${w}" != --* ]] && (( count++ ))
-            done
-            local presets
-            presets="$(_rig_presets ollama 2>/dev/null)"
-            local gpu_done=false
-            _rig_contains "--gpu" "${words[@]}" && gpu_done=true
-
-            if [[ "${count}" -lt 3 ]]; then
-                $gpu_done && \
-                    COMPREPLY=($(compgen -W "${presets}" -- "${cur}")) || \
-                    COMPREPLY=($(compgen -W "${presets} --gpu" -- "${cur}"))
-            else
-                $gpu_done || COMPREPLY=($(compgen -W "--gpu" -- "${cur}"))
-            fi
+            _rig_contains "--gpu" "${words[@]}" || \
+                COMPREPLY=($(compgen -W "--gpu" -- "${cur}"))
         fi
         ;;
 
@@ -189,39 +157,6 @@ _rig_completions() {
                 local models
                 models="$(_rig_models 2>/dev/null)"
                 COMPREPLY=($(compgen -W "${models}" -- "${cur}"))
-                ;;
-        esac
-        ;;
-
-    # ── rig presets ───────────────────────────────────────────────────────────
-    presets)
-        if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "show set list --help" -- "${cur}"))
-            return
-        fi
-
-        case "${sub}" in
-            show)
-                if [[ "${cword}" -eq 3 ]]; then
-                    local presets
-                    presets="$(_rig_all_presets 2>/dev/null)"
-                    COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
-                fi
-                ;;
-            set)
-                if [[ "${cword}" -eq 3 ]]; then
-                    COMPREPLY=($(compgen -W "vllm comfyui ollama" -- "${cur}"))
-                elif [[ "${cword}" -eq 4 ]]; then
-                    local presets
-                    presets="$(_rig_presets "${words[3]}" 2>/dev/null)"
-                    local default
-                    default="$(_rig_default_preset "${words[3]}" 2>/dev/null)"
-                    local marked="" p
-                    for p in ${presets}; do
-                        [[ "${p}" == "${default}" ]] && marked+="${p}* " || marked+="${p} "
-                    done
-                    COMPREPLY=($(compgen -W "${marked}" -- "${cur}"))
-                fi
                 ;;
         esac
         ;;

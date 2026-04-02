@@ -31,22 +31,16 @@ cmd_status() {
         fi
     done
     comfy_status="${comfy_status:-${DIM}stopped${RESET}}"
-    local comfy_preset="—"
-    local comfy_active="${RIG_ROOT}/presets/.env.active.comfyui"
-    [[ -f "${comfy_active}" ]] && comfy_preset=$(grep '^# Preset:' "${comfy_active}" | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null || echo "—")
-    printf "  %-12s ${CYAN}%-30s${RESET} %-25s %b\n" "comfyui" "—" "${comfy_preset:0:25}" "${comfy_status}"
+    printf "  %-12s ${CYAN}%-30s${RESET} %-25s %b\n" "comfyui" "—" "—" "${comfy_status}"
 
     # Ollama
-    local ollama_status ollama_preset="—" ollama_model="—"
-    local ollama_default="${RIG_ROOT}/presets/.env.active.ollama"
-    [[ -f "${ollama_default}" ]] && ollama_preset=$(grep '^# Preset:' "${ollama_default}" | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null || echo "—")
-    [[ -f "${ollama_default}" ]] && ollama_model=$(grep '^OLLAMA_MODEL=' "${ollama_default}" | cut -d= -f2 || echo "—")
+    local ollama_status
     if container_running "rig-ollama"; then
         ollama_status="${GREEN}running${RESET}"
     else
         ollama_status="${DIM}stopped${RESET}"
     fi
-    printf "  %-12s ${CYAN}%-30s${RESET} %-25s %b\n" "ollama" "${ollama_model:0:30}" "${ollama_preset:0:25}" "${ollama_status}"
+    printf "  %-12s ${CYAN}%-30s${RESET} %-25s %b\n" "ollama" "—" "—" "${ollama_status}"
 
     # RAG API
     local rag_status

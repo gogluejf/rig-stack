@@ -27,7 +27,6 @@ rig models install ezioruan/inswapper_128.onnx --file inswapper_128.onnx --path 
 ## Start
 
 ```bash
-rig presets set comfyui facefusion
 rig comfy start --edge
 ```
 

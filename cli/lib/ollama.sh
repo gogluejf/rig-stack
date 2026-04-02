@@ -7,19 +7,13 @@ cmd_ollama() {
             echo -e "${BOLD}rig ollama${RESET} — manage Ollama"
             echo ""
             echo "Usage:"
-            echo "  rig ollama start [<preset>...]    start Ollama and preload up to 3 models in VRAM"
-            echo "  rig ollama start <p1> <p2> --gpu  start with GPU"
-            echo "  rig ollama stop                   stop Ollama"
-            echo "  rig ollama list                   list available presets"
-            echo ""
-            echo "  Presets are optional — Ollama loads any model on first request."
-            echo "  Passing presets pre-warms VRAM so the first call has no cold start."
-            echo "  Up to 3 models stay loaded concurrently (LRU eviction when full)."
+            echo "  rig ollama start [--gpu]   start Ollama (--gpu for GPU mode)"
+            echo "  rig ollama stop             stop Ollama"
+            echo "  rig ollama list             list installed Ollama models"
             echo ""
             echo "Examples:"
-            echo "  rig ollama start nomic-embed-text"
-            echo "  rig ollama start nomic-embed-text phi3-mini"
-            echo "  rig ollama start nomic-embed-text phi3-mini deepseek-r1-7b --gpu"
+            echo "  rig ollama start"
+            echo "  rig ollama start --gpu"
             echo "  rig ollama list"
             ;;
         start)
@@ -46,78 +40,13 @@ cmd_ollama() {
 }
 
 _ollama_list() {
-    local preset_dir="${RIG_ROOT}/presets/ollama"
-    local default_preset=""
-    local default_file="${RIG_ROOT}/presets/.env.default.ollama"
-    [[ -f "${default_file}" ]] && default_preset=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
-
-    print_header "Ollama presets"
-    hr
-    printf "  ${BOLD}  %-28s %s${RESET}\n" "PRESET" "DESCRIPTION"
-    hr
-    for f in "${preset_dir}"/*.env; do
-        [[ -f "${f}" ]] || continue
-        local name desc marker
-        name=$(basename "${f}" .env)
-        desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
-        if [[ "${name}" == "${default_preset}" ]]; then
-            marker="${GREEN}✓${RESET}"
-        else
-            marker=" "
-        fi
-        printf "  ${marker} %-28s %s\n" "${name}" "${desc:0:60}"
-    done
-    hr
-    echo -e "  ${DIM}✓ = default preset (used by: rig ollama start)${RESET}"
-    echo -e "  ${DIM}Set default: rig presets set ollama <preset>${RESET}"
-    echo ""
+    bash "${RIG_ROOT}/scripts/models/list-models.sh" --filter type=ollama
 }
 
 _ollama_start() {
     local gpu=false
-    local presets=()
-
-    # Parse args: collect preset names, detect --gpu
     for arg in "$@"; do
-        if [[ "${arg}" == "--gpu" ]]; then
-            gpu=true
-        else
-            presets+=("${arg}")
-        fi
-    done
-
-    # Fall back to default preset if none given
-    if [[ ${#presets[@]} -eq 0 ]]; then
-        local default_file="${RIG_ROOT}/presets/.env.default.ollama"
-        if [[ -f "${default_file}" ]]; then
-            local default_name
-            default_name=$(grep '^# Preset:' "${default_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null)
-            presets=("${default_name}")
-            echo -e "${DIM}  Using default preset: ${default_name}${RESET}"
-        else
-            echo -e "${RED}No preset given and no default set.${RESET}"
-            echo "  rig ollama start <preset> [<preset2>] [<preset3>]"
-            echo "  rig ollama list"
-            exit 1
-        fi
-    fi
-
-    # Cap at 3
-    if [[ ${#presets[@]} -gt 3 ]]; then
-        echo -e "${YELLOW}  Max 3 presets — ignoring: ${presets[@]:3}${RESET}"
-        presets=("${presets[@]:0:3}")
-    fi
-
-    # Validate all presets and collect model names
-    local models=()
-    for preset_name in "${presets[@]}"; do
-        local preset_file="${RIG_ROOT}/presets/ollama/${preset_name}.env"
-        if [[ ! -f "${preset_file}" ]]; then
-            echo -e "${RED}Preset '${preset_name}' not found.${RESET}"
-            echo "Run 'rig ollama list' to see available presets."
-            exit 1
-        fi
-        models+=("$(grep '^OLLAMA_MODEL=' "${preset_file}" | cut -d= -f2)")
+        [[ "${arg}" == "--gpu" ]] && gpu=true
     done
 
     require_docker
@@ -138,29 +67,13 @@ _ollama_start() {
     until curl -sf "http://localhost:${port}" > /dev/null 2>&1; do
         (( attempts++ ))
         if [[ ${attempts} -ge 30 ]]; then
-            echo -e "${YELLOW}  Ollama not responding after 30s — skipping VRAM preload${RESET}"
+            echo -e "${YELLOW}  Ollama not responding after 30s${RESET}"
             break
         fi
         sleep 1
     done
 
-    # Warm each model into VRAM via the HTTP API (keep_alive: -1 = keep indefinitely)
-    if [[ ${attempts} -lt 30 ]]; then
-        for i in "${!models[@]}"; do
-            local model="${models[$i]}"
-            echo -e "  Warming ${model} into VRAM..."
-            curl -sf --max-time 120 \
-                -X POST "http://localhost:${port}/api/generate" \
-                -H "Content-Type: application/json" \
-                -d "{\"model\":\"${model}\",\"prompt\":\"\",\"keep_alive\":-1}" > /dev/null \
-                && echo -e "${GREEN}  ✓  ${model}${RESET}" \
-                || echo -e "${YELLOW}  ⚠  ${model} not loaded — run: rig models init --ollama${RESET}"
-        done
-    fi
-
     echo -e "${GREEN}✓  Ollama running${RESET}"
-    echo -e "  Warmed    : ${models[*]:-none}"
-    echo -e "  VRAM slots: 3 (LRU eviction when full)"
     echo -e "  Endpoint  : http://localhost:${port}"
     echo -e "  Via proxy : http://localhost:${TRAEFIK_PORT:-80}/ollama"
 }
