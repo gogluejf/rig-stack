@@ -13,7 +13,7 @@ cmd_status() {
     for variant in vllm-stable vllm-edge; do
         if container_running "rig-${variant}"; then
             vllm_status="${GREEN}running${RESET} (rig-${variant})"
-            local active="${RIG_ROOT}/presets/.env.active.vllm"
+            local active="${RIG_ROOT}/.env.active.vllm"
             [[ -f "${active}" ]] && vllm_model=$(grep '^MODEL_ID=' "${active}" | cut -d= -f2 || echo "—")
             [[ -f "${active}" ]] && vllm_preset=$(grep '^# Preset:' "${active}" | sed 's/^# Preset: *//' | awk '{print $1}' | xargs basename 2>/dev/null || basename "${active}" .env)
             break

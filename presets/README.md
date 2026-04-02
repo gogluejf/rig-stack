@@ -11,11 +11,11 @@ One model can have multiple presets for different workloads.
 ## How presets are applied
 
 When you run `rig serve qwen3-5-27b`, the CLI:
-1. Copies `presets/vllm/qwen3-5-27b.env` → `presets/.env.active.vllm`
-2. Starts the vLLM container — `compose.yaml` loads `presets/.env.active.vllm` as `env_file`
+1. Copies `presets/vllm/qwen3-5-27b.env` → `.env.active.vllm`
+2. Starts the vLLM container — `compose.yaml` loads `.env.active.vllm` as `env_file`
 3. vLLM reads the env vars and launches with those parameters
 
-`presets/.env.active.vllm` is the single remembered state — it's both "what is running now" and "what will start next time". It is gitignored (runtime state).
+`.env.active.vllm` is the single remembered state — it's both "what is running now" and "what will start next time". It is gitignored (runtime state).
 
 `rig serve preset set qwen3-5-27b-fast` sets the active preset without starting the server.
 

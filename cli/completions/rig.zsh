@@ -17,7 +17,7 @@ _rig_preset_items() {
     local root service="$1"
     root="$(_rig_root)" || return
     local active_name=""
-    local active_file="${root}/presets/.env.active.${service}"
+    local active_file="${root}/.env.active.${service}"
     [[ -f "${active_file}" ]] && \
         active_name="$(grep -m1 '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')"
 

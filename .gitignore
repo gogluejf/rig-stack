@@ -1,6 +1,5 @@
 # Environment — never commit secrets
 .env
-.env.active
 
 # Runtime state
 *.pid
@@ -8,7 +7,7 @@
 
 # Generated at runtime — not committed
 config/models-registry.tsv
-presets/.env.active.*
+.env.active.*
 
 # OS
 .DS_Store

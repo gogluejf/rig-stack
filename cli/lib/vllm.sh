@@ -41,7 +41,7 @@ cmd_serve() {
 _serve_list() {
     local preset_dir="${RIG_ROOT}/presets/vllm"
     local active_preset=""
-    local active_file="${RIG_ROOT}/presets/.env.active.vllm"
+    local active_file="${RIG_ROOT}/.env.active.vllm"
     [[ -f "${active_file}" ]] && active_preset=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
 
     print_header "vLLM presets"
@@ -78,7 +78,7 @@ _serve_start() {
 
     # Fall back to active preset if none given
     if [[ -z "${preset_name}" ]]; then
-        local active_file="${RIG_ROOT}/presets/.env.active.vllm"
+        local active_file="${RIG_ROOT}/.env.active.vllm"
         if [[ -f "${active_file}" ]]; then
             preset_name=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
             echo -e "${DIM}  Using active preset: ${preset_name}${RESET}"
@@ -172,7 +172,7 @@ _serve_preset_show() {
         fi
         header="vLLM preset: ${name}"
     else
-        source_file="${RIG_ROOT}/presets/.env.active.vllm"
+        source_file="${RIG_ROOT}/.env.active.vllm"
         if [[ ! -f "${source_file}" ]]; then
             echo -e "${DIM}No active preset set. Run: rig serve <preset>${RESET}"
             exit 0

@@ -58,7 +58,7 @@ services:
     shm_size: '16gb'
     env_file:
       - .env
-      - ${DOCKER_ROOT}/rig-stack/presets/.env.active.vllm
+      - ${DOCKER_ROOT}/rig-stack/.env.active.vllm
     volumes:
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
@@ -91,7 +91,7 @@ services:
     shm_size: '16gb'
     env_file:
       - .env
-      - ${DOCKER_ROOT}/rig-stack/presets/.env.active.vllm
+      - ${DOCKER_ROOT}/rig-stack/.env.active.vllm
     volumes:
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface

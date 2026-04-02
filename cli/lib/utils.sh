@@ -54,7 +54,7 @@ rig_compose() {
 set_active_preset() {
     local service="$1"
     local preset_file="$2"
-    cp "${preset_file}" "${RIG_ROOT}/presets/.env.active.${service}"
+    cp "${preset_file}" "${RIG_ROOT}/.env.active.${service}"
 }
 
 # ── Print helpers ─────────────────────────────────────────────────────────────
