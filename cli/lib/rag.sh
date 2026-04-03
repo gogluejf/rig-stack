@@ -7,9 +7,15 @@ cmd_rag() {
             echo -e "${BOLD}rig rag${RESET} — manage RAG API"
             echo ""
             echo "Usage:"
-            echo "  rig rag start    start RAG API + Qdrant"
-            echo "  rig rag stop     stop RAG API + Qdrant"
-            echo "  rig rag status   show RAG API health"
+            echo "  rig rag start                     start RAG API + Qdrant"
+            echo ""
+            echo "  rig rag stop                      stop RAG API + Qdrant"
+            echo ""
+            echo "  rig rag status                    show RAG API health"
+            echo ""
+            echo "Examples:"
+            echo "  rig rag start"
+            echo "  rig rag status"
             ;;
         start)
             require_docker
