@@ -341,7 +341,7 @@ Run `bash scripts/setup/00-init-dirs.sh` to create the subdirectory tree at the 
 | Variable | Options | Effect |
 |---|---|---|
 | `GPU_MODEL` | `rtx5090`, `rtx4090`, etc. | Validation messaging in setup scripts |
-| `OS_FAMILY` | `ubuntu`, `debian`, `macos` | Package manager selection in setup scripts |
+| `OS_FAMILY` | `ubuntu`, `debian` | Apt codename resolution in setup scripts |
 | `OS_VERSION` | `24.04`, `22.04`, etc. | Apt codename resolution |
 
 For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge container is only needed for sm_120 (RTX 5090).

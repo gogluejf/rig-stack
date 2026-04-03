@@ -41,7 +41,7 @@ DRY_RUN=false
 # ── OS check (Linux only) ─────────────────────────────────────────────────────
 if [[ "$(uname)" != "Linux" ]]; then
     echo -e "${RED}install.sh requires Linux (Ubuntu/Debian). Detected: $(uname)${RESET}"
-    echo "The Docker Compose stack works on other platforms; GPU passthrough requires Linux."
+    echo "rig-stack requires Linux — GPU passthrough is Linux/NVIDIA only."
     exit 1
 fi
 

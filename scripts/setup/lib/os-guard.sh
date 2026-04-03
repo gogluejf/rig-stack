@@ -4,7 +4,7 @@
 # Sourced by setup scripts. Validates OS_FAMILY and provides package manager helpers.
 #
 # Currently supported: ubuntu, debian (both via apt)
-# Stub support: macos (exits with clear message), other Linux distros (warns)
+# Other distros/OS: exits with clear message
 #
 # OS_FAMILY is read from .env. If not set, auto-detected from /etc/os-release.
 
@@ -17,8 +17,6 @@ _detect_os_family() {
             debian) echo "debian" ;;
             *) echo "${id}" ;;
         esac
-    elif [[ "$(uname)" == "Darwin" ]]; then
-        echo "macos"
     else
         echo "unknown"
     fi
@@ -38,15 +36,6 @@ require_supported_os() {
                 echo "ERROR: OS_FAMILY=${family} but apt-get not found." >&2
                 exit 1
             fi
-            ;;
-        macos)
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-            echo "  OS_FAMILY=macos — macOS setup is not yet supported." >&2
-            echo "  rig-stack setup scripts currently target Linux only." >&2
-            echo "  The Docker Compose stack itself works on macOS;" >&2
-            echo "  NVIDIA GPU passthrough requires Linux." >&2
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-            exit 1
             ;;
         *)
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
