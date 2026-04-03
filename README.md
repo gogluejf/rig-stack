@@ -175,7 +175,6 @@ $MODELS_ROOT/               # default: /models
   llm/
     qwen3-5-27b/            # Kbenkhaled/Qwen3.5-27B-NVFP4
     qwen3-5-27b-distilled/  # qwen3-5-27b-open-4-6-distilled-v2
-    qwen2-vl-7b/            # Qwen/Qwen2-VL-7B-Instruct (image workflows)
   diffusion/
     flux2-fp8/              # FLUX.2-dev fp8 quantized (default, gated)
     flux2-klein/            # FLUX.2-klein (Apache 2.0, fastest)

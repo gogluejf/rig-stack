@@ -20,7 +20,7 @@ cmd_models() {
             echo "  rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy"
             echo "  rig models install ollama/phi3:mini"
             echo "  rig models install black-forest-labs/FLUX.1-dev --type comfy"
-            echo "  rig models remove Qwen/Qwen2-VL-7B-Instruct"
+            echo "  rig models remove Qwen/Qwen-Image-2512"
             echo "  rig models remove ollama/phi3:mini"
             ;;
         ""|list)
@@ -157,7 +157,6 @@ _models_init() {
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
-        _install hf Qwen/Qwen2-VL-7B-Instruct
         _install hf nomic-ai/nomic-embed-text-v1.5
     }
 
@@ -166,6 +165,8 @@ _models_init() {
         echo -e "${DIM}  Requires ComfyUI running: rig comfy start${RESET}\n"
         _install comfy black-forest-labs/FLUX.1-dev
         _install comfy black-forest-labs/FLUX.2-klein
+        _install comfy Qwen/Qwen-Image-2512
+        _install comfy Qwen/Qwen-Image-Edit-2511
     }
 
     minimal_ollama() {

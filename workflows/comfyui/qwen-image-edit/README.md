@@ -1,27 +1,24 @@
 # Workflow: Qwen Image Edit
 
-Instruction-guided image editing. Feed an image + a natural language instruction
-("remove the background", "change the jacket to red", "add snow") and Qwen2-VL
-interprets the edit, generates a mask or conditioning signal, and FLUX applies it.
+Instruction-guided image editing using Qwen-Image-Edit-2511, a diffusion transformer (DiT)
+model that takes an image + natural language instruction ("remove the background",
+"change the jacket to red", "add snow") and applies the edit natively.
 
 ## Required models
 
-| Model | Path | HF |
+| Model | Bundle | HF |
 |---|---|---|
-| Qwen2-VL-7B-Instruct | `$MODELS_ROOT/llm/qwen2-vl-7b` | [Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct) |
-| FLUX.1-dev (Fill) | `$MODELS_ROOT/diffusion/flux1-dev` | black-forest-labs/FLUX.1-Fill-dev |
+| Qwen-Image-Edit-2511 | minimal | [Qwen/Qwen-Image-Edit-2511](https://huggingface.co/Qwen/Qwen-Image-Edit-2511) |
 
 ## Download
 
 ```bash
-rig models install Qwen/Qwen2-VL-7B-Instruct
-rig models install black-forest-labs/FLUX.1-Fill-dev --type comfy
+rig models install Qwen/Qwen-Image-Edit-2511 --type comfy
 ```
 
 ## Required ComfyUI nodes
 
-- [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF)
-- [ComfyUI-FluxInpaint](https://github.com/ltdrdata/ComfyUI-Manager) — install via Manager
+- Install via ComfyUI-Manager
 
 ## Start
 
@@ -36,12 +33,10 @@ Save exported JSON to: `$DATA_ROOT/workflows/comfyui/qwen-image-edit.json`
 ## Pipeline
 
 ```
-Image + Instruction → Qwen2-VL (understand scene + generate edit mask)
-  → FLUX.1-Fill (inpaint/edit masked region) → Save Image
+Image + Instruction → Qwen-Image-Edit-2511 (DiT instruction-guided edit) → Save Image
 ```
 
 ## Notes
 
-- FLUX.1-Fill-dev is a separate model from FLUX.1-dev — download explicitly
 - Input images go to `$DATA_ROOT/inputs/`
 - Works best with clear, specific edit instructions

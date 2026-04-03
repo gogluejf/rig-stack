@@ -19,7 +19,6 @@ Downloaded to `${MODELS_ROOT}/hf/<org>/<repo>`. Used by vllm.
 | Source | Bundle | Description |
 |---|---|---|
 | `Kbenkhaled/Qwen3.5-27B-NVFP4` | minimal | Main LLM — chat, reasoning, coding, tool-calling |
-| `Qwen/Qwen2-VL-7B-Instruct` | minimal | Multimodal — used by comfy workflows via vllm API |
 | `nomic-ai/nomic-embed-text-v1.5` | minimal | RAG embeddings |
 | `starvector/starvector-8b-im2svg` | all | Image → SVG conversion |
 
@@ -61,6 +60,8 @@ Downloaded to `${MODELS_ROOT}/comfy/<type>/`. comfy-cli places each model in the
 |---|---|---|---|
 | `black-forest-labs/FLUX.1-dev` | | minimal | Base diffusion model |
 | `black-forest-labs/FLUX.2-klein` | | minimal | Fast iteration |
+| `Qwen/Qwen-Image-2512` | | minimal | Text-to-image DiT |
+| `Qwen/Qwen-Image-Edit-2511` | | minimal | Instruction-guided image editing DiT |
 | `black-forest-labs/FLUX.1-Fill-dev` | | all | Inpainting / image editing |
 | `Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro` | | all | Pose, depth, canny, scribble |
 | `Shakker-Labs/FLUX.1-dev-ControlNet-Depth` | | all | Depth conditioned generation |
