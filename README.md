@@ -1,19 +1,19 @@
 # rig-stack
 
-**Self-hosted AI inference stack for NVIDIA Blackwell. Your RTX 5090 as a private cloud.**
+Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a private AI cloud for your local network — unified endpoint, GPU-optimized inference, and a CLI that manages the whole rig. Built to run inside a network you trust.
 
-Most AI tooling gives you an API key and a billing page. rig-stack gives you the whole stack — running on your hardware, under your control, at zero per-token cost.
+## Features
 
-The motivation is practical. An RTX 5090 is a serious machine. Getting the most out of it means:
-
-- **Running the right build for the job.** vLLM ships a stable release and a nightly edge build compiled for Blackwell (sm_120, CUDA 13.0). Edge unlocks the full performance of the card — stable keeps you unblocked when nightly breaks.
-- **Splitting the GPU intelligently.** Load your large LLM on the GPU via vLLM, offload utility models — embeddings, small chat, vision — to Ollama running on CPU. Optionalluy, load ComfyUI on CPU for lighter image workflows when you need your GPU dedicated to vllm.
-- **Tuning without rewriting configs.** vLLM is driven by preset files. Switch from a high-throughput quantized build to a quality full-precision run with one command. Presets live in the repo and are version-controlled.
-- **A CLI that feels native.** `rig` follows Debian UX conventions — subcommands, consistent flags, tab completion, clean output. No YAML archaeology, no Docker command memorisation.
-- **One place to manage all model artifacts.** A single registry covers every model across all services — with descriptions, sizes, and categories. Download, inspect, and remove anything with one command. No hunting across service configs to find what lives where.
-- **A single endpoint for everything.** Every service — LLM, image generation, embeddings, RAG — sits behind one Traefik gateway on port 80. Clients point at one host and one port; routing is handled transparently. No per-service ports to remember, no firewall rules to maintain per workload.
-
-Drop it on Ubuntu 24.04, run `./install.sh`, and the full stack — LLM serving, image generation, RAG, observability — is one `rig` command away.
+- **Dual PyTorch builds** — stable release + nightly edge compiled for Blackwell (sm_120). Full GPU performance with a stable fallback.
+- **Smart GPU/CPU split** — large LLMs on GPU via vLLM, utility models and light workflows offloaded to CPU. Use the whole machine.
+- **Preset-driven inference** — switch quantization, context length, and throughput with one command. Presets are version-controlled files.
+- **Native CLI** — `rig` follows Debian UX conventions: subcommands, flags, tab completion. No YAML archaeology.
+- **Single endpoint** — every service sits behind Traefik on port 80. One host, one port.
+- **Unified model registry** — download, inspect, or remove any model across vLLM, Ollama, and ComfyUI with one command.
+- **Data-service separation** — models and data live on host paths (`$MODELS_ROOT`, `$DATA_ROOT`), independent of the containers serving them. Swap or upgrade any service without touching your artifacts.
+- **Built-in RAG** — vector retrieval API on `/rag` backed by Qdrant, ready to wire into any workflow.
+- **Self-hosted observability** — Langfuse traces every request. Nothing leaves your network.
+- **Trusted-network design** — no auth overhead, no cloud dependency, no per-token cost.
 
 ---
 
@@ -37,7 +37,7 @@ Drop it on Ubuntu 24.04, run `./install.sh`, and the full stack — LLM serving,
 - NVIDIA driver ≥ 550
 - Docker CE (not snap)
 - NVIDIA Container Toolkit
- the
+
 Or just run `./install.sh` — it handles all of the above.
 
 ---
@@ -345,3 +345,14 @@ Run `bash scripts/setup/00-init-dirs.sh` to create the subdirectory tree at the 
 | `OS_VERSION` | `24.04`, `22.04`, etc. | Apt codename resolution |
 
 For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge container is only needed for sm_120 (RTX 5090).
+
+---
+
+## Future features
+
+- **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
+- **Broader edge support** — edge builds for GPUs beyond RTX 5090 / Blackwell architecture
+- **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
+- **Extended RAG system prompts** — built-in instruction architectures for custom-branded endpoints
+- **MCP server** — tooling layer over your private cloud AI endpoint
+- **Authentication** — access control for your self-hosted AI cloud
