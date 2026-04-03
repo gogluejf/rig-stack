@@ -4,25 +4,26 @@
 cmd_comfy() {
     case "${1:-}" in
         --help|-h)
-            echo -e "${BOLD}rig comfy${RESET} — manage ComfyUI"
+            echo -e "\n${BOLD}rig comfy${RESET} — manage ComfyUI"
             echo ""
-            echo "Usage:"
-            echo "  rig comfy start                    start ComfyUI (default: GPU stable)"
-            echo "    --cpu                            use CPU mode"
-            echo "    --edge                           use Blackwell/sm_120 edge mode"
+            echo -e "${GREEN}Usage:${RESET}"
+            echo -e "  rig comfy ${BOLD}start${RESET} ${YELLOW_SOFT}[--cpu|--edge]${RESET}     ${DIM}start ComfyUI (default: GPU stable)${RESET}"
+            echo -e "    ${YELLOW_SOFT}--cpu${RESET}                            ${DIM}use CPU mode${RESET}"
+            echo -e "    ${YELLOW_SOFT}--edge${RESET}                           ${DIM}use Blackwell/sm_120 edge mode${RESET}"
             echo ""
-            echo "  rig comfy stop                     stop ComfyUI"
+            echo -e "  rig comfy ${BOLD}stop${RESET}                     ${DIM}stop ComfyUI${RESET}"
             echo ""
-            echo "  rig comfy list                     list installed ComfyUI models"
+            echo -e "  rig comfy ${BOLD}list${RESET}                     ${DIM}list installed ComfyUI models${RESET}"
             echo ""
-            echo "  rig comfy workflows                list saved workflow files"
+            echo -e "  rig comfy ${BOLD}workflows${RESET}                ${DIM}list saved workflow files${RESET}"
             echo ""
-            echo "Examples:"
+            echo -e "${GREEN}Examples:${RESET}"
             echo "  rig comfy start"
-            echo "  rig comfy start --cpu"
-            echo "  rig comfy start --edge"
+            echo -e "  rig comfy start ${YELLOW_SOFT}--cpu${RESET}"
+            echo -e "  rig comfy start ${YELLOW_SOFT}--edge${RESET}"
             echo "  rig comfy list"
             echo "  rig comfy workflows"
+            echo ""
             ;;
         start)
             shift
@@ -38,9 +39,7 @@ cmd_comfy() {
             _comfy_workflows
             ;;
         "")
-            echo -e "${RED}Subcommand required: start | stop | list | workflows${RESET}"
-            echo "Run 'rig comfy --help' for usage."
-            exit 1
+            cmd_comfy --help
             ;;
         *)
             echo -e "${RED}Unknown comfy subcommand: ${1}${RESET}"

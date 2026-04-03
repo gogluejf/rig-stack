@@ -6,18 +6,19 @@ cmd_ollama() {
         --help|-h)
             echo -e "${BOLD}rig ollama${RESET} — manage Ollama"
             echo ""
-            echo "Usage:"
-            echo "  rig ollama start                   start Ollama"
-            echo "    --gpu                            use GPU mode"
+            echo -e "${GREEN}Usage:${RESET}"
+            echo -e "  rig ollama ${BOLD}start${RESET}                   ${DIM}start Ollama${RESET}"
+            echo -e "    ${YELLOW_SOFT}--gpu${RESET}                            ${DIM}use GPU mode${RESET}"
             echo ""
-            echo "  rig ollama stop                    stop Ollama"
+            echo -e "  rig ollama ${BOLD}stop${RESET}                    ${DIM}stop Ollama${RESET}"
             echo ""
-            echo "  rig ollama list                    list installed Ollama models"
+            echo -e "  rig ollama ${BOLD}list${RESET}                    ${DIM}list installed Ollama models${RESET}"
             echo ""
-            echo "Examples:"
+            echo -e "${GREEN}Examples:${RESET}"
             echo "  rig ollama start"
-            echo "  rig ollama start --gpu"
+            echo -e "  rig ollama start ${YELLOW_SOFT}--gpu${RESET}"
             echo "  rig ollama list"
+            echo ""
             ;;
         start)
             shift
@@ -30,9 +31,7 @@ cmd_ollama() {
             _ollama_list
             ;;
         "")
-            echo -e "${RED}Subcommand required: start | stop | list${RESET}"
-            echo "Run 'rig ollama --help' for usage."
-            exit 1
+            cmd_ollama --help
             ;;
         *)
             echo -e "${RED}Unknown ollama subcommand: ${1}${RESET}"

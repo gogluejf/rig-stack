@@ -70,57 +70,7 @@ The LLM endpoint is live at `http://localhost/v1`.
 rig <command> [subcommand] [flags]
 ```
 
-### serve — vLLM inference
-
-| Command | Description |
-|---|---|
-| `rig serve <preset>` | Start vLLM stable with a preset |
-| `rig serve <preset> --edge` | Use Blackwell/sm_120 edge container |
-| `rig serve list` | Table of all presets (model, context, kv-cache, gpu-util) |
-| `rig serve stop` | Stop vLLM |
-| `rig serve preset set <name>` | Set active preset (used on next start, without starting) |
-| `rig serve preset show [<name>]` | Show preset config (active if no name given) |
-
-### comfy — image generation
-
-| Command | Description |
-|---|---|
-| `rig comfy start [--cpu\|--edge]` | Start ComfyUI (default GPU stable, `--cpu` for lighter workflows, `--edge` for Blackwell/sm_120) |
-| `rig comfy stop` | Stop ComfyUI |
-| `rig comfy workflows` | List saved workflow JSON files |
-
-### ollama — utility models
-
-| Command | Description |
-|---|---|
-| `rig ollama start [--gpu]` | Start Ollama (--gpu for GPU mode) |
-| `rig ollama stop` | Stop Ollama |
-| `rig ollama list` | List installed Ollama models |
-
-### rag — retrieval API
-
-| Command | Description |
-|---|---|
-| `rig rag start` | Start RAG API + Qdrant |
-| `rig rag stop` | Stop RAG stack |
-| `rig rag status` | Health check |
-
-### models — model management
-
-| Command | Description |
-|---|---|
-| `rig models` | List installed models (HF, Ollama, ComfyUI) |
-| `rig models init <bundle>` | Install a curated model bundle |
-| `rig models install <source>` | Install one model from HuggingFace, Ollama, or ComfyUI Manager |
-| `rig models show <source>` | Files and size under /models/<source> |
-| `rig models remove <source>` | Delete a model from disk or Ollama |
-
-### observability
-
-| Command | Description |
-|---|---|
-| `rig status` | Active services, loaded models, runtime mode, build flavor |
-| `rig stats` | GPU VRAM, watt, temp, active containers, tokens/sec |
+![architecture](docs/cli.png)
 
 ---
 

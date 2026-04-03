@@ -7,30 +7,34 @@
 cmd_service() {
     case "${1:-}" in
         --help|-h)
-            echo -e "${BOLD}rig service${RESET} — manage infrastructure services"
+            echo -e "\n${BOLD}rig service${RESET} — manage infrastructure services"
             echo ""
-            echo "Usage:"
-            echo "  rig service status                      show all services (running / stopped)"
+            echo -e "${GREEN}Usage:${RESET}"
+            echo -e "  rig service ${BOLD}status${RESET}                      ${DIM}show all services (running / stopped)${RESET}"
             echo ""
-            echo "  rig service start <service|all>         start one or all services"
+            echo -e "  rig service ${BOLD}start${RESET} ${CYAN}<service|all>${RESET}         ${DIM}start one or all services${RESET}"
             echo ""
-            echo "  rig service stop <service|all>          stop one or all services"
+            echo -e "  rig service ${BOLD}stop${RESET} ${CYAN}<service|all>${RESET}          ${DIM}stop one or all services${RESET}"
             echo ""
-            echo "Services:"
-            echo "  hf          HuggingFace downloader (rig-hf)"
-            echo "  qdrant      Vector database (rig-qdrant)"
-            echo "  langfuse    LLM observability (rig-langfuse + rig-postgres)"
-            echo "  traefik     Unified gateway (rig-traefik)"
-            echo "  all         All of the above"
+            echo -e "${GREEN}Services:${RESET}"
+            echo -e "  hf          ${DIM}HuggingFace downloader (rig-hf)${RESET}"
+            echo -e "  qdrant      ${DIM}Vector database (rig-qdrant)${RESET}"
+            echo -e "  langfuse    ${DIM}LLM observability (rig-langfuse + rig-postgres)${RESET}"
+            echo -e "  traefik     ${DIM}Unified gateway (rig-traefik)${RESET}"
+            echo -e "  all         ${DIM}All of the above${RESET}"
             echo ""
-            echo "Examples:"
+            echo -e "${GREEN}Examples:${RESET}"
             echo "  rig service status"
-            echo "  rig service start hf"
-            echo "  rig service stop langfuse"
-            echo "  rig service start all"
+            echo -e "  rig service start ${DIM}hf${RESET}"
+            echo -e "  rig service stop ${DIM}langfuse${RESET}"
+            echo -e "  rig service start ${DIM}all${RESET}"
+            echo ""
             ;;
-        status|"")
+        status)
             _service_status
+            ;;
+        "")
+            cmd_service --help
             ;;
         start)
             shift

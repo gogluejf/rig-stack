@@ -4,18 +4,19 @@
 cmd_rag() {
     case "${1:-}" in
         --help|-h)
-            echo -e "${BOLD}rig rag${RESET} — manage RAG API"
+            echo -e "\n${BOLD}rig rag${RESET} — manage RAG API"
             echo ""
-            echo "Usage:"
-            echo "  rig rag start                     start RAG API + Qdrant"
+            echo -e "${GREEN}Usage:${RESET}"
+            echo -e "  rig rag ${BOLD}start${RESET}                     ${DIM}start RAG API + Qdrant${RESET}"
             echo ""
-            echo "  rig rag stop                      stop RAG API + Qdrant"
+            echo -e "  rig rag ${BOLD}stop${RESET}                      ${DIM}stop RAG API + Qdrant${RESET}"
             echo ""
-            echo "  rig rag status                    show RAG API health"
+            echo -e "  rig rag ${BOLD}status${RESET}                    ${DIM}show RAG API health${RESET}"
             echo ""
-            echo "Examples:"
+            echo -e "${GREEN}Examples:${RESET}"
             echo "  rig rag start"
             echo "  rig rag status"
+            echo ""
             ;;
         start)
             require_docker
@@ -39,6 +40,9 @@ cmd_rag() {
             else
                 echo -e "${YELLOW}RAG API not responding${RESET}: ${url}"
             fi
+            ;;
+        "")
+            cmd_rag --help
             ;;
         *)
             echo -e "${RED}Unknown rag subcommand: ${1:-}${RESET}"
