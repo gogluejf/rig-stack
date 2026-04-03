@@ -74,4 +74,4 @@ create_dirs "${DATA_ROOT}" \
     backups
 
 echo -e "\n${GREEN}Directories ready.${RESET}"
-echo "  Next: bash scripts/models/init-models.sh   (to download models)"
+echo "  Next: rig models init --minimal   (to download models)"
