@@ -71,5 +71,6 @@ print_table_row() {
 }
 
 hr() {
-    printf '%s\n' "$(printf '─%.0s' {1..72})"
+    local width="${1:-72}"
+    printf '%s\n' "$(printf '─%.0s' $(seq 1 "${width}"))"
 }

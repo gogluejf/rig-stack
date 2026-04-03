@@ -81,7 +81,7 @@ _status_value_if_running() {
     if [[ "${state}" == "running" && -n "${value}" ]]; then
         printf '%s' "${value}"
     else
-        printf '%s' "—"
+        printf '%s' "-"
     fi
 }
 
@@ -170,7 +170,7 @@ _status_vllm_build() {
     case "${container}" in
         rig-vllm-edge) echo "edge" ;;
         rig-vllm-stable) echo "stable" ;;
-        *) echo "—" ;;
+        *) echo "-" ;;
     esac
 }
 
@@ -181,7 +181,7 @@ _status_comfy_build() {
         rig-comfyui-edge) echo "edge" ;;
         rig-comfyui-cpu) echo "cpu" ;;
         rig-comfyui-stable) echo "stable" ;;
-        *) echo "—" ;;
+        *) echo "-" ;;
     esac
 }
 
@@ -191,7 +191,7 @@ _status_comfy_runtime() {
     case "${container}" in
         rig-comfyui-cpu) echo "CPU" ;;
         rig-comfyui-edge|rig-comfyui-stable) echo "GPU" ;;
-        *) echo "—" ;;
+        *) echo "-" ;;
     esac
 }
 
@@ -203,7 +203,7 @@ _status_ollama_runtime() {
             echo "CPU"
         fi
     else
-        echo "—"
+        echo "-"
     fi
 }
 
@@ -293,13 +293,13 @@ _status_container_ram_usage() {
 _status_memory_for() {
     local container="$1"
     local runtime="$2"
-    [[ -n "${container}" ]] || { echo "—"; return 0; }
-    container_running "${container}" || { echo "—"; return 0; }
+    [[ -n "${container}" ]] || { echo "-"; return 0; }
+    container_running "${container}" || { echo "-"; return 0; }
 
     if [[ "${runtime}" == "GPU" ]]; then
-        _status_container_gpu_mem_usage "${container}" 2>/dev/null || _status_container_ram_usage "${container}" || echo "—"
+        _status_container_gpu_mem_usage "${container}" 2>/dev/null || _status_container_ram_usage "${container}" || echo "-"
     else
-        _status_container_ram_usage "${container}" || echo "—"
+        _status_container_ram_usage "${container}" || echo "-"
     fi
 }
 
@@ -354,7 +354,7 @@ _status_print_triptych() {
     (( ${#right_lines[@]} > max )) && max=${#right_lines[@]}
 
     printf "  ${BOLD}%-34s %-34s %-34s${RESET}\n" "OPENAPI / PRIMARY" "SERVICE / AUXILIARY" "MODELS"
-    hr
+    hr 108
     for ((i=0; i<max; i++)); do
         printf "  %-34s %-34s %-34s\n" \
             "$(_status_trim "${left_lines[i]:-}" 34)" \
@@ -365,6 +365,14 @@ _status_print_triptych() {
 
 _status_metadata_line() {
     printf "  ${CYAN}%-14s${RESET} %s\n" "$1" "$2"
+}
+
+_status_plain_state() {
+    if [[ "$1" == "running" ]]; then
+        printf '%s' 'running'
+    else
+        printf '%s' 'stopped'
+    fi
 }
 
 _status_summary() {
@@ -387,7 +395,7 @@ _status_summary() {
     if [[ "${vllm_state}" == "running" ]]; then
         vllm_model="$(_status_vllm_primary_model)"
     fi
-    [[ -n "${vllm_model}" ]] || vllm_model="—"
+    [[ -n "${vllm_model}" ]] || vllm_model="-"
 
     vllm_memory="$(_status_memory_for "${vllm_container}" "GPU")"
     comfy_memory="$(_status_memory_for "${comfy_container}" "$(_status_comfy_runtime)")"
@@ -396,39 +404,39 @@ _status_summary() {
 
     echo ""
     print_header "Primary services"
-    hr
+    hr 105
     printf "  ${BOLD}%-12s %-24s %-8s %-8s %-16s %-12s %s${RESET}\n" "SERVICE" "ACTIVE MODEL" "RUNTIME" "BUILD" "ROUTE" "MEMORY" "STATUS"
-    hr
-    printf "  %-12s ${CYAN}%-24s${RESET} %-8s %-8s %-16s %-12s %b %b\n" \
-        "vllm" "$(_status_trim "$(_status_value_if_running "${vllm_state}" "${vllm_model}")" 24)" "$(_status_value_if_running "${vllm_state}" "GPU")" "$(_status_value_if_running "${vllm_state}" "$(_status_vllm_build)")" "$(_status_value_if_running "${vllm_state}" "/v1,/openai")" "$(_status_trim "$(_status_value_if_running "${vllm_state}" "${vllm_memory:-—}")" 12)" \
+    hr 105
+    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
+        "vllm" "$(_status_trim "$(_status_value_if_running "${vllm_state}" "${vllm_model}")" 24)" "$(_status_value_if_running "${vllm_state}" "GPU")" "$(_status_value_if_running "${vllm_state}" "$(_status_vllm_build)")" "$(_status_value_if_running "${vllm_state}" "/v1")" "$(_status_trim "$(_status_value_if_running "${vllm_state}" "${vllm_memory:--}")" 12)" \
         "$(_status_icon "${vllm_state}")" "$(_status_label "${vllm_state}")"
-    printf "  %-12s ${CYAN}%-24s${RESET} %-8s %-8s %-16s %-12s %b %b\n" \
-        "ollama" "—" "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")" "—" "$(_status_value_if_running "${ollama_state}" "/ollama")" "$(_status_trim "$(_status_value_if_running "${ollama_state}" "${ollama_memory:-—}")" 12)" \
+    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
+        "ollama" "-" "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")" "-" "$(_status_value_if_running "${ollama_state}" "/ollama/v1")" "$(_status_trim "$(_status_value_if_running "${ollama_state}" "${ollama_memory:--}")" 12)" \
         "$(_status_icon "${ollama_state}")" "$(_status_label "${ollama_state}")"
-    printf "  %-12s ${CYAN}%-24s${RESET} %-8s %-8s %-16s %-12s %b %b\n" \
-        "comfyui" "—" "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_runtime)")" "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_build)")" "$(_status_value_if_running "${comfy_state}" "/comfy")" "$(_status_trim "$(_status_value_if_running "${comfy_state}" "${comfy_memory:-—}")" 12)" \
+    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
+        "comfyui" "-" "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_runtime)")" "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_build)")" "$(_status_value_if_running "${comfy_state}" "/comfy")" "$(_status_trim "$(_status_value_if_running "${comfy_state}" "${comfy_memory:--}")" 12)" \
         "$(_status_icon "${comfy_state}")" "$(_status_label "${comfy_state}")"
-    printf "  %-12s ${CYAN}%-24s${RESET} %-8s %-8s %-16s %-12s %b %b\n" \
-        "rag" "—" "$(_status_value_if_running "${rag_state}" "CPU")" "—" "$(_status_value_if_running "${rag_state}" "/rag")" "$(_status_trim "$(_status_value_if_running "${rag_state}" "${rag_memory:-—}")" 12)" \
+    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
+        "rag" "-" "$(_status_value_if_running "${rag_state}" "CPU")" "-" "$(_status_value_if_running "${rag_state}" "/rag/v1")" "$(_status_trim "$(_status_value_if_running "${rag_state}" "${rag_memory:--}")" 12)" \
         "$(_status_icon "${rag_state}")" "$(_status_label "${rag_state}")"
-    hr
+    hr 105
     echo ""
 
     print_header "Backing services"
-    hr
+    hr 85
     printf "  ${BOLD}%-12s %-30s %-12s %s${RESET}\n" "SERVICE" "ADDRESS" "ROUTE" "STATUS"
-    hr
+    hr 85
     printf "  %-12s %-30s %-12s %b %b\n" \
         "traefik" "$(_status_trim "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_PORT:-80}")" 30)" "$(_status_value_if_running "${traefik_state}" "/")" "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
     printf "  %-12s %-30s %-12s %b %b\n" \
-        "dashboard" "$(_status_trim "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_DASHBOARD_PORT:-8080}")" 30)" "—" "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
+        "dashboard" "$(_status_trim "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_DASHBOARD_PORT:-8080}")" 30)" "-" "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
     printf "  %-12s %-30s %-12s %b %b\n" \
-        "qdrant" "$(_status_trim "$(_status_value_if_running "${qdrant_state}" "http://rig-qdrant:6333")" 30)" "—" "$(_status_icon "${qdrant_state}")" "$(_status_label "${qdrant_state}")"
+        "qdrant" "$(_status_trim "$(_status_value_if_running "${qdrant_state}" "http://rig-qdrant:6333")" 30)" "-" "$(_status_icon "${qdrant_state}")" "$(_status_label "${qdrant_state}")"
     printf "  %-12s %-30s %-12s %b %b\n" \
         "langfuse" "$(_status_trim "$(_status_value_if_running "${langfuse_state}" "http://rig-langfuse:3000")" 30)" "$(_status_value_if_running "${langfuse_state}" "/langfuse")" "$(_status_icon "${langfuse_state}")" "$(_status_label "${langfuse_state}")"
     printf "  %-12s %-30s %-12s %b %b\n" \
-        "postgres" "$(_status_trim "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")" 30)" "—" "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
-    hr
+        "postgres" "$(_status_trim "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")" 30)" "-" "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
+    hr 85
     echo -e "  ${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
     echo ""
 }
@@ -443,28 +451,34 @@ _status_detail_vllm() {
     if [[ "${state}" == "running" ]]; then
         model="$(_status_vllm_primary_model)"
     fi
-    [[ -n "${model}" ]] || model="—"
     memory="$(_status_memory_for "${container}" "GPU")"
-    models="$(_status_vllm_live_models | _status_limit_lines 10)"
-    [[ -n "${models}" ]] || models="${model}"
-
-    endpoints=$'GET  /v1/models\nPOST /v1/chat/completions\nPOST /v1/completions\nPOST /v1/embeddings'
-    aux=$'GET  /openai/models\nPOST /openai/chat/completions\nPOST /openai/completions\nPOST /openai/embeddings\nGET  /metrics (internal)\nGET  /health  (internal)'
+    if [[ "${state}" == "running" ]]; then
+        models="$(_status_vllm_live_models | _status_limit_lines 10)"
+        endpoints=$'GET  /v1/models\nPOST /v1/chat/completions\nPOST /v1/completions\nPOST /v1/embeddings'
+        aux=$'GET  /openai/models\nPOST /openai/chat/completions\nPOST /openai/completions\nPOST /openai/embeddings\nGET  /metrics (internal)\nGET  /health  (internal)'
+    else
+        model="-"
+        models="-"
+        endpoints="-"
+        aux="-"
+    fi
+    [[ -n "${model}" ]] || model="-"
+    [[ -n "${models}" ]] || models="-"
 
     echo ""
     print_header "vLLM status"
-    hr
+    hr 108
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
-    _status_metadata_line "container" "${container:-—}"
+    _status_metadata_line "container" "$(_status_value_if_running "${state}" "${container}")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "GPU")"
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/v1")"
     _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/openai")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:-—}")"
+    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
-    hr
+    hr 108
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr
+    hr 108
     echo ""
 }
 
@@ -474,24 +488,29 @@ _status_detail_ollama() {
     state="$(_status_state "rig-ollama")"
     runtime="$(_status_ollama_runtime)"
     memory="$(_status_memory_for "rig-ollama" "${runtime}")"
-    models="$(_status_ollama_models | _status_limit_lines 12)"
-    [[ -n "${models}" ]] || models="unavailable"
-
-    endpoints=$'GET  /ollama/v1/models\nPOST /ollama/v1/chat/completions\nPOST /ollama/v1/completions\nPOST /ollama/v1/embeddings'
-    aux=$'GET  /ollama/api/tags\nPOST /ollama/api/chat\nPOST /ollama/api/generate\nPOST /ollama/api/embeddings\nGET  /ollama/api/version\nGET  /ollama/api/ps'
+    if [[ "${state}" == "running" ]]; then
+        models="$(_status_ollama_models | _status_limit_lines 12)"
+        endpoints=$'GET  /ollama/v1/models\nPOST /ollama/v1/chat/completions\nPOST /ollama/v1/completions\nPOST /ollama/v1/embeddings'
+        aux=$'GET  /ollama/api/tags\nPOST /ollama/api/chat\nPOST /ollama/api/generate\nPOST /ollama/api/embeddings\nGET  /ollama/api/version\nGET  /ollama/api/ps'
+    else
+        models="-"
+        endpoints="-"
+        aux="-"
+    fi
+    [[ -n "${models}" ]] || models="-"
 
     echo ""
     print_header "Ollama status"
-    hr
+    hr 108
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
     _status_metadata_line "container" "rig-ollama"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "${runtime}")"
-    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/ollama")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:-—}")"
-    _status_metadata_line "warming" "[x] = loaded via 'ollama ps'"
-    hr
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/ollama/v1")"
+    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "warming" "$(_status_value_if_running "${state}" "[x] = loaded via 'ollama ps'")"
+    hr 108
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr
+    hr 108
     echo ""
 }
 
@@ -503,25 +522,30 @@ _status_detail_comfy() {
     runtime="$(_status_comfy_runtime)"
     build="$(_status_comfy_build)"
     memory="$(_status_memory_for "${container}" "${runtime}")"
-    models="$(_status_comfy_models | _status_limit_lines 12)"
-    [[ -n "${models}" ]] || models="unavailable"
-
-    endpoints=$'GET  /comfy/\nPOST /comfy/prompt\nGET  /comfy/queue\nGET  /comfy/history/{id}'
-    aux=$'GET  /comfy/object_info\nGET  /comfy/system_stats\nGET  /comfy/view\nPOST /comfy/upload/image\nGET  /comfy/ws'
+    if [[ "${state}" == "running" ]]; then
+        models="$(_status_comfy_models | _status_limit_lines 12)"
+        endpoints=$'GET  /comfy/\nPOST /comfy/prompt\nGET  /comfy/queue\nGET  /comfy/history/{id}'
+        aux=$'GET  /comfy/object_info\nGET  /comfy/system_stats\nGET  /comfy/view\nPOST /comfy/upload/image\nGET  /comfy/ws'
+    else
+        models="-"
+        endpoints="-"
+        aux="-"
+    fi
+    [[ -n "${models}" ]] || models="-"
 
     echo ""
     print_header "ComfyUI status"
-    hr
+    hr 108
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
-    _status_metadata_line "container" "${container:-—}"
+    _status_metadata_line "container" "$(_status_value_if_running "${state}" "${container}")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "${runtime}")"
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/comfy")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:-—}")"
-    _status_metadata_line "models" "best-effort file inventory from container"
-    hr
+    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "models" "$(_status_value_if_running "${state}" "best-effort file inventory from container")"
+    hr 108
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr
+    hr 108
     echo ""
 }
 
@@ -530,24 +554,29 @@ _status_detail_rag() {
 
     state="$(_status_state "rig-rag-api")"
     memory="$(_status_memory_for "rig-rag-api" "CPU")"
-    models="$(_status_rag_live_models | _status_limit_lines 10)"
-    [[ -n "${models}" ]] || models=$'start service to discover\nmodels'
-
-    endpoints=$'GET  /rag/v1/models\nPOST /rag/v1/chat/completions\nPOST /rag/v1/embeddings'
-    aux=$'GET  /rag/health\nGET  /rag/docs\nGET  /rag/openapi.json\nGET  /rag/redoc\nPOST /rag/chat\nPOST /rag/embed'
+    if [[ "${state}" == "running" ]]; then
+        models="$(_status_rag_live_models | _status_limit_lines 10)"
+        endpoints=$'GET  /rag/v1/models\nPOST /rag/v1/chat/completions\nPOST /rag/v1/embeddings'
+        aux=$'GET  /rag/health\nGET  /rag/docs\nGET  /rag/openapi.json\nGET  /rag/redoc\nPOST /rag/chat\nPOST /rag/embed'
+    else
+        models="-"
+        endpoints="-"
+        aux="-"
+    fi
+    [[ -n "${models}" ]] || models="-"
 
     echo ""
     print_header "RAG API status"
-    hr
+    hr 108
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
-    _status_metadata_line "container" "rig-rag-api"
+    _status_metadata_line "container" "$(_status_value_if_running "${state}" "rig-rag-api")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "CPU")"
-    _status_metadata_line "build" "—"
-    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/rag")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:-—}")"
-    _status_metadata_line "mode" "first-class /v1 endpoints + legacy native routes"
-    hr
+    _status_metadata_line "build" "-"
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/rag/v1")"
+    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "mode" "$(_status_value_if_running "${state}" "first-class /v1 endpoints + legacy native routes")"
+    hr 108
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr
+    hr 108
     echo ""
 }
