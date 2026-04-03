@@ -111,7 +111,7 @@ rig <command> [subcommand] [flags]
 |---|---|
 | `rig models` | List installed models (HF, Ollama, ComfyUI) |
 | `rig models init <bundle>` | Install a curated model bundle |
-| `rig models install <source>` | Install one model from HuggingFace, Ollama, or ComfyUI |
+| `rig models install <source>` | Install one model from HuggingFace, Ollama, or ComfyUI Manager |
 | `rig models show <source>` | Files and size under /models/<source> |
 | `rig models remove <source>` | Delete a model from disk or Ollama |
 
@@ -137,7 +137,7 @@ rig <command> [subcommand] [flags]
 rig models install <huggingface-repo-id>
 
 # Install an Ollama model
-rig models install ollama/phi3:mini
+rig models install phi3:mini --type ollama
 
 # Install a model via ComfyUI (requires rig comfy start)
 rig models install black-forest-labs/FLUX.1-dev --type comfy
@@ -147,7 +147,7 @@ rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy
 
 ```
 
-For gated artifacts (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
+For gated models (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
 
 ---
 

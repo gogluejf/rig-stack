@@ -26,8 +26,8 @@ cat workflows/comfyui/<workflow>/README.md
 # 2. Install required models
 
 #    ComfyUI models (diffusion, controlnet, upscalers — comfy-cli organises them):
-rig models install <hf-repo> --type comfy
-rig models install <hf-repo> --file <filename> --type comfy
+rig models install <source> --type comfy
+rig models install <source> --file <filename> --type comfy
 
 # 3. Start ComfyUI
 rig comfy start         # default: GPU stable

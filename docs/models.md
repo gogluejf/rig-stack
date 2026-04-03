@@ -8,7 +8,7 @@ ${MODELS_ROOT}/
 ```
 
 Install a bundle: `rig models init --minimal` / `--all`
-Install one model: `rig models install <source>` / `rig models install <source> --type comfy`
+Install one model: `rig models install <source>` / `rig models install <source> --type ollama` / `rig models install <source> --type comfy`
 
 ---
 
@@ -29,27 +29,27 @@ Downloaded to `${MODELS_ROOT}/hf/<org>/<repo>`. Used by vllm.
 
 | Source | Bundle | Description |
 |---|---|---|
-| `ollama/nomic-embed-text` | minimal | Local RAG embeddings |
-| `ollama/phi3:mini` | minimal | Small utility model |
-| `ollama/deepseek-coder:6.7b` | minimal | Code completion |
-| `ollama/mistral:7b` | minimal | General assistant, summarisation |
-| `ollama/mxbai-embed-large` | all | Embeddings |
-| `ollama/all-minilm` | all | Embeddings |
-| `ollama/llava:13b` | all | Vision |
-| `ollama/moondream` | all | Vision |
-| `ollama/llava-phi3` | all | Vision |
-| `ollama/phi3:medium` | all | General |
-| `ollama/gemma2:2b` | all | General |
-| `ollama/gemma2:9b` | all | General |
-| `ollama/mistral-nemo` | all | General |
-| `ollama/qwen2.5:7b` | all | General |
-| `ollama/qwen2.5:14b` | all | General |
-| `ollama/llama3.2:1b` | all | General |
-| `ollama/llama3.2:3b` | all | General |
-| `ollama/codellama:7b` | all | Code |
-| `ollama/codegemma:7b` | all | Code |
-| `ollama/deepseek-r1:7b` | all | Reasoning |
-| `ollama/deepseek-r1:14b` | all | Reasoning |
+| `nomic-embed-text` | minimal | Local RAG embeddings |
+| `phi3:mini` | minimal | Small utility model |
+| `deepseek-coder:6.7b` | minimal | Code completion |
+| `mistral:7b` | minimal | General assistant, summarisation |
+| `mxbai-embed-large` | all | Embeddings |
+| `all-minilm` | all | Embeddings |
+| `llava:13b` | all | Vision |
+| `moondream` | all | Vision |
+| `llava-phi3` | all | Vision |
+| `phi3:medium` | all | General |
+| `gemma2:2b` | all | General |
+| `gemma2:9b` | all | General |
+| `mistral-nemo` | all | General |
+| `qwen2.5:7b` | all | General |
+| `qwen2.5:14b` | all | General |
+| `llama3.2:1b` | all | General |
+| `llama3.2:3b` | all | General |
+| `codellama:7b` | all | Code |
+| `codegemma:7b` | all | Code |
+| `deepseek-r1:7b` | all | Reasoning |
+| `deepseek-r1:14b` | all | Reasoning |
 
 ---
 

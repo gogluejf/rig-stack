@@ -18,7 +18,7 @@ cmd_models() {
             echo "  rig models init --minimal"
             echo "  rig models install Kbenkhaled/Qwen3.5-27B-NVFP4"
             echo "  rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy"
-            echo "  rig models install ollama/phi3:mini"
+            echo "  rig models install phi3:mini --type ollama"
             echo "  rig models install black-forest-labs/FLUX.1-dev --type comfy"
             echo "  rig models remove Qwen/Qwen-Image-2512"
             echo "  rig models remove ollama/phi3:mini"
@@ -72,20 +72,18 @@ _models_install() {
 
     [[ -z "${source}" ]] && {
         echo -e "${RED}Source required.${RESET}"
-        echo "  rig models install <hf-repo-id>"
-        echo "  rig models install <hf-repo-id> --file <filename>"
-        echo "  rig models install ollama/<model>"
-        echo "  rig models install <hf-repo-id> --type comfy"
+        echo "  rig models install <source>"
+        echo "  rig models install <source> --file <filename>"
+        echo "  rig models install <source> --type ollama"
+        echo "  rig models install <source> --type comfy"
+        echo "  rig models install <source> --type comfy --file <filename>"        
         exit 1
     }
 
-    # Auto-detect type
+
+    # Default to HuggingFace unless a backend is specified explicitly.
     if [[ -z "${type}" ]]; then
-        if [[ "${source}" == ollama/* ]]; then
-            type="ollama"
-        else
-            type="hf"
-        fi
+        type="hf"
     fi
 
     local -a args=(--type "${type}" --source "${source}")
@@ -173,10 +171,10 @@ _models_init() {
     minimal_ollama() {
         echo -e "\n${BOLD}── Ollama models ─────────────────────────────────${RESET}"
         echo -e "${DIM}  Requires Ollama running: rig ollama start${RESET}\n"
-        _install ollama ollama/nomic-embed-text
-        _install ollama ollama/phi3:mini
-        _install ollama ollama/deepseek-coder:6.7b
-        _install ollama ollama/mistral:7b
+        _install ollama nomic-embed-text
+        _install ollama phi3:mini
+        _install ollama deepseek-coder:6.7b
+        _install ollama mistral:7b
     }
 
     # ── Additional (--all only) ───────────────────────────────────────────────
@@ -214,27 +212,27 @@ _models_init() {
         echo -e "\n${BOLD}── Ollama models (additional) ────────────────────${RESET}"
         echo -e "${DIM}  Requires Ollama running: rig ollama start${RESET}\n"
 
-        _install ollama ollama/mxbai-embed-large
-        _install ollama ollama/all-minilm
+        _install ollama mxbai-embed-large
+        _install ollama all-minilm
 
-        _install ollama ollama/llava:13b
-        _install ollama ollama/moondream
-        _install ollama ollama/llava-phi3
+        _install ollama llava:13b
+        _install ollama moondream
+        _install ollama llava-phi3
 
-        _install ollama ollama/phi3:medium
-        _install ollama ollama/gemma2:2b
-        _install ollama ollama/gemma2:9b
-        _install ollama ollama/mistral-nemo
-        _install ollama ollama/qwen2.5:7b
-        _install ollama ollama/qwen2.5:14b
-        _install ollama ollama/llama3.2:1b
-        _install ollama ollama/llama3.2:3b
+        _install ollama phi3:medium
+        _install ollama gemma2:2b
+        _install ollama gemma2:9b
+        _install ollama mistral-nemo
+        _install ollama qwen2.5:7b
+        _install ollama qwen2.5:14b
+        _install ollama llama3.2:1b
+        _install ollama llama3.2:3b
 
-        _install ollama ollama/codellama:7b
-        _install ollama ollama/codegemma:7b
+        _install ollama codellama:7b
+        _install ollama codegemma:7b
 
-        _install ollama ollama/deepseek-r1:7b
-        _install ollama ollama/deepseek-r1:14b
+        _install ollama deepseek-r1:7b
+        _install ollama deepseek-r1:14b
     }
 
     echo -e "${BOLD}rig-stack — model initialisation${RESET}"

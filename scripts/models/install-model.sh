@@ -74,7 +74,8 @@ fi
 
 # ── ollama ────────────────────────────────────────────────────────────────────
 if [[ "${TYPE}" == "ollama" ]]; then
-    local_model="${SOURCE#ollama/}"
+
+    local_model="${SOURCE}"
     if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
         echo -e "${RED}Ollama container is not running.${RESET}"
         echo -e "  Start it first: ${BOLD}rig ollama start${RESET}"
@@ -82,7 +83,7 @@ if [[ "${TYPE}" == "ollama" ]]; then
     fi
     echo -e "${CYAN}Pulling Ollama model: ${local_model}${RESET}"
     docker exec rig-ollama ollama pull "${local_model}"
-    echo -e "${GREEN}${BOLD}✓  ollama/${local_model} pulled${RESET}"
+    echo -e "${GREEN}${BOLD}✓  ${local_model} pulled${RESET}"
 fi
 
 # ── comfy ─────────────────────────────────────────────────────────────────────
