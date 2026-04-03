@@ -6,6 +6,31 @@ import httpx
 VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://rig-vllm-stable:8000")
 
 
+async def list_models() -> dict:
+    """Return model metadata from local vLLM."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.get(f"{VLLM_BASE_URL}/v1/models")
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def resolve_chat_model(model: str = "default") -> str:
+    """Map rig-rag aliases to the active upstream vLLM model."""
+    if model and model not in {"default", "rig-rag"}:
+        return model
+
+    try:
+        payload = await list_models()
+        for item in payload.get("data", []):
+            model_id = item.get("id")
+            if model_id:
+                return model_id
+    except Exception:
+        pass
+
+    return model
+
+
 async def chat(
     messages: list[dict],
     model: str = "default",

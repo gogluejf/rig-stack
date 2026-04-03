@@ -5,8 +5,7 @@ from core.embeddings import embed
 router = APIRouter()
 
 
-@router.post("/embed", response_model=EmbedResponse)
-async def embed_endpoint(req: EmbedRequest):
+async def handle_embed_request(req: EmbedRequest):
     texts = [req.input] if isinstance(req.input, str) else req.input
     try:
         vectors = await embed(texts)
@@ -23,3 +22,13 @@ async def embed_endpoint(req: EmbedRequest):
         model=req.model,
         usage={"prompt_tokens": total_tokens, "total_tokens": total_tokens},
     )
+
+
+@router.post("/embed", response_model=EmbedResponse)
+async def embed_endpoint(req: EmbedRequest):
+    return await handle_embed_request(req)
+
+
+@router.post("/v1/embeddings", response_model=EmbedResponse)
+async def embeddings_endpoint(req: EmbedRequest):
+    return await handle_embed_request(req)

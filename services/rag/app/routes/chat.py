@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from models.schemas import ChatRequest
 from core.embeddings import embed
 from core.retrieval import retrieve
-from core.llm_client import chat
+from core.llm_client import chat, resolve_chat_model
 
 router = APIRouter()
 
@@ -13,8 +13,7 @@ the provided context. If the context doesn't contain relevant information, say s
 and answer from your general knowledge."""
 
 
-@router.post("/chat")
-async def chat_endpoint(req: ChatRequest):
+async def handle_chat_request(req: ChatRequest):
     # Extract the user's latest message
     user_messages = [m for m in req.messages if m.role == "user"]
     if not user_messages:
@@ -49,9 +48,10 @@ async def chat_endpoint(req: ChatRequest):
 
     # Call local vLLM
     try:
+        resolved_model = await resolve_chat_model(req.model)
         result = await chat(
             messages=augmented_messages,
-            model=req.model,
+            model=resolved_model,
             max_tokens=req.max_tokens,
             temperature=req.temperature,
         )
@@ -59,3 +59,13 @@ async def chat_endpoint(req: ChatRequest):
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
 
     return result
+
+
+@router.post("/chat")
+async def chat_endpoint(req: ChatRequest):
+    return await handle_chat_request(req)
+
+
+@router.post("/v1/chat/completions")
+async def chat_completions_endpoint(req: ChatRequest):
+    return await handle_chat_request(req)
