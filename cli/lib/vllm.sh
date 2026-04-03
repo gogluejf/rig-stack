@@ -12,9 +12,9 @@ cmd_serve() {
             echo ""
             echo -e "  rig serve ${BOLD}stop${RESET}                     ${DIM}stop vLLM${RESET}"
             echo ""
-            echo -e "  rig serve ${BOLD}list${RESET}                     ${DIM}list available presets${RESET}"
-            echo ""
             echo -e "  rig serve preset ${BOLD}set${RESET} ${CYAN}<name>${RESET}        ${DIM}set active preset (used on next start)${RESET}"
+            echo ""
+            echo -e "  rig serve preset ${BOLD}list${RESET}              ${DIM}list available presets${RESET}"
             echo ""
             echo -e "  rig serve preset ${BOLD}show${RESET} ${CYAN}[<name>]${RESET}     ${DIM}show preset config (active if no name given)${RESET}"
             echo ""
@@ -22,16 +22,13 @@ cmd_serve() {
             echo -e "  rig serve ${DIM}qwen3-5-27b${RESET}"
             echo -e "  rig serve ${DIM}qwen3-5-27b-fast${RESET} ${YELLOW_SOFT}--edge${RESET}"
             echo -e "  rig serve"
-            echo "  rig serve list"
             echo -e "  rig serve preset set ${DIM}qwen3-5-27b-fast${RESET}"
+            echo "  rig serve preset list"
             echo -e "  rig serve preset show ${DIM}qwen3-5-27b${RESET}"
             echo ""
             ;;
         stop)
             _serve_stop
-            ;;
-        list)
-            _serve_list
             ;;
         preset)
             shift
@@ -110,7 +107,7 @@ _serve_start() {
         else
             echo -e "${RED}No preset given and no active preset set.${RESET}"
             echo "  rig serve <preset>"
-            echo "  rig serve list"
+            echo "  rig serve preset list"
             exit 1
         fi
     fi
@@ -118,7 +115,7 @@ _serve_start() {
     local preset_file="${RIG_ROOT}/presets/vllm/${preset_name}.env"
     if [[ ! -f "${preset_file}" ]]; then
         echo -e "${RED}Preset '${preset_name}' not found.${RESET}"
-        echo "Run 'rig serve list' to see available presets."
+        echo "Run 'rig serve preset list' to see available presets."
         exit 1
     fi
 
@@ -158,6 +155,10 @@ _serve_stop() {
 
 _serve_preset() {
     case "${1:-}" in
+        list)
+            shift
+            _serve_list "$@"
+            ;;
         set)
             shift
             _serve_preset_set "$@"
@@ -168,6 +169,7 @@ _serve_preset() {
             ;;
         --help|-h|"")
             echo "Usage:"
+            echo "  rig serve preset list               list available presets"
             echo "  rig serve preset set <name>        set active preset (used on next start)"
             echo "  rig serve preset show [<name>]     show preset config (active if no name given)"
             ;;
@@ -182,13 +184,13 @@ _serve_preset_set() {
     local name="${1:-}"
     if [[ -z "${name}" ]]; then
         echo -e "${RED}Preset name required.${RESET}"
-        echo "Run 'rig serve list' to see available presets."
+        echo "Run 'rig serve preset list' to see available presets."
         exit 1
     fi
     local preset_file="${RIG_ROOT}/presets/vllm/${name}.env"
     if [[ ! -f "${preset_file}" ]]; then
         echo -e "${RED}Preset '${name}' not found.${RESET}"
-        echo "Run 'rig serve list' to see available presets."
+        echo "Run 'rig serve preset list' to see available presets."
         exit 1
     fi
     set_active_preset "vllm" "${preset_file}"
@@ -204,7 +206,7 @@ _serve_preset_show() {
         source_file="${RIG_ROOT}/presets/vllm/${name}.env"
         if [[ ! -f "${source_file}" ]]; then
             echo -e "${RED}Preset '${name}' not found.${RESET}"
-            echo "Run 'rig serve list' to see available presets."
+            echo "Run 'rig serve preset list' to see available presets."
             exit 1
         fi
         header="vLLM preset: ${name}"

@@ -64,10 +64,9 @@ _rig_commands() {
 # ── Per-command completions ───────────────────────────────────────────────────
 
 _rig_serve() {
-    # rig serve [<preset>|stop|list|preset] [--edge] [--help]
+    # rig serve [<preset>|stop|preset] [--edge] [--help]
     local -a subcmds=(
         'stop:Stop vLLM container'
-        'list:List available presets'
         'preset:Manage active preset'
     )
     local -a opts=(
@@ -87,6 +86,7 @@ _rig_serve() {
     args)
         if [[ "${words[1]}" == "preset" ]]; then
             local -a preset_subcmds=(
+                'list:List available presets'
                 'set:Set active preset (used on next start)'
                 'show:Show active preset config'
             )

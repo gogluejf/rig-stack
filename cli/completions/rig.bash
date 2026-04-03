@@ -70,15 +70,15 @@ _rig_completions() {
             for p in ${presets}; do
                 [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
             done
-            COMPREPLY=($(compgen -W "${marked} stop list preset --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${marked} stop preset --help" -- "${cur}"))
             return
         fi
 
         case "${sub}" in
-            stop|list|--help) ;;
+            stop|--help) ;;
             preset)
                 if [[ "${cword}" -eq 3 ]]; then
-                    COMPREPLY=($(compgen -W "set show" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "list set show" -- "${cur}"))
                 elif [[ "${cword}" -eq 4 && ( "${words[3]}" == "set" || "${words[3]}" == "show" ) ]]; then
                     COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
                 fi

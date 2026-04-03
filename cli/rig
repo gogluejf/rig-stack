@@ -59,9 +59,9 @@ print_help() {
     echo ""
     _help_cmd_row "${BOLD}serve${RESET}" "serve" "${CYAN}[<preset>]${RESET} ${YELLOW_SOFT}[--edge]${RESET}" "[<preset>] [--edge]" "start vLLM in stable or edge GPU mode"
     _help_cmd_row "" "" "${DIM}stop${RESET}" "stop" "stop vLLM"
-    _help_cmd_row "" "" "${DIM}list${RESET}" "list" "show available presets"
     _help_cmd_row "" "" "${DIM}preset set${RESET} ${CYAN}<name>${RESET}" "preset set <name>" "set active preset (no start)"
-    _help_cmd_row "" "" "${DIM}preset show${RESET} [${CYAN}<name>${RESET}]" "preset show [<name>]" "show preset config"
+    _help_cmd_row "" "" "${DIM}preset list${RESET}" "preset list" "list available presets"
+    _help_cmd_row "" "" "${DIM}preset show${RESET} ${CYAN}[<name>]${RESET}" "preset show [<name>]" "show preset config"
     echo ""
     _help_cmd_row "${BOLD}comfy${RESET}" "comfy" "${DIM}start${RESET} ${YELLOW_SOFT}[--cpu|--edge]${RESET}" "start [--cpu|--edge]" "start ComfyUI in CPU, stable GPU, or edge GPU mode"
     _help_cmd_row "" "" "${DIM}stop${RESET}" "stop" "stop ComfyUI"
@@ -94,8 +94,8 @@ print_help() {
     echo -e "  ${GREEN}${BOLD}EXAMPLES${RESET}"
     echo -e "    rig serve ${DIM}qwen3-5-27b${RESET}"
     echo -e "    rig serve ${DIM}qwen3-5-27b-fast${RESET} ${YELLOW_SOFT}--edge${RESET}"
-    echo -e "    rig serve list"
     echo -e "    rig serve preset set ${DIM}qwen3-5-27b-fast${RESET}"
+    echo -e "    rig serve preset list"
     echo -e "    rig serve preset show"
     echo -e "    rig comfy start ${YELLOW_SOFT}--cpu${RESET}"
     echo -e "    rig comfy start ${YELLOW_SOFT}--edge${RESET}"
@@ -132,4 +132,3 @@ case "${COMMAND}" in
         exit 1
         ;;
 esac
-

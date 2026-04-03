@@ -22,7 +22,7 @@ Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a privat
 | Component | Stack | Route |
 |---|---|---|
 | LLM inference | vLLM (stable + Blackwell-edge) | `/v1` |
-| Image generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
+| Image/Video generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
 | Utility models | Ollama (CPU/GPU) | `/ollama` |
 | RAG API | FastAPI + Qdrant | `/rag` |
 | Observability | Langfuse (self-hosted) | `/langfuse` |
