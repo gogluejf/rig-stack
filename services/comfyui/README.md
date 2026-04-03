@@ -46,14 +46,7 @@ List them: `rig comfy workflows`
 
 For heavier diffusion pipelines, prefer `rig comfy start` or `rig comfy start --edge`. Use `rig comfy start --cpu` for lighter workflows, debugging, or when the GPU should stay dedicated to other services.
 
-Pre-scaffolded workflow stubs:
-- `flux-generation` — FLUX.2-dev / FLUX.2-klein text-to-image
-- `gfpgan-upscale` — GFPGAN face restoration
-- `qwen-image-edit` — Qwen-based image editing
-- `qwen-image-gen` — Qwen-based image generation
-- `controlnet` — ControlNet conditioning pipeline
-- `facefusion` — Face swap/fusion
-- `starvector` — SVG vector generation
+- [workflows/](workflows/) — example workflows for various tasks, including ComfyUI pipelines
 
 ## Updating
 
