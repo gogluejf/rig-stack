@@ -157,6 +157,7 @@ _models_init() {
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
+        _install hf Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-GGUF qwen3.5-27b-q4_k_m.gguf
         _install hf nomic-ai/nomic-embed-text-v1.5
     }
 
@@ -183,10 +184,6 @@ _models_init() {
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
         _install hf starvector/starvector-8b-im2svg
-
-
-        echo -e "${YELLOW}  qwen3-5-27b-distilled: verify HF repo slug, then:${RESET}"
-        echo -e "${DIM}  rig models install <repo>${RESET}"
     }
 
     extra_comfy() {

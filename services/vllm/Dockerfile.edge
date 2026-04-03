@@ -73,6 +73,7 @@ ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
 
 CMD ["sh", "-c", "python -m vllm.entrypoints.openai.api_server \
     --model ${MODEL_PATH:-/models/llm/qwen3-5-27b} \
+    $([ -n "${TOKENIZER}" ] && echo --tokenizer ${TOKENIZER}) \
     --served-model-name ${MODEL_ID:-default} \
     --max-model-len ${MAX_MODEL_LEN:-32768} \
     --kv-cache-dtype ${KV_CACHE_DTYPE:-auto} \

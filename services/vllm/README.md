@@ -36,12 +36,9 @@ Via Traefik: `http://localhost/v1/...`
 
 ## Presets
 
-See `presets/vllm/` — one `.env` file per preset. Key parameters:
+Presets are pre-configured sets of environment variables that define how vLLM should load and serve a model. They specify the model path, tokenizer, context length, KV cache type, GPU memory fraction, and other parameters.
 
-- `MAX_MODEL_LEN` — context window
-- `KV_CACHE_DTYPE=fp8` — reduces VRAM, minimal quality impact
-- `ENABLE_PREFIX_CACHING=true` — huge speedup for repeated system prompts
-- `GPU_MEMORY_UTILIZATION` — lower when co-running with ComfyUI
+See `presets/README.md` for preset reference and how to create your own.
 
 ## Updating
 
