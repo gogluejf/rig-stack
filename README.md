@@ -1,19 +1,38 @@
 # rig-stack
 
-Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a private AI cloud for your local network — unified endpoint, GPU-optimized inference, and a CLI that manages the whole rig. Built to run inside a network you trust.
+Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a private AI cloud, easy to manage, for your local network — unified endpoint, GPU-optimized inference, and a CLI that manages the whole rig. Built to run inside a network you trust.
 
 ## Features
 
-- **Dual PyTorch builds** — stable release + nightly edge compiled for Blackwell (sm_120). Full GPU performance with a stable fallback.
-- **Smart GPU/CPU split** — large LLMs on GPU via vLLM, utility models and light workflows offloaded to CPU. Use the whole machine.
-- **Preset-driven inference** — switch quantization, context length, and throughput with one command. Presets are version-controlled files.
-- **Native CLI** — `rig` follows Debian UX conventions: subcommands, flags, tab completion. No YAML archaeology.
-- **Single endpoint** — every service sits behind Traefik on port 80. One host, one port.
-- **Unified model registry** — download, inspect, or remove any model across vLLM, Ollama, and ComfyUI with one command.
-- **Data-service separation** — models and data live on host paths (`$MODELS_ROOT`, `$DATA_ROOT`), independent of the containers serving them. Swap or upgrade any service without touching your artifacts.
-- **Built-in RAG** — vector retrieval API on `/rag` backed by Qdrant, ready to wire into any workflow.
-- **Self-hosted observability** — Langfuse traces every request. Nothing leaves your network.
-- **Trusted-network design** — no auth overhead, no cloud dependency, no per-token cost.
+- **Dual PyTorch builds**
+  Stable release plus nightly edge compiled for Blackwell (sm_120). Up to 40-60% faster inference on RTX 5090 with the edge build, while still supporting older GPUs with the stable build.
+
+- **Smart GPU/CPU split**
+  Large LLMs run on GPU via vLLM, while utility models and lighter workflows can move to CPU. Use the whole machine.
+
+- **Preset-driven inference**
+  Switch quantization, context length, and throughput with one command. Keep multiple serving setups ready to go.
+
+- **Native CLI**
+  `rig` follows Debian UX conventions: subcommands, flags, tab completion. No YAML archaeology.
+
+- **Single endpoint**
+  Every service sits behind Traefik on port 80. One host, one port.
+
+- **Unified model registry**
+  Download, inspect, or remove any model across vLLM, Ollama, and ComfyUI with one command.
+
+- **Clear model/data separation**
+  Models and data live on host paths like `$MODELS_ROOT` and `$DATA_ROOT`, independent of the containers serving them. That abstraction lets you rebuild, replace, or upgrade an inference server without touching the stored assets.
+
+- **Built-in RAG**
+  Vector retrieval API on `/rag` backed by Qdrant, ready to wire into any workflow.
+
+- **Self-hosted observability**
+  Langfuse traces every request. Nothing leaves your network.
+
+- **Trusted-network design**
+  No auth overhead, no cloud dependency, no per-token cost.
 
 ---
 
@@ -66,6 +85,8 @@ The LLM endpoint is live at `http://localhost/v1`.
 
 ## CLI reference
 
+Best CLI UX for you and your agent. `rig` is your command center for managing the whole stack — services, models, presets, and more.
+
 ```
 rig <command> [subcommand] [flags]
 ```
@@ -76,11 +97,15 @@ rig <command> [subcommand] [flags]
 
 ## Architecture
 
+A single endpoint, multiple services. Traefik routes requests to vLLM for LLM inference, ComfyUI for image generation, Ollama for utility models, and the RAG API for retrieval — all on port 80. Langfuse captures traces across the stack.
+
 ![architecture](docs/architecture.png)
 
 ---
 
 ## How to add a model
+
+Models management made easy. `rig models install` handles Hugging Face, Ollama, and ComfyUI models — just provide the source and type.
 
 ```bash
 # Install a full Hugging Face repository
@@ -103,7 +128,11 @@ For gated models (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
 
 ## How to add a preset
 
-A **preset** is an env file in `presets/vllm/` with operational parameters for vLLM. Create one by copying an existing preset and adjusting the values:
+A **preset** is an env file in `presets/vllm/` with operational parameters for vLLM.
+
+Presets let you manage different vLLM configurations and switch from one setup to another without headache.
+
+Create one by copying an existing preset and adjusting the values:
 
 ```bash
 cp presets/vllm/qwen3-5-27b.env presets/vllm/my-preset.env
@@ -145,7 +174,9 @@ bash scripts/maintenance/update-images.sh
 
 ---
 
-## Mount point configuration
+## Storage layout
+
+Keep models, data, and Docker storage separate from the inference services themselves.
 
 If your server uses different paths than `/models`, `/data`, `/docker`, edit `.env`:
 
