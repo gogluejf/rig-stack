@@ -67,6 +67,7 @@ RUN pip3 install --no-cache-dir \
 RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager && \
     pip3 install --no-cache-dir -r custom_nodes/ComfyUI-Manager/requirements.txt 2>/dev/null || true
 
+ENV COMFYUI_MODEL_PATH=/models
 ENV COMFYUI_OUTPUT_DIR=/outputs
 ENV COMFYUI_INPUT_DIR=/inputs
 
@@ -76,4 +77,5 @@ CMD ["sh", "-c", "python main.py \
     --listen ${COMFYUI_LISTEN:-0.0.0.0} \
     --port ${COMFYUI_PORT:-8188} \
     --output-directory /outputs \
-    --input-directory /inputs"]
+    --input-directory /inputs \
+    --extra-model-paths-config /workflows/extra_model_paths.yaml 2>/dev/null || true"]

@@ -26,7 +26,7 @@ rig serve preset set qwen3-5-27b-fast   # set active preset without starting
 | Variable | Description | Example |
 |---|---|---|
 | `MODEL_ID` | HuggingFace model identifier (display/metadata) | `Kbenkhaled/Qwen3.5-27B-NVFP4` |
-| `MODEL_PATH` | Path inside container to model weights | `/models/llm/qwen3-5-27b` |
+| `MODEL_PATH` | Path inside container to model weights | `/models/hf/Kbenkhaled/Qwen3.5-27B-NVFP4` |
 | `MAX_MODEL_LEN` | Maximum context length in tokens | `65536` |
 | `KV_CACHE_DTYPE` | KV cache quantization (`auto`, `fp8`, `fp16`) | `fp8` |
 | `ENABLE_PREFIX_CACHING` | Cache prompt prefixes for repeated contexts | `true` |

@@ -1,5 +1,7 @@
 # workflows/
 
+> **Work in progress** — workflow scaffolds are documented but not all are fully tested end-to-end. Use as a reference for required models and node setup.
+
 Workflow scaffolds — setup docs, required models, and node lists for each supported pipeline.
 
 These are **documentation**, not runtime files. Actual ComfyUI workflow JSON exports

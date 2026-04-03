@@ -124,7 +124,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${MODELS_ROOT}:/models:ro
+      - ${MODELS_ROOT}/comfy:/models
       - ${DATA_ROOT}/outputs/comfyui:/outputs
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
       - ${DATA_ROOT}/inputs:/inputs:ro
@@ -152,7 +152,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${MODELS_ROOT}:/models:ro
+      - ${MODELS_ROOT}/comfy:/models
       - ${DATA_ROOT}/outputs/comfyui:/outputs
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
       - ${DATA_ROOT}/inputs:/inputs:ro
@@ -179,7 +179,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ${MODELS_ROOT}:/models:ro
+      - ${MODELS_ROOT}/comfy:/models
       - ${DATA_ROOT}/outputs/comfyui:/outputs
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
       - ${DATA_ROOT}/inputs:/inputs:ro
@@ -319,7 +319,7 @@ services:
       - HF_TOKEN=${HF_TOKEN:-}
       - HF_HUB_ENABLE_HF_TRANSFER=1
     volumes:
-      - ${MODELS_ROOT}:/models
+      - ${MODELS_ROOT}/hf:/models/hf
     networks:
       - rig-net
     logging: *default-logging

@@ -32,7 +32,7 @@ if [[ "${SOURCE}" == ollama/* ]]; then
 fi
 
 # ── HF / disk ─────────────────────────────────────────────────────────────────
-target="${MODELS_ROOT}/${SOURCE}"
+target="${MODELS_ROOT}/hf/${SOURCE}"
 if [[ ! -e "${target}" ]]; then
     echo -e "${RED}Not found: ${target}${RESET}"
     exit 1

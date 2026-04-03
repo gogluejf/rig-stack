@@ -15,7 +15,7 @@ interprets the edit, generates a mask or conditioning signal, and FLUX applies i
 
 ```bash
 rig models install Qwen/Qwen2-VL-7B-Instruct
-rig models install black-forest-labs/FLUX.1-Fill-dev
+rig models install black-forest-labs/FLUX.1-Fill-dev --type comfy
 ```
 
 ## Required ComfyUI nodes

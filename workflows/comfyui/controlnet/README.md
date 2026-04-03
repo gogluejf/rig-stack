@@ -15,10 +15,10 @@ Uses FLUX.1-dev + ControlNet Union for multi-condition support.
 ## Download
 
 ```bash
-rig models install black-forest-labs/FLUX.1-dev
-rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro
-rig models install InstantX/FLUX.1-dev-Controlnet-Canny --file diffusion_pytorch_model.safetensors
-rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Depth
+rig models install black-forest-labs/FLUX.1-dev --type comfy
+rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro --type comfy
+rig models install InstantX/FLUX.1-dev-Controlnet-Canny --file diffusion_pytorch_model.safetensors --type comfy
+rig models install Shakker-Labs/FLUX.1-dev-ControlNet-Depth --type comfy
 ```
 
 ## Required ComfyUI nodes

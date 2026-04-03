@@ -193,16 +193,8 @@ _rig_models_cmd() {
         case "${words[1]}" in
         init)
             local -a modes=(
-                '--minimal:Embeddings + primary LLM only'
-                '--llm:All LLM models'
-                '--diffusion:All diffusion models'
-                '--upscalers:GFPGAN + Real-ESRGAN'
-                '--controlnet:ControlNet variants'
-                '--facefusion:FaceFusion model dependencies'
-                '--starvector:StarVector 8B SVG model'
-                '--embeddings:Embedding models only'
-                '--ollama:All Ollama models'
-                '--all:Everything'
+                '--minimal:Core LLMs + essential Ollama models'
+                '--all:All HF and Ollama models'
             )
             _describe 'mode' modes
             ;;

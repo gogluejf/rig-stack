@@ -1,102 +1,71 @@
 # Models
 
-All models managed by `rig models`. Source of truth for what each model does and which bundle installs it.
+```
+${MODELS_ROOT}/
+  hf/       ← HuggingFace models (huggingface-cli)
+  comfy/    ← ComfyUI models (comfy-cli, organised by type)
+  ollama/   ← Ollama models (ollama)
+```
 
-Install a bundle: `rig models init --minimal` / `--all` / etc.
-Install one model: `rig models install <source>` or `rig models install <source> --file <file>`
+Install a bundle: `rig models init --minimal` / `--all`
+Install one model: `rig models install <source>` / `rig models install <source> --type comfy`
 
 ---
 
-## Embeddings
+## HF models
 
-| Service | Source | File | Description |
+Downloaded to `${MODELS_ROOT}/hf/<org>/<repo>`. Used by vllm.
+
+| Source | Bundle | Description |
+|---|---|---|
+| `Kbenkhaled/Qwen3.5-27B-NVFP4` | minimal | Main LLM — chat, reasoning, coding, tool-calling |
+| `Qwen/Qwen2-VL-7B-Instruct` | minimal | Multimodal — used by comfy workflows via vllm API |
+| `nomic-ai/nomic-embed-text-v1.5` | minimal | RAG embeddings |
+| `starvector/starvector-8b-im2svg` | all | Image → SVG conversion |
+
+---
+
+## Ollama models
+
+| Source | Bundle | Description |
+|---|---|---|
+| `ollama/nomic-embed-text` | minimal | Local RAG embeddings |
+| `ollama/phi3:mini` | minimal | Small utility model |
+| `ollama/deepseek-coder:6.7b` | minimal | Code completion |
+| `ollama/mistral:7b` | minimal | General assistant, summarisation |
+| `ollama/mxbai-embed-large` | all | Embeddings |
+| `ollama/all-minilm` | all | Embeddings |
+| `ollama/llava:13b` | all | Vision |
+| `ollama/moondream` | all | Vision |
+| `ollama/llava-phi3` | all | Vision |
+| `ollama/phi3:medium` | all | General |
+| `ollama/gemma2:2b` | all | General |
+| `ollama/gemma2:9b` | all | General |
+| `ollama/mistral-nemo` | all | General |
+| `ollama/qwen2.5:7b` | all | General |
+| `ollama/qwen2.5:14b` | all | General |
+| `ollama/llama3.2:1b` | all | General |
+| `ollama/llama3.2:3b` | all | General |
+| `ollama/codellama:7b` | all | Code |
+| `ollama/codegemma:7b` | all | Code |
+| `ollama/deepseek-r1:7b` | all | Reasoning |
+| `ollama/deepseek-r1:14b` | all | Reasoning |
+
+---
+
+## ComfyUI models
+
+Downloaded to `${MODELS_ROOT}/comfy/<type>/`. comfy-cli places each model in the correct subdirectory.
+
+| Source | File | Bundle | Description |
 |---|---|---|---|
-| hf | `nomic-ai/nomic-embed-text-v1.5` | | Primary RAG embeddings. Fast, CPU-friendly, 768-dim. |
-
----
-
-## LLM
-
-| Service | Source | File | Description |
-|---|---|---|---|
-| hf | `Kbenkhaled/Qwen3.5-27B-NVFP4` | | Main chat, reasoning, coding, and tool-calling. Long context (65k). fp4 quantized. |
-| hf | `Qwen/Qwen2-VL-7B-Instruct` | | Understands images and prompts to guide multimodal generation and editing workflows. |
-
----
-
-## Diffusion
-
-| Service | Source | File | Description |
-|---|---|---|---|
-| hf | `black-forest-labs/FLUX.2-klein` | | Fast iteration and prompt experimentation. |
-| hf | `black-forest-labs/FLUX.1-dev` | | High-quality base images, strong workflow and node compatibility. |
-| hf | `black-forest-labs/FLUX.1-Fill-dev` | | Inpainting and instruction-based image editing. |
-| hf | `<flux2-fp8-repo>` | | FLUX.2-dev fp8 — best quality, low VRAM. Verify repo slug before installing. |
-
----
-
-## Upscalers
-
-| Service | Source | File | Description |
-|---|---|---|---|
-| hf | `TencentARC/GFPGAN` | `GFPGANv1.4.pth` | Restores damaged, blurry, or low-quality faces before final output. |
-| hf | `ai-forever/Real-ESRGAN` | `RealESRGAN_x4plus.pth` | Upscales full images while preserving detail and reducing blur. |
-| hf | `ai-forever/Real-ESRGAN` | `RealESRGAN_x4plus_anime_6B.pth` | Upscales anime and illustration images with cleaner lines. |
-
----
-
-## ControlNet
-
-| Service | Source | File | Description |
-|---|---|---|---|
-| hf | `InstantX/FLUX.1-dev-Controlnet-Canny` | `diffusion_pytorch_model.safetensors` | Guides generation from canny edge maps to preserve structure. |
-| hf | `Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro` | | Guides generation from pose, depth, canny, and scribble conditions. |
-| hf | `Shakker-Labs/FLUX.1-dev-ControlNet-Depth` | | Guides generation from scene depth maps for spatial consistency. |
-
----
-
-## FaceFusion
-
-| Service | Source | File | Description |
-|---|---|---|---|
-| hf | `ezioruan/inswapper_128.onnx` | `inswapper_128.onnx` | Swaps source identity onto target face in FaceFusion workflows. |
-| hf | `TencentARC/GFPGAN` | `GFPGANv1.4.pth` | Cleans up and restores faces after swapping. |
-| — | ArcFace buffalo_l | | Auto-downloaded by insightface on first ComfyUI run. |
-
----
-
-## StarVector
-
-| Service | Source | File | Description |
-|---|---|---|---|
-| hf | `starvector/starvector-8b-im2svg` | | Converts raster images (logos, illustrations) into clean scalable SVG vectors. |
-
----
-
-## Ollama
-
-Requires `rig ollama start` before installing.
-
-| Source | Description |
-|---|---|
-| `ollama/nomic-embed-text` | Primary RAG embeddings. Fast, CPU-friendly, 768-dim. |
-| `ollama/mxbai-embed-large` | Richer embeddings when retrieval quality matters more than speed. |
-| `ollama/all-minilm` | Lightweight embeddings for very fast low-cost retrieval. |
-| `ollama/llava:13b` | Image description and visual reasoning. |
-| `ollama/moondream` | Lightweight image understanding. |
-| `ollama/llava-phi3` | Visual understanding with strong instruction-following. |
-| `ollama/phi3:mini` | Fast summarization, extraction, lightweight classification. |
-| `ollama/phi3:medium` | Stronger reasoning on CPU-friendly setups. |
-| `ollama/gemma2:2b` | Tiny utility tasks with minimal memory footprint. |
-| `ollama/gemma2:9b` | Balanced speed and reasoning for everyday local inference. |
-| `ollama/mistral:7b` | General assistant and automation tasks. |
-| `ollama/mistral-nemo` | Longer-context utility tasks. |
-| `ollama/qwen2.5:7b` | Multilingual prompting and everyday assistant tasks. |
-| `ollama/qwen2.5:14b` | Improved multilingual reasoning on harder prompts. |
-| `ollama/llama3.2:1b` | Tiny local tasks where speed and footprint matter. |
-| `ollama/llama3.2:3b` | Compact chat and assistant behavior. |
-| `ollama/codellama:7b` | Code generation and explanation on CPU. |
-| `ollama/codegemma:7b` | Code generation with broader task instruction-following. |
-| `ollama/deepseek-coder:6.7b` | Code completion, refactoring, and debugging. |
-| `ollama/deepseek-r1:7b` | Step-by-step reasoning for analytical local tasks. |
-| `ollama/deepseek-r1:14b` | Deeper reasoning for harder local inference workloads. |
+| `black-forest-labs/FLUX.1-dev` | | minimal | Base diffusion model |
+| `black-forest-labs/FLUX.2-klein` | | minimal | Fast iteration |
+| `black-forest-labs/FLUX.1-Fill-dev` | | all | Inpainting / image editing |
+| `Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro` | | all | Pose, depth, canny, scribble |
+| `Shakker-Labs/FLUX.1-dev-ControlNet-Depth` | | all | Depth conditioned generation |
+| `InstantX/FLUX.1-dev-Controlnet-Canny` | `diffusion_pytorch_model.safetensors` | all | Canny edge conditioned generation |
+| `TencentARC/GFPGAN` | `GFPGANv1.4.pth` | all | Face restoration |
+| `ai-forever/Real-ESRGAN` | `RealESRGAN_x4plus.pth` | all | Image upscale |
+| `ai-forever/Real-ESRGAN` | `RealESRGAN_x4plus_anime_6B.pth` | all | Anime upscale |
+| `ezioruan/inswapper_128.onnx` | `inswapper_128.onnx` | all | Face swap |

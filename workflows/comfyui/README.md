@@ -1,5 +1,7 @@
 # ComfyUI Workflows
 
+> **Work in progress** — these scaffolds document required models and nodes. Not all workflows have been tested end-to-end.
+
 Each subdirectory is a workflow scaffold: required models, nodes, and setup instructions.
 Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them with `rig comfy workflows`.
 
@@ -22,8 +24,11 @@ Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them
 cat workflows/comfyui/<workflow>/README.md
 
 # 2. Install required models
+#    HF models (used by vllm):
 rig models install <hf-repo>
-rig models install <hf-repo> --file <filename>   # for single-file models
+#    ComfyUI models (diffusion, controlnet, upscalers — comfy-cli organises them):
+rig models install <hf-repo> --type comfy
+rig models install <hf-repo> --file <filename> --type comfy
 
 # 3. Start ComfyUI
 rig comfy start         # default: GPU stable

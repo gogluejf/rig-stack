@@ -9,18 +9,18 @@ cmd_models() {
             echo ""
             echo "Usage:"
             echo "  rig models                              list installed models"
-            echo "  rig models init [--minimal|--llm|--diffusion|--upscalers|--controlnet|--facefusion|--starvector|--embeddings|--ollama|--all]"
-            echo "  rig models install <source> [--file <path>] [--type comfy]"
-            echo "  rig models show <source>                files and size under /models/<source>"
+            echo "  rig models init [--minimal|--all]"
+            echo "  rig models install <source> [--file <path>] [--type <hf|ollama|comfy>]"
+            echo "  rig models show <source>                files and size"
             echo "  rig models remove <source>              delete from disk or ollama"
             echo ""
             echo "Examples:"
             echo "  rig models init --minimal"
             echo "  rig models install Kbenkhaled/Qwen3.5-27B-NVFP4"
-            echo "  rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth"
+            echo "  rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy"
             echo "  rig models install ollama/phi3:mini"
             echo "  rig models install black-forest-labs/FLUX.1-dev --type comfy"
-            echo "  rig models remove mistralai/Mistral-7B"
+            echo "  rig models remove Qwen/Qwen2-VL-7B-Instruct"
             echo "  rig models remove ollama/phi3:mini"
             ;;
         ""|list)
@@ -100,11 +100,10 @@ _models_list() {
 
     echo ""
 
-    # ── HF models (host filesystem scan) ──────────────────────────────────────
-    echo -e "  ${BOLD}── HF models${RESET}  ${DIM}(${models_root})${RESET}"
+    # ── HF models (host filesystem scan of ${MODELS_ROOT}/hf/) ───────────────
+    echo -e "  ${BOLD}── HF models${RESET}  ${DIM}(${models_root}/hf)${RESET}"
     local found_hf=false
-    if [[ -d "${models_root}" ]]; then
-        # List 2-level deep directories: <org>/<repo>
+    if [[ -d "${models_root}/hf" ]]; then
         while IFS= read -r -d '' org_dir; do
             local org
             org="$(basename "${org_dir}")"
@@ -115,9 +114,9 @@ _models_list() {
                 printf "  %-8s  %s/%s\n" "${size}" "${org}" "${repo}"
                 found_hf=true
             done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
-        done < <(find "${models_root}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+        done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     fi
-    ${found_hf} || echo -e "  ${DIM}No HF models found under ${models_root}${RESET}"
+    ${found_hf} || echo -e "  ${DIM}No HF models downloaded yet — rig models install <hf-repo-id>${RESET}"
     echo ""
 
     # ── Ollama models ──────────────────────────────────────────────────────────
@@ -153,64 +152,69 @@ _models_init() {
         bash "${INSTALL}" "${args[@]}"
     }
 
-    section_embeddings() {
-        echo -e "\n${BOLD}── Embeddings ────────────────────────────────────${RESET}"
+    # ── Minimal set ───────────────────────────────────────────────────────────
+
+    minimal_hf() {
+        echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
+        _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
+        _install hf Qwen/Qwen2-VL-7B-Instruct
         _install hf nomic-ai/nomic-embed-text-v1.5
     }
 
-    section_llm() {
-        echo -e "\n${BOLD}── LLM models ────────────────────────────────────${RESET}"
-
-        _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
-
-        echo -e "${YELLOW}  qwen3-5-27b-distilled: verify HF repo slug, then run:${RESET}"
-        echo -e "${DIM}  rig models install <repo>${RESET}"
-
-        _install hf Qwen/Qwen2-VL-7B-Instruct
+    minimal_comfy() {
+        echo -e "\n${BOLD}── ComfyUI models ────────────────────────────────${RESET}"
+        echo -e "${DIM}  Requires ComfyUI running: rig comfy start${RESET}\n"
+        _install comfy black-forest-labs/FLUX.1-dev
+        _install comfy black-forest-labs/FLUX.2-klein
     }
 
-    section_diffusion() {
-        echo -e "\n${BOLD}── Diffusion models ──────────────────────────────${RESET}"
+    minimal_ollama() {
+        echo -e "\n${BOLD}── Ollama models ─────────────────────────────────${RESET}"
+        echo -e "${DIM}  Requires Ollama running: rig ollama start${RESET}\n"
+        _install ollama ollama/nomic-embed-text
+        _install ollama ollama/phi3:mini
+        _install ollama ollama/deepseek-coder:6.7b
+        _install ollama ollama/mistral:7b
+    }
+
+    # ── Additional (--all only) ───────────────────────────────────────────────
+
+    extra_hf() {
+        echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
+        _install hf starvector/starvector-8b-im2svg
+
+        echo -e "${YELLOW}  qwen3-5-27b-distilled: verify HF repo slug, then:${RESET}"
+        echo -e "${DIM}  rig models install <repo>${RESET}"
+    }
+
+    extra_comfy() {
+        echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
+        echo -e "${DIM}  Requires ComfyUI running: rig comfy start${RESET}\n"
+
+        _install comfy black-forest-labs/FLUX.1-Fill-dev
 
         echo -e "${YELLOW}  FLUX.2 fp8: verify repo slug at huggingface.co/black-forest-labs, then:${RESET}"
-        echo -e "${DIM}  rig models install <repo>${RESET}"
+        echo -e "${DIM}  rig models install <repo> --type comfy${RESET}"
 
-        _install hf black-forest-labs/FLUX.2-klein
-        _install hf black-forest-labs/FLUX.1-dev
-        _install hf black-forest-labs/FLUX.1-Fill-dev
+        # ControlNet
+        _install comfy Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro
+        _install comfy Shakker-Labs/FLUX.1-dev-ControlNet-Depth
+        _install comfy InstantX/FLUX.1-dev-Controlnet-Canny diffusion_pytorch_model.safetensors
+
+        # Upscalers
+        _install comfy TencentARC/GFPGAN GFPGANv1.4.pth
+        _install comfy ai-forever/Real-ESRGAN RealESRGAN_x4plus.pth
+        _install comfy ai-forever/Real-ESRGAN RealESRGAN_x4plus_anime_6B.pth
+
+        # FaceFusion
+        _install comfy ezioruan/inswapper_128.onnx inswapper_128.onnx
+        echo -e "${DIM}  ArcFace buffalo_l: auto-downloaded by insightface on first run.${RESET}"
     }
 
-    section_upscalers() {
-        echo -e "\n${BOLD}── Upscaler models ───────────────────────────────${RESET}"
-        _install hf TencentARC/GFPGAN                GFPGANv1.4.pth
-        _install hf ai-forever/Real-ESRGAN            RealESRGAN_x4plus.pth
-        _install hf ai-forever/Real-ESRGAN            RealESRGAN_x4plus_anime_6B.pth
-    }
+    extra_ollama() {
+        echo -e "\n${BOLD}── Ollama models (additional) ────────────────────${RESET}"
+        echo -e "${DIM}  Requires Ollama running: rig ollama start${RESET}\n"
 
-    section_controlnet() {
-        echo -e "\n${BOLD}── ControlNet models ─────────────────────────────${RESET}"
-        _install hf InstantX/FLUX.1-dev-Controlnet-Canny        diffusion_pytorch_model.safetensors
-        _install hf Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro
-        _install hf Shakker-Labs/FLUX.1-dev-ControlNet-Depth
-    }
-
-    section_facefusion() {
-        echo -e "\n${BOLD}── FaceFusion models ─────────────────────────────${RESET}"
-        _install hf ezioruan/inswapper_128.onnx  inswapper_128.onnx
-        _install hf TencentARC/GFPGAN            GFPGANv1.4.pth
-        echo -e "${DIM}  ArcFace buffalo_l: auto-downloaded by insightface on first ComfyUI run.${RESET}"
-    }
-
-    section_starvector() {
-        echo -e "\n${BOLD}── StarVector models ─────────────────────────────${RESET}"
-        _install hf starvector/starvector-8b-im2svg
-    }
-
-    section_ollama() {
-        echo -e "\n${BOLD}── Ollama models ─────────────────────────────────${RESET}"
-        echo -e "${DIM}  Requires Ollama container running: rig ollama start${RESET}\n"
-
-        _install ollama ollama/nomic-embed-text
         _install ollama ollama/mxbai-embed-large
         _install ollama ollama/all-minilm
 
@@ -218,11 +222,9 @@ _models_init() {
         _install ollama ollama/moondream
         _install ollama ollama/llava-phi3
 
-        _install ollama ollama/phi3:mini
         _install ollama ollama/phi3:medium
         _install ollama ollama/gemma2:2b
         _install ollama ollama/gemma2:9b
-        _install ollama ollama/mistral:7b
         _install ollama ollama/mistral-nemo
         _install ollama ollama/qwen2.5:7b
         _install ollama ollama/qwen2.5:14b
@@ -231,7 +233,6 @@ _models_init() {
 
         _install ollama ollama/codellama:7b
         _install ollama ollama/codegemma:7b
-        _install ollama ollama/deepseek-coder:6.7b
 
         _install ollama ollama/deepseek-r1:7b
         _install ollama ollama/deepseek-r1:14b
@@ -244,30 +245,21 @@ _models_init() {
 
     case "${mode}" in
         --minimal)
-            section_embeddings
-            _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
+            minimal_hf
+            minimal_comfy
+            minimal_ollama
             ;;
-        --llm)         section_llm ;;
-        --diffusion)   section_diffusion ;;
-        --upscalers)   section_upscalers ;;
-        --controlnet)  section_controlnet ;;
-        --facefusion)  section_facefusion ;;
-        --starvector)  section_starvector ;;
-        --embeddings)  section_embeddings ;;
-        --ollama)      section_ollama ;;
         --all)
-            section_embeddings
-            section_llm
-            section_diffusion
-            section_upscalers
-            section_controlnet
-            section_facefusion
-            section_starvector
-            section_ollama
+            minimal_hf
+            minimal_comfy
+            minimal_ollama
+            extra_hf
+            extra_comfy
+            extra_ollama
             ;;
         *)
             echo -e "${RED}Unknown mode: ${mode}${RESET}"
-            echo "Usage: rig models init [--all|--minimal|--llm|--diffusion|--upscalers|--controlnet|--facefusion|--starvector|--embeddings|--ollama]"
+            echo "Usage: rig models init [--minimal|--all]"
             exit 1
             ;;
     esac
@@ -278,5 +270,5 @@ _models_init() {
     echo "  rig models"
     echo "  rig serve preset set qwen3-5-27b"
     echo "  rig serve qwen3-5-27b"
-    echo "  rig comfy start --edge"
+    echo "  rig comfy start"
 }

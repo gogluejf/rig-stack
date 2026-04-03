@@ -60,7 +60,7 @@ if [[ "${TYPE}" == "hf" ]]; then
         sleep 5  # allow pip install to complete inside container
     fi
 
-    local_dir="/models/${SOURCE}"
+    local_dir="/models/hf/${SOURCE}"
     echo -e "${CYAN}Downloading HF: ${SOURCE}${RESET}"
     [[ -n "${FILE}" ]] && echo -e "  File: ${FILE}"
     echo -e "  Destination: ${local_dir}"

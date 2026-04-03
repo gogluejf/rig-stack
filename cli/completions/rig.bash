@@ -133,8 +133,7 @@ _rig_completions() {
 
         case "${sub}" in
             init)
-                local modes="--minimal --llm --diffusion --upscalers --controlnet --facefusion --starvector --embeddings --ollama --all"
-                COMPREPLY=($(compgen -W "${modes}" -- "${cur}"))
+                COMPREPLY=($(compgen -W "--minimal --all" -- "${cur}"))
                 ;;
             install)
                 if [[ "${prev}" == "--type" ]]; then
