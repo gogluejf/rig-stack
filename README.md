@@ -126,44 +126,7 @@ rig <command> [subcommand] [flags]
 
 ## Architecture
 
-```mermaid
-graph TD
-  subgraph HOST["Ubuntu host — NVIDIA driver · Docker · NVIDIA Container Toolkit"]
-    TF["Traefik gateway\nunified port :80"]
-
-    subgraph SERVING["Model serving"]
-      VS["vllm-stable\nPyTorch stable · CUDA runtime"]
-      VE["vllm-edge\nPyTorch nightly · CUDA 13.x"]
-      CS["comfyui-stable\nPyTorch stable · CUDA runtime"]
-      CC["comfyui-cpu\nPyTorch CPU · light workflows"]
-      CE["comfyui-edge\nPyTorch nightly · CUDA 13.x"]
-      OL["ollama\n--cpu default · --gpu flag"]
-    end
-
-    subgraph OBS["Observability"]
-      LF["Langfuse\nself-hosted traces"]
-      PG["Postgres\nLangfuse backend"]
-    end
-
-    subgraph RAGSTACK["RAG stack"]
-      RA["rag-api\nFastAPI · OpenAI-compatible"]
-      QD["Qdrant\nvector DB"]
-    end
-
-    subgraph VOLUMES["Persistent volumes — host filesystem, outside all containers"]
-      M["$MODELS_ROOT\nllm · diffusion · embeddings"]
-      D["$DATA_ROOT\ninputs · outputs · logs · cache"]
-    end
-  end
-
-  TF --> VS & VE & CS & CC & CE & OL & RA & LF
-  RA --> QD
-  RA --> VS
-  LF --> PG
-
-  VS & VE & CS & CC & CE & OL -.->|bind mount| M
-  RA & VS & VE & CS & CC & CE -.->|bind mount| D
-```
+![architecture](docs/architecture.png)
 
 ---
 
