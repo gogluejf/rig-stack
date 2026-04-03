@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # scripts/models/install-model.sh
 #
-# Installs one artifact and registers it in the artifact registry.
+# Installs one model by exec-ing into the appropriate running service container.
 #
-# Supported artifact types:
-#   - hf-repo : download an entire Hugging Face repository into $MODELS_ROOT/<path>
-#   - hf-file : download one file from a Hugging Face repository into $MODELS_ROOT/<path>
-#   - ollama  : pull one Ollama model into the rig-ollama container and register it at <path>
+# Supported types:
+#   hf     — download from HuggingFace via rig-hf (auto-started if needed)
+#   ollama — pull via rig-ollama (must be running: rig ollama start)
+#   comfy  — download via rig-comfyui (must be running: rig comfy start)
 
 set -euo pipefail
 
@@ -15,24 +15,18 @@ ROOT_DIR="${SCRIPT_DIR}/../.."
 source "${ROOT_DIR}/.env" 2>/dev/null || true
 
 MODELS_ROOT="${MODELS_ROOT:-/models}"
-HF_TOKEN="${HF_TOKEN:-}"
-REGISTRY="${ROOT_DIR}/config/models-registry.tsv"
 
 TYPE=""
 SOURCE=""
-ARTIFACT_PATH=""
-REMOTE_FILE=""
-DESCR=""
+FILE=""
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --type)  TYPE="${2:-}"; shift 2 ;;
+        --type)   TYPE="${2:-}";   shift 2 ;;
         --source) SOURCE="${2:-}"; shift 2 ;;
-        --path)  ARTIFACT_PATH="${2:-}"; shift 2 ;;
-        --file)  REMOTE_FILE="${2:-}"; shift 2 ;;
-        --descr) DESCR="${2:-}"; shift 2 ;;
+        --file)   FILE="${2:-}";   shift 2 ;;
         *)
             echo -e "${RED}Unknown argument: $1${RESET}"
             exit 1
@@ -40,118 +34,70 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -z "${TYPE}" || -z "${SOURCE}" || -z "${ARTIFACT_PATH}" || -z "${DESCR}" ]]; then
-    echo "Usage: $0 --type <hf-repo|hf-file|ollama> --source <source> --path <artifact-path> [--file <remote-file>] --descr <text>"
+if [[ -z "${TYPE}" || -z "${SOURCE}" ]]; then
+    echo "Usage: $0 --type <hf|ollama|comfy> --source <source> [--file <path>]"
     exit 1
 fi
 
-if [[ "${TYPE}" == "hf-file" && -z "${REMOTE_FILE}" ]]; then
-    echo -e "${RED}hf-file artifacts require --file <remote-file>.${RESET}"
+if [[ ! "${TYPE}" =~ ^(hf|ollama|comfy)$ ]]; then
+    echo -e "${RED}Unsupported type: ${TYPE}. Must be one of: hf, ollama, comfy${RESET}"
     exit 1
 fi
 
-if [[ ! "${TYPE}" =~ ^(hf-repo|hf-file|ollama)$ ]]; then
-    echo -e "${RED}Unsupported artifact type: ${TYPE}${RESET}"
-    exit 1
-fi
-
-_registry_init() {
-    if [[ ! -f "${REGISTRY}" ]]; then
-        mkdir -p "$(dirname "${REGISTRY}")"
-        {
-            printf '# rig-stack artifact registry\n'
-            printf '# Format (tab-separated, 5 columns):\n'
-            printf '#   type\tsource\tpath\tremote-file\tdescription\n'
-            printf '#\n'
-            printf '# Written by: rig models install / rig models init\n'
-        } > "${REGISTRY}"
+# ── hf ────────────────────────────────────────────────────────────────────────
+if [[ "${TYPE}" == "hf" ]]; then
+    # Auto-start rig-hf if not running
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-hf$'; then
+        echo -e "${CYAN}Starting rig-hf...${RESET}"
+        docker compose -f "${ROOT_DIR}/compose.yaml" --profile hf up -d hf
+        # Wait for container to appear and packages to finish installing
+        local_attempts=0
+        until docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-hf$'; do
+            (( local_attempts++ ))
+            [[ ${local_attempts} -ge 30 ]] && { echo -e "${RED}rig-hf failed to start${RESET}"; exit 1; }
+            sleep 1
+        done
+        sleep 5  # allow pip install to complete inside container
     fi
-}
 
-_registry_upsert() {
-    _registry_init
-    awk -F'\t' -v artifact_path="${ARTIFACT_PATH}" '
-        BEGIN { OFS = "\t" }
-        /^#/ { print; next }
-        NF == 0 { next }
-        $3 != artifact_path { print }
-    ' "${REGISTRY}" > "${REGISTRY}.tmp"
-    mv "${REGISTRY}.tmp" "${REGISTRY}"
-    printf "%s\t%s\t%s\t%s\t%s\n" "${TYPE}" "${SOURCE}" "${ARTIFACT_PATH}" "${REMOTE_FILE}" "${DESCR}" >> "${REGISTRY}"
-}
+    local_dir="/models/${SOURCE}"
+    echo -e "${CYAN}Downloading HF: ${SOURCE}${RESET}"
+    [[ -n "${FILE}" ]] && echo -e "  File: ${FILE}"
+    echo -e "  Destination: ${local_dir}"
 
-_hf_env_flags() {
-    if [[ -n "${HF_TOKEN}" ]]; then
-        printf '%s' "-e HUGGING_FACE_HUB_TOKEN=${HF_TOKEN} -e HF_TOKEN=${HF_TOKEN}"
-    fi
-}
+    local_args=(huggingface-cli download "${SOURCE}" --local-dir "${local_dir}" --local-dir-use-symlinks False)
+    [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}")
 
+    docker exec rig-hf "${local_args[@]}"
+    echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${local_dir}${RESET}"
+fi
+
+# ── ollama ────────────────────────────────────────────────────────────────────
 if [[ "${TYPE}" == "ollama" ]]; then
     local_model="${SOURCE#ollama/}"
-    echo -e "${CYAN}Installing Ollama artifact: ${local_model}${RESET}"
-    [[ -n "${DESCR}" ]] && echo -e "  Description: ${DESCR}"
-
     if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
         echo -e "${RED}Ollama container is not running.${RESET}"
-        echo -e "  Start it first: rig ollama start"
+        echo -e "  Start it first: ${BOLD}rig ollama start${RESET}"
+        exit 1
+    fi
+    echo -e "${CYAN}Pulling Ollama model: ${local_model}${RESET}"
+    docker exec rig-ollama ollama pull "${local_model}"
+    echo -e "${GREEN}${BOLD}✓  ollama/${local_model} pulled${RESET}"
+fi
+
+# ── comfy ─────────────────────────────────────────────────────────────────────
+if [[ "${TYPE}" == "comfy" ]]; then
+    comfy_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -m1 '^rig-comfyui' || true)
+    if [[ -z "${comfy_container}" ]]; then
+        echo -e "${RED}No ComfyUI container is running.${RESET}"
+        echo -e "  Start it first: ${BOLD}rig comfy start${RESET}"
         exit 1
     fi
 
-    docker exec rig-ollama ollama pull "${local_model}"
-    echo -e "${GREEN}${BOLD}✓  ollama/${local_model} pulled${RESET}"
-else
-    target_path="${MODELS_ROOT}/${ARTIFACT_PATH}"
-    hf_env_flags="$(_hf_env_flags)"
+    url="https://huggingface.co/${SOURCE}"
+    [[ -n "${FILE}" ]] && url="https://huggingface.co/${SOURCE}/resolve/main/${FILE}"
 
-    [[ -z "${HF_TOKEN}" ]] && echo -e "${YELLOW}HF_TOKEN not set — gated artifacts will fail${RESET}"
-
-    case "${TYPE}" in
-        hf-repo)
-            mkdir -p "${target_path}"
-            echo -e "${CYAN}Installing HF repo: ${SOURCE}${RESET}"
-            echo -e "  Target: ${target_path}"
-            [[ -n "${DESCR}" ]] && echo -e "  Description: ${DESCR}"
-
-            docker run --rm \
-                -v "${target_path}:/dest" \
-                ${hf_env_flags} \
-                -e HF_HUB_ENABLE_HF_TRANSFER=1 \
-                python:3.12-slim \
-                sh -c "pip install -q huggingface_hub[hf_transfer] hf_transfer && \
-                       huggingface-cli download '${SOURCE}' \
-                           --local-dir /dest \
-                           --local-dir-use-symlinks False"
-
-            echo -e "${GREEN}${BOLD}✓  ${SOURCE} → ${target_path}${RESET}"
-            ;;
-        hf-file)
-            target_dir="$(dirname "${target_path}")"
-            local_name="$(basename "${target_path}")"
-            remote_name="$(basename "${REMOTE_FILE}")"
-            mkdir -p "${target_dir}"
-
-            echo -e "${CYAN}Installing HF file: ${SOURCE} — ${REMOTE_FILE}${RESET}"
-            echo -e "  Target: ${target_path}"
-            [[ -n "${DESCR}" ]] && echo -e "  Description: ${DESCR}"
-
-            docker run --rm \
-                -v "${target_dir}:/dest" \
-                ${hf_env_flags} \
-                -e HF_HUB_ENABLE_HF_TRANSFER=1 \
-                python:3.12-slim \
-                sh -c "pip install -q huggingface_hub[hf_transfer] hf_transfer && \
-                       huggingface-cli download '${SOURCE}' '${REMOTE_FILE}' \
-                           --local-dir /dest \
-                           --local-dir-use-symlinks False"
-
-            if [[ "${remote_name}" != "${local_name}" && -f "${target_dir}/${remote_name}" ]]; then
-                mv -f "${target_dir}/${remote_name}" "${target_path}"
-            fi
-
-            echo -e "${GREEN}${BOLD}✓  ${REMOTE_FILE} → ${target_path}${RESET}"
-            ;;
-    esac
+    echo -e "${CYAN}Downloading via ComfyUI: ${url}${RESET}"
+    docker exec "${comfy_container}" comfy model download --url "${url}"
+    echo -e "${GREEN}${BOLD}✓  Downloaded via ${comfy_container}${RESET}"
 fi
-
-_registry_upsert
-echo -e "  ${RESET}Registered: ${TYPE} → ${ARTIFACT_PATH}"

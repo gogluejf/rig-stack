@@ -12,8 +12,8 @@ Face restoration and image upscaling using GFPGAN + Real-ESRGAN.
 ## Download
 
 ```bash
-rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --path upscalers/gfpgan/GFPGANv1.4.pth --descr "Restores damaged or low-quality faces before upscale"
-rig models install ai-forever/Real-ESRGAN --file RealESRGAN_x4plus.pth --path upscalers/real-esrgan/RealESRGAN_x4plus.pth --descr "Upscales the full image while preserving detail"
+rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth
+rig models install ai-forever/Real-ESRGAN --file RealESRGAN_x4plus.pth
 ```
 
 ## Required ComfyUI nodes

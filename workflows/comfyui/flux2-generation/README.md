@@ -18,10 +18,10 @@ Text-to-image generation using FLUX.2-dev fp8 (default) or FLUX.2-klein.
 ## Download
 
 ```bash
-rig models install black-forest-labs/FLUX.2-klein --path diffusion/flux2-klein --descr "Generates images quickly for fast iteration"
-rig models install black-forest-labs/FLUX.1-dev --path diffusion/flux1-dev --descr "Provides a stable fallback image model with broad workflow support"
+rig models install black-forest-labs/FLUX.2-klein
+rig models install black-forest-labs/FLUX.1-dev
 # If you have the FLUX.2 fp8 repo slug available:
-rig models install <flux2-fp8-repo> --path diffusion/flux2-fp8 --descr "Generates the highest-quality FLUX.2 images with lower VRAM usage"
+rig models install <flux2-fp8-repo>
 ```
 
 ## Start

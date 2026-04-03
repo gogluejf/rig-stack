@@ -40,7 +40,12 @@ cmd_ollama() {
 }
 
 _ollama_list() {
-    bash "${RIG_ROOT}/scripts/models/list-models.sh" --filter type=ollama
+    if ! container_running rig-ollama; then
+        echo -e "${RED}Ollama is not running.${RESET}"
+        echo -e "  Start it first: rig ollama start"
+        exit 1
+    fi
+    docker exec rig-ollama ollama list
 }
 
 _ollama_start() {

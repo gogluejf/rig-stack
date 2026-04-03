@@ -21,15 +21,6 @@ _rig_presets() {
     done
 }
 
-_rig_models() {
-    # Read artifact basenames from the registry TSV (col 3)
-    local root
-    root="$(_rig_root)" || return
-    local reg="${root}/config/models-registry.tsv"
-    [[ -f "${reg}" ]] || return
-    awk -F'\t' '!/^#/ && NF>=3 { n=split($3,a,"/"); print a[n] }' "${reg}" | sort -u
-}
-
 _rig_active_preset() {
     # _rig_active_preset <service>  — name of the current active preset
     local root
@@ -58,7 +49,7 @@ _rig_completions() {
 
     # ── Level 1: top-level command ────────────────────────────────────────────
     if [[ "${cword}" -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "serve comfy ollama rag models status stats --help" -- "${cur}"))
+        COMPREPLY=($(compgen -W "serve comfy ollama rag models service status stats --help" -- "${cur}"))
         return
     fi
 
@@ -103,7 +94,7 @@ _rig_completions() {
     # ── rig comfy ─────────────────────────────────────────────────────────────
     comfy)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop workflows --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop list workflows --help" -- "${cur}"))
             return
         fi
 
@@ -142,22 +133,32 @@ _rig_completions() {
 
         case "${sub}" in
             init)
-                # Only offer modes not yet given (all are mutually exclusive flags)
                 local modes="--minimal --llm --diffusion --upscalers --controlnet --facefusion --starvector --embeddings --ollama --all"
                 COMPREPLY=($(compgen -W "${modes}" -- "${cur}"))
                 ;;
             install)
-                # After the source arg: offer --path, --file, and --descr if not already present
-                local flags=""
-                _rig_contains "--path"  "${words[@]}" || flags+="--path "
-                _rig_contains "--file"  "${words[@]}" || flags+="--file "
-                _rig_contains "--descr" "${words[@]}" || flags+="--descr "
-                [[ -n "${flags}" ]] && COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+                if [[ "${prev}" == "--type" ]]; then
+                    COMPREPLY=($(compgen -W "hf ollama comfy" -- "${cur}"))
+                else
+                    local flags=""
+                    _rig_contains "--file" "${words[@]}" || flags+="--file "
+                    _rig_contains "--type" "${words[@]}" || flags+="--type "
+                    [[ -n "${flags}" ]] && COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+                fi
                 ;;
-            show|remove)
-                local models
-                models="$(_rig_models 2>/dev/null)"
-                COMPREPLY=($(compgen -W "${models}" -- "${cur}"))
+        esac
+        ;;
+
+    # ── rig service ───────────────────────────────────────────────────────────
+    service)
+        if [[ "${cword}" -eq 2 ]]; then
+            COMPREPLY=($(compgen -W "start stop status --help" -- "${cur}"))
+            return
+        fi
+
+        case "${sub}" in
+            start|stop)
+                COMPREPLY=($(compgen -W "hf qdrant langfuse traefik all" -- "${cur}"))
                 ;;
         esac
         ;;

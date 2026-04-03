@@ -2,7 +2,7 @@
 #
 # All services are profile-gated. Only what you start runs.
 # Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-cpu,
-#           comfyui-edge, ollama, rag, observability
+#           comfyui-edge, ollama, rag, observability, hf
 #
 # Traefik always runs as the unified gateway.
 #
@@ -304,6 +304,22 @@ services:
     volumes:
       - ${DATA_ROOT}/postgres:/var/lib/postgresql/data
       - ${DATA_ROOT}/logs/postgres:/logs
+    networks:
+      - rig-net
+    logging: *default-logging
+
+  # ── HF downloader — persistent huggingface-cli container ─────────────────
+  hf:
+    image: python:3.12-slim
+    container_name: rig-hf
+    profiles: [hf]
+    command: >
+      sh -c "pip install -q huggingface_hub[hf_transfer] hf_transfer && sleep infinity"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_HUB_ENABLE_HF_TRANSFER=1
+    volumes:
+      - ${MODELS_ROOT}:/models
     networks:
       - rig-net
     logging: *default-logging

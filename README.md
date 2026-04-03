@@ -109,11 +109,11 @@ rig <command> [subcommand] [flags]
 
 | Command | Description |
 |---|---|
-| `rig models` | List installed artifacts: type, name, path, size |
-| `rig models init <bundle>` | Install a curated artifact bundle |
-| `rig models install <source>` | Install one artifact from HuggingFace or Ollama |
-| `rig models show <name\|path>` | Type, source, path, size |
-| `rig models remove <name\|path>` | Delete an artifact |
+| `rig models` | List installed models (HF, Ollama, ComfyUI) |
+| `rig models init <bundle>` | Install a curated model bundle |
+| `rig models install <source>` | Install one model from HuggingFace, Ollama, or ComfyUI |
+| `rig models show <source>` | Files and size under /models/<source> |
+| `rig models remove <source>` | Delete a model from disk or Ollama |
 
 ### observability
 
@@ -258,18 +258,20 @@ $DATA_ROOT/                 # default: /data
 
 ---
 
-## How to add an artifact
+## How to add a model
 
 ```bash
-# Install a full Hugging Face repository artifact
-rig models install <huggingface-repo-id> --path <artifact-path> --descr "Explain what the artifact does for your workflow"
+# Install a full Hugging Face repository
+rig models install <huggingface-repo-id>
 
 # Install a single file from a Hugging Face repository
-rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --path upscalers/gfpgan/GFPGANv1.4.pth --descr "GFPGAN face restoration"
+rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth
 
-## Install an Ollama model
-rig models install ollama/phi3:mini --path ollama/phi3-mini --descr "Fast utility model"
+# Install an Ollama model
+rig models install ollama/phi3:mini
 
+# Install a model via ComfyUI (requires rig comfy start)
+rig models install black-forest-labs/FLUX.1-dev --type comfy
 ```
 
 For gated artifacts (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.

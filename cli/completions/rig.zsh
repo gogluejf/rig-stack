@@ -45,23 +45,6 @@ _rig_complete_presets() {
     _describe "preset" items
 }
 
-_rig_complete_models() {
-    local root
-    root="$(_rig_root)" || return
-    local reg="${root}/config/models-registry.tsv"
-    [[ -f "${reg}" ]] || return
-
-    local -a items=()
-    local line name type source path remote_file desc
-    while IFS=$'\t' read -r type source path remote_file desc; do
-        [[ "${type}" =~ ^# ]] && continue
-        [[ -z "${type}" ]] && continue
-        name="${path##*/}"
-        items+=("${name}:${desc}")
-    done < "${reg}"
-    _describe "model" items
-}
-
 # ── Top-level commands ────────────────────────────────────────────────────────
 
 _rig_commands() {
@@ -70,7 +53,8 @@ _rig_commands() {
         'comfy:Manage ComfyUI image generation'
         'ollama:Manage Ollama (local models)'
         'rag:Manage RAG API and Qdrant'
-        'models:Install and manage artifacts'
+        'models:Install and manage models'
+        'service:Manage infrastructure services (hf, qdrant, langfuse, traefik)'
         'status:Show active services and models'
         'stats:Show GPU stats and container metrics'
     )
@@ -122,10 +106,11 @@ _rig_serve() {
 }
 
 _rig_comfy() {
-    # rig comfy start [--cpu|--edge] | stop | workflows
+    # rig comfy start [--cpu|--edge] | stop | list | workflows
     local -a subcmds=(
         'start:Start ComfyUI'
         'stop:Stop ComfyUI container'
+        'list:List installed ComfyUI models'
         'workflows:List saved workflow JSON files'
     )
     _arguments -C \
@@ -139,11 +124,9 @@ _rig_comfy() {
         ;;
     args)
         if [[ "${words[1]}" == "start" ]]; then
-            if (( ${words[(Ie)--cpu]} == 0 && ${words[(Ie)--edge]} == 0 )); then
-                _arguments \
-                    '--cpu[Run ComfyUI on CPU for lighter workflows]' \
-                    '--edge[Use Blackwell/sm_120 edge container]'
-            fi
+            _arguments \
+                '--cpu[Use CPU-only container]' \
+                '--edge[Use Blackwell/sm_120 edge container]'
         fi
         ;;
     esac
@@ -189,13 +172,13 @@ _rig_rag() {
 }
 
 _rig_models_cmd() {
-    # rig models [list] | init <mode> | install <src> [--path] [--file] [--descr] | show <artifact> | remove <artifact>
+    # rig models [list] | init <mode> | install <src> [--file] [--type] | show <source> | remove <source>
     local -a subcmds=(
-        'list:List installed artifacts'
-        'init:Install a curated artifact bundle'
-        'install:Install a single artifact from HuggingFace or Ollama'
-        'show:Show type, source, path, and size for an artifact'
-        'remove:Delete an artifact from disk and registry'
+        'list:List installed models (HF, Ollama, ComfyUI)'
+        'init:Install a curated model bundle'
+        'install:Install a single model from HuggingFace, Ollama, or ComfyUI'
+        'show:Show files and size for a model'
+        'remove:Delete a model from disk or Ollama'
     )
     _arguments -C \
         '--help[Show help]' \
@@ -225,12 +208,41 @@ _rig_models_cmd() {
             ;;
         install)
             _arguments \
-                '--path[Artifact path under $MODELS_ROOT or ollama/*]:path:' \
-                '--file[Remote filename inside a Hugging Face repo]:remote-file:' \
-                '--descr[One-line description]:description:'
+                '--file[Filename to download from the HuggingFace repo]:filename:' \
+                '--type[Force model type]:type:(hf ollama comfy)'
             ;;
-        show|remove)
-            _rig_complete_models
+        esac
+        ;;
+    esac
+}
+
+_rig_service() {
+    # rig service status | start <svc> | stop <svc>
+    local -a subcmds=(
+        'status:Show all infrastructure services (running / stopped)'
+        'start:Start an infrastructure service'
+        'stop:Stop an infrastructure service'
+    )
+    local -a services=(
+        'hf:HuggingFace downloader (rig-hf)'
+        'qdrant:Vector database (rig-qdrant)'
+        'langfuse:LLM observability (rig-langfuse + rig-postgres)'
+        'traefik:Unified gateway (rig-traefik)'
+        'all:All of the above'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->subcmd' \
+        '*:: :->args'
+
+    case "${state}" in
+    subcmd)
+        _describe 'subcommand' subcmds
+        ;;
+    args)
+        case "${words[1]}" in
+        start|stop)
+            _describe 'service' services
             ;;
         esac
         ;;
@@ -256,15 +268,8 @@ _rig() {
         ollama)  _rig_ollama ;;
         rag)     _rig_rag ;;
         models)  _rig_models_cmd ;;
-        status)
-            _arguments \
-                '--vllm[Detailed vLLM status view]' \
-                '--ollama[Detailed Ollama status view]' \
-                '--comfy[Detailed ComfyUI status view]' \
-                '--rag[Detailed RAG API status view]' \
-                '--help[Show help]'
-            ;;
-        stats) ;;
+        service) _rig_service ;;
+        status|stats) ;;
         esac
         ;;
     esac

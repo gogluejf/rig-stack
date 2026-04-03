@@ -21,8 +21,9 @@ Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them
 # 1. Read the workflow README for required models
 cat workflows/comfyui/<workflow>/README.md
 
-# 2. Install required artifacts
-rig models install <hf-repo> --path <artifact-path> --descr "Explain what the artifact does for your workflow"
+# 2. Install required models
+rig models install <hf-repo>
+rig models install <hf-repo> --file <filename>   # for single-file models
 
 # 3. Start ComfyUI
 rig comfy start         # default: GPU stable

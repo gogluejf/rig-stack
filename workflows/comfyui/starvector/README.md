@@ -12,7 +12,7 @@ Feed a PNG/JPG and get clean, scalable SVG output.
 ## Download
 
 ```bash
-rig models install starvector/starvector-8b-im2svg --path starvector/starvector-8b-im2svg --descr "Converts raster images into clean scalable SVG vectors"
+rig models install starvector/starvector-8b-im2svg
 ```
 
 ## Required ComfyUI nodes

@@ -9,12 +9,14 @@ cmd_comfy() {
             echo "Usage:"
             echo "  rig comfy start [--cpu|--edge]   start ComfyUI (default: GPU stable)"
             echo "  rig comfy stop             stop ComfyUI"
+            echo "  rig comfy list             list installed ComfyUI models"
             echo "  rig comfy workflows        list saved workflow files"
             echo ""
             echo "Examples:"
             echo "  rig comfy start"
             echo "  rig comfy start --cpu"
             echo "  rig comfy start --edge"
+            echo "  rig comfy list"
             echo "  rig comfy workflows"
             ;;
         start)
@@ -24,11 +26,14 @@ cmd_comfy() {
         stop)
             _comfy_stop
             ;;
+        list)
+            _comfy_list
+            ;;
         workflows)
             _comfy_workflows
             ;;
         "")
-            echo -e "${RED}Subcommand required: start | stop | workflows${RESET}"
+            echo -e "${RED}Subcommand required: start | stop | list | workflows${RESET}"
             echo "Run 'rig comfy --help' for usage."
             exit 1
             ;;
@@ -111,6 +116,17 @@ _comfy_stop() {
     echo "Stopping ComfyUI..."
     rig_compose --profile comfyui-stable --profile comfyui-edge --profile comfyui-cpu stop comfyui-stable comfyui-edge comfyui-cpu 2>/dev/null || true
     echo -e "${GREEN}✓  ComfyUI stopped.${RESET}"
+}
+
+_comfy_list() {
+    local container
+    container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -m1 '^rig-comfyui' || true)
+    if [[ -z "${container}" ]]; then
+        echo -e "${RED}ComfyUI is not running.${RESET}"
+        echo -e "  Start it first: rig comfy start"
+        exit 1
+    fi
+    docker exec "${container}" comfy model list
 }
 
 _comfy_workflows() {

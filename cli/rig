@@ -16,6 +16,7 @@ export RIG_ROOT="$(dirname "${CLI_DIR}")"
 
 # ── Load env and libs ─────────────────────────────────────────────────────────
 source "${CLI_DIR}/lib/utils.sh"
+source "${CLI_DIR}/lib/service.sh"
 source "${CLI_DIR}/lib/vllm.sh"
 source "${CLI_DIR}/lib/comfy.sh"
 source "${CLI_DIR}/lib/ollama.sh"
@@ -60,6 +61,10 @@ print_help() {
     printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "show <name|path>" "Details: type, source, path, size"
     printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "remove <name|path>" "Delete artifact from disk"
     echo ""
+    printf "  ${CYAN}%-12s${RESET}  %-22s  %s\n" "service" "status" "Show infrastructure services (hf, qdrant, langfuse, traefik)"
+    printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "start <service|all>" "Start an infrastructure service"
+    printf "  ${DIM}%-12s  %-22s  %s${RESET}\n" "" "stop  <service|all>" "Stop an infrastructure service"
+    echo ""
     printf "  ${CYAN}%-12s${RESET}  %-22s  %s\n" "status" "" "Active services, models, memory, routes, endpoints"
     printf "  ${CYAN}%-12s${RESET}  %-22s  %s\n" "stats" "" "GPU VRAM, watt, temp, tokens/sec"
     echo ""
@@ -76,9 +81,12 @@ print_help() {
     echo -e "    rig comfy start --edge"
     echo -e "    rig comfy workflows"
     echo -e "    rig ollama start"
+    echo -e "    rig service status"
+    echo -e "    rig service start hf"
     echo -e "    rig models init --minimal"
-    echo -e "    rig models install Kbenkhaled/Qwen3.5-27B-NVFP4 --path llm/qwen3-5-27b"
-    echo -e "    rig models show qwen3-5-27b"
+    echo -e "    rig models install Kbenkhaled/Qwen3.5-27B-NVFP4"
+    echo -e "    rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth"
+    echo -e "    rig models show Kbenkhaled/Qwen3.5-27B-NVFP4"
     echo -e "    rig status"
     echo -e "    rig stats"
     echo ""
@@ -94,6 +102,7 @@ case "${COMMAND}" in
     ollama)     cmd_ollama "$@" ;;
     rag)        cmd_rag "$@" ;;
     models)     cmd_models "$@" ;;
+    service)    cmd_service "$@" ;;
     status)     cmd_status "$@" ;;
     stats)      cmd_stats "$@" ;;
     --help|-h|help|"")  print_help ;;
