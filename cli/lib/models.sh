@@ -184,6 +184,7 @@ _models_init() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
         _install hf starvector/starvector-8b-im2svg
 
+
         echo -e "${YELLOW}  qwen3-5-27b-distilled: verify HF repo slug, then:${RESET}"
         echo -e "${DIM}  rig models install <repo>${RESET}"
     }

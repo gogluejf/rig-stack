@@ -24,8 +24,7 @@ Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them
 cat workflows/comfyui/<workflow>/README.md
 
 # 2. Install required models
-#    HF models (used by vllm):
-rig models install <hf-repo>
+
 #    ComfyUI models (diffusion, controlnet, upscalers — comfy-cli organises them):
 rig models install <hf-repo> --type comfy
 rig models install <hf-repo> --file <filename> --type comfy

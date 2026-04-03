@@ -130,110 +130,21 @@ rig <command> [subcommand] [flags]
 
 ---
 
-## Folder map
-
-```
-rig-stack/
-  README.md          ← you are here
-  install.sh         ← full setup orchestrator
-  compose.yaml       ← all containers, profile-gated
-  .env.example       ← all variables documented
-  .env               ← gitignored
-
-  services/          ← Dockerfiles for each workload
-    vllm/            ← Dockerfile.stable + Dockerfile.edge
-    comfyui/         ← Dockerfile.stable + Dockerfile.edge
-    ollama/
-    rag/             ← FastAPI source + Dockerfile
-    langfuse/
-
-  config/            ← static config files
-    traefik/
-    qdrant/
-    langfuse/
-
-  presets/           ← vLLM operational configuration presets
-    vllm/            ← qwen3-5-27b.env, qwen3-5-27b-fast.env, ...
-
-  cli/               ← rig CLI source
-    rig              ← entrypoint
-    lib/             ← one file per command group
-    completions/     ← bash + zsh tab completion
-
-  scripts/
-    setup/           ← 00-init-dirs through 05-install-cli
-    models/          ← pull, list, show, remove, init
-    maintenance/     ← backup, update
-```
-
----
-
-## $MODELS_ROOT layout
-
-```
-$MODELS_ROOT/               # default: /models
-  llm/
-    qwen3-5-27b/            # Kbenkhaled/Qwen3.5-27B-NVFP4
-    qwen3-5-27b-distilled/  # qwen3-5-27b-open-4-6-distilled-v2
-  diffusion/
-    flux2-fp8/              # FLUX.2-dev fp8 quantized (default, gated)
-    flux2-klein/            # FLUX.2-klein (Apache 2.0, fastest)
-    flux1-dev/              # FLUX.1-dev (ControlNet/edit workflows, gated)
-    flux1-fill/             # FLUX.1-Fill-dev (inpainting/edit, gated)
-    flux-lora/
-  controlnet/               # ControlNet models (canny, depth, union-pro)
-  upscalers/
-    gfpgan/                 # GFPGANv1.4.pth
-    real-esrgan/            # RealESRGAN_x4plus.pth
-  face/
-    facefusion/             # inswapper_128.onnx, buffalo_l (ArcFace)
-  starvector/
-    starvector-8b-im2svg/
-  embeddings/
-    nomic-embed-text/
-  ollama/                   # Ollama model cache (managed by Ollama)
-```
-
-## $DATA_ROOT layout
-
-```
-$DATA_ROOT/                 # default: /data
-  inputs/
-  outputs/
-    vllm/
-    comfyui/
-  workflows/
-    comfyui/                # save ComfyUI workflow JSON files here
-  datasets/
-    raw/
-    captioned/
-  lora/
-    training/
-    output/
-  logs/                     # per-service log dirs
-  cache/
-    huggingface/
-    torch/
-  qdrant/                   # Qdrant vector store
-  postgres/                 # Langfuse DB
-```
-
----
-
 ## How to add a model
 
 ```bash
 # Install a full Hugging Face repository
 rig models install <huggingface-repo-id>
 
-# Install a single file from a Hugging Face repository
-rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth
-
 # Install an Ollama model
 rig models install ollama/phi3:mini
 
 # Install a model via ComfyUI (requires rig comfy start)
 rig models install black-forest-labs/FLUX.1-dev --type comfy
+
+# Install a single file from a ComfyUI model repo
+rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy
+
 ```
 
 For gated artifacts (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
