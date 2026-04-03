@@ -21,10 +21,18 @@ Call local vLLM → return OpenAI-compatible response
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Health check |
-| `POST` | `/chat` | RAG chat — embed + retrieve + generate |
-| `POST` | `/embed` | Direct embedding via Ollama |
+| `GET` | `/v1/models` | OpenAI-style model list exposed by the RAG API |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible RAG chat completions |
+| `POST` | `/v1/embeddings` | OpenAI-compatible embeddings endpoint |
+| `POST` | `/chat` | Legacy alias for RAG chat completions |
+| `POST` | `/embed` | Legacy alias for embeddings |
 
-Via Traefik: `http://localhost/rag/<path>`
+Via Traefik, the service is mounted under `/rag`, for example:
+
+- `http://localhost/rag/health`
+- `http://localhost/rag/v1/models`
+- `http://localhost/rag/v1/chat/completions`
+- `http://localhost/rag/v1/embeddings`
 
 ## Request format (chat)
 
@@ -64,24 +72,6 @@ vector = resp.json()["data"][0]["embedding"]
 # Insert into Qdrant
 client = QdrantClient("localhost", port=6333)
 client.upsert("default", [PointStruct(id=1, vector=vector, payload={"text": "chunk text..."})])
-```
-
-## Source layout
-
-```
-app/
-  main.py               ← FastAPI app, middleware, router registration
-  routes/
-    health.py           ← GET /health
-    chat.py             ← POST /chat (RAG pipeline)
-    embed.py            ← POST /embed
-  core/
-    embeddings.py       ← Ollama embedding client
-    retrieval.py        ← Qdrant search client
-    llm_client.py       ← vLLM HTTP client
-  models/
-    schemas.py          ← Pydantic request/response models
-  requirements.txt
 ```
 
 ## Updating
