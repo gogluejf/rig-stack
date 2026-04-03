@@ -36,6 +36,10 @@ container_running() {
     docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${1}$"
 }
 
+container_runtime_name() {
+    docker inspect --format '{{.HostConfig.Runtime}}' "${1}" 2>/dev/null
+}
+
 container_status() {
     local name="$1"
     if container_running "${name}"; then

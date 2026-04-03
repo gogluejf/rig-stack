@@ -25,7 +25,6 @@ async def models_endpoint():
         entry.update(extra)
         data.append(entry)
 
-    add_model("rig-rag", "rig-stack", description="RAG chat alias backed by local vLLM + Qdrant")
     add_model(EMBED_MODEL, "ollama", description="Embedding model used by the RAG API")
 
     try:

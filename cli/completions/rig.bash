@@ -108,8 +108,9 @@ _rig_completions() {
         fi
 
         if [[ "${sub}" == "start" ]]; then
-            _rig_contains "--edge" "${words[@]}" || \
-                COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
+            if ! _rig_contains "--cpu" "${words[@]}" && ! _rig_contains "--edge" "${words[@]}"; then
+                COMPREPLY=($(compgen -W "--cpu --edge" -- "${cur}"))
+            fi
         fi
         ;;
 
@@ -162,7 +163,10 @@ _rig_completions() {
         ;;
 
     # ── rig status / stats ────────────────────────────────────────────────────
-    status|stats)
+    status)
+        [[ "${cword}" -eq 2 ]] && COMPREPLY=($(compgen -W "--vllm --ollama --comfy --rag --help" -- "${cur}"))
+        ;;
+    stats)
         [[ "${cword}" -eq 2 ]] && COMPREPLY=($(compgen -W "--help" -- "${cur}"))
         ;;
 

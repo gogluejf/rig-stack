@@ -8,22 +8,3 @@ These are **documentation**, not runtime files. Actual ComfyUI workflow JSON exp
 ## Available
 
 - [comfyui/](comfyui/) — ComfyUI workflow scaffolds
-
-## How to use a workflow
-
-```bash
-# 1. Read the setup doc
-cat workflows/comfyui/<workflow>/README.md
-
-# 2. Install required artifacts
-rig models install <hf-repo> --path <artifact-path> --descr "Artificat utility description"
-
-# 3. Start ComfyUI
-rig comfy start --edge
-
-# 4. Load / build the workflow in the UI at http://localhost/comfy
-#    Export via Save (API format) → $DATA_ROOT/workflows/comfyui/<name>.json
-
-# 5. List saved workflows
-rig comfy workflows
-```

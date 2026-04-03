@@ -71,10 +71,30 @@ _serve_list() {
 }
 
 _serve_start() {
-    local preset_name="${1:-}"
+    local preset_name=""
     local edge=false
-    [[ "${2:-}" == "--edge" || "${1:-}" == "--edge" ]] && edge=true
-    [[ "${preset_name}" == "--edge" ]] && preset_name=""
+    local arg
+    for arg in "$@"; do
+        case "${arg}" in
+            --edge)
+                edge=true
+                ;;
+            --*)
+                echo -e "${RED}Unknown flag for 'rig serve': ${arg}${RESET}"
+                echo "Usage: rig serve [<preset>] [--edge]"
+                exit 1
+                ;;
+            *)
+                if [[ -z "${preset_name}" ]]; then
+                    preset_name="${arg}"
+                else
+                    echo -e "${RED}Unexpected extra argument: ${arg}${RESET}"
+                    echo "Usage: rig serve [<preset>] [--edge]"
+                    exit 1
+                fi
+                ;;
+        esac
+    done
 
     # Fall back to active preset if none given
     if [[ -z "${preset_name}" ]]; then
@@ -101,7 +121,17 @@ _serve_start() {
     set_active_preset "vllm" "${preset_file}"
 
     local profile="vllm-stable"
+    local build_label="stable"
     $edge && profile="vllm-edge"
+    $edge && build_label="edge"
+
+    local other_service="vllm-edge"
+    $edge && other_service="vllm-stable"
+
+    if container_running "rig-${other_service}"; then
+        echo -e "${DIM}Stopping other vLLM variant: ${other_service}${RESET}"
+        rig_compose --profile vllm-stable --profile vllm-edge stop "${other_service}" 2>/dev/null || true
+    fi
 
     echo -e "${CYAN}Starting ${profile} with preset '${preset_name}'...${RESET}"
     rig_compose --profile "${profile}" up -d
@@ -109,6 +139,8 @@ _serve_start() {
     echo -e "${GREEN}✓  vLLM running${RESET}"
     echo -e "  Endpoint : http://localhost:${VLLM_PORT:-8000}/v1"
     echo -e "  Preset   : ${preset_name}"
+    echo -e "  Runtime  : GPU"
+    echo -e "  Build    : ${build_label}"
     echo -e "  Container: rig-${profile}"
 }
 

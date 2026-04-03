@@ -1,8 +1,8 @@
 # rig-stack — Docker Compose
 #
 # All services are profile-gated. Only what you start runs.
-# Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-edge,
-#           ollama, rag, observability
+# Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-cpu,
+#           comfyui-edge, ollama, rag, observability
 #
 # Traefik always runs as the unified gateway.
 #
@@ -149,6 +149,33 @@ services:
     profiles: [comfyui-edge]
     restart: unless-stopped
     <<: *gpu-runtime
+    env_file:
+      - .env
+    volumes:
+      - ${MODELS_ROOT}:/models:ro
+      - ${DATA_ROOT}/outputs/comfyui:/outputs
+      - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
+      - ${DATA_ROOT}/inputs:/inputs:ro
+      - ${DATA_ROOT}/logs/comfyui:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.comfyui.rule=PathPrefix(`/comfy`)"
+      - "traefik.http.middlewares.comfyui-strip.stripprefix.prefixes=/comfy"
+      - "traefik.http.routers.comfyui.middlewares=comfyui-strip"
+      - "traefik.http.services.comfyui.loadbalancer.server.port=8188"
+    logging: *default-logging
+
+  # ── ComfyUI CPU (light workflows / GPU-free) ──────────────────────────────
+  comfyui-cpu:
+    build:
+      context: ./services/comfyui
+      dockerfile: Dockerfile.cpu
+    image: rig-comfyui-cpu:latest
+    container_name: rig-comfyui-cpu
+    profiles: [comfyui-cpu]
+    restart: unless-stopped
     env_file:
       - .env
     volumes:

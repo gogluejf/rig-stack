@@ -2,12 +2,18 @@
 
 ComfyUI — node-based image generation. Supports FLUX, ControlNet, GFPGAN, FaceFusion, and custom workflow pipelines.
 
-## Two containers
+## Three containers
 
 ### comfyui-stable
 - Base: `ghcr.io/ai-dock/comfyui:latest-cuda`
 - PyTorch: stable, CUDA 12.x
 - Start: `rig comfy start`
+
+### comfyui-cpu
+- Base: `python:3.12-slim` + CPU-only PyTorch
+- PyTorch: CPU-only
+- Start: `rig comfy start --cpu`
+- Use case: lighter workflows, debugging, or keeping the GPU free for vLLM / Ollama
 
 ### comfyui-edge
 - Base: `nvidia/cuda:12.8.0-devel-ubuntu24.04` + PyTorch nightly cu130
@@ -17,7 +23,7 @@ ComfyUI — node-based image generation. Supports FLUX, ControlNet, GFPGAN, Face
 - Start: `rig comfy start --edge`
 - Build time: 15-25 min
 
-**Why two containers?** Same reason as vLLM — sm_120 (RTX 5090) requires nightly PyTorch for native Blackwell diffusion kernels. Diffusion workloads see proportionally larger gains from sm_120 optimisations than LLM workloads.
+**Why three containers?** Same reason as vLLM for `stable` vs `edge` — sm_120 (RTX 5090) benefits from nightly PyTorch for native Blackwell diffusion kernels. ComfyUI also gets a CPU mode so lighter workflows can still run when the GPU is reserved for serving or tuning LLM workloads.
 
 ## Access
 
@@ -38,6 +44,8 @@ ComfyUI — node-based image generation. Supports FLUX, ControlNet, GFPGAN, Face
 Save exported ComfyUI workflow JSON files to `$DATA_ROOT/workflows/comfyui/`.  
 List them: `rig comfy workflows`
 
+For heavier diffusion pipelines, prefer `rig comfy start` or `rig comfy start --edge`. Use `rig comfy start --cpu` for lighter workflows, debugging, or when the GPU should stay dedicated to other services.
+
 Pre-scaffolded workflow stubs:
 - `flux-generation` — FLUX.2-dev / FLUX.2-klein text-to-image
 - `gfpgan-upscale` — GFPGAN face restoration
@@ -49,5 +57,6 @@ Pre-scaffolded workflow stubs:
 
 ## Updating
 
-**Stable:** `docker pull ghcr.io/ai-dock/comfyui:latest-cuda`  
+**Stable:** `docker compose build comfyui-stable`  
+**CPU:** `docker compose build comfyui-cpu`  
 **Edge:** `bash scripts/setup/04-build-edge-images.sh`

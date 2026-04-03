@@ -6,8 +6,8 @@ Most AI tooling gives you an API key and a billing page. rig-stack gives you the
 
 The motivation is practical. An RTX 5090 is a serious machine. Getting the most out of it means:
 
-- **Running the right build for the job.** vLLM and ComfyUI ship both a stable release and a nightly edge build compiled for Blackwell (sm_120, CUDA 13.0). Edge unlocks the full performance of the card — stable keeps you unblocked when nightly breaks.
-- **Splitting the GPU intelligently.** Load your large LLM on the GPU via vLLM, and offload utility models — embeddings, small chat, vision — to Ollama running on CPU. No context switching, no reloading.
+- **Running the right build for the job.** vLLM ships a stable release and a nightly edge build compiled for Blackwell (sm_120, CUDA 13.0). Edge unlocks the full performance of the card — stable keeps you unblocked when nightly breaks.
+- **Splitting the GPU intelligently.** Load your large LLM on the GPU via vLLM, offload utility models — embeddings, small chat, vision — to Ollama running on CPU. Optionalluy, load ComfyUI on CPU for lighter image workflows when you need your GPU dedicated to vllm.
 - **Tuning without rewriting configs.** vLLM is driven by preset files. Switch from a high-throughput quantized build to a quality full-precision run with one command. Presets live in the repo and are version-controlled.
 - **A CLI that feels native.** `rig` follows Debian UX conventions — subcommands, consistent flags, tab completion, clean output. No YAML archaeology, no Docker command memorisation.
 - **One place to manage all model artifacts.** A single registry covers every model across all services — with descriptions, sizes, and categories. Download, inspect, and remove anything with one command. No hunting across service configs to find what lives where.
@@ -22,7 +22,7 @@ Drop it on Ubuntu 24.04, run `./install.sh`, and the full stack — LLM serving,
 | Component | Stack | Route |
 |---|---|---|
 | LLM inference | vLLM (stable + Blackwell-edge) | `/v1` |
-| Image generation | ComfyUI (stable + Blackwell-edge) | `/comfy` |
+| Image generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
 | Utility models | Ollama (CPU/GPU) | `/ollama` |
 | RAG API | FastAPI + Qdrant | `/rag` |
 | Observability | Langfuse (self-hosted) | `/langfuse` |
@@ -37,7 +37,7 @@ Drop it on Ubuntu 24.04, run `./install.sh`, and the full stack — LLM serving,
 - NVIDIA driver ≥ 550
 - Docker CE (not snap)
 - NVIDIA Container Toolkit
-
+ the
 Or just run `./install.sh` — it handles all of the above.
 
 ---
@@ -85,7 +85,7 @@ rig <command> [subcommand] [flags]
 
 | Command | Description |
 |---|---|
-| `rig comfy start [--edge]` | Start ComfyUI (--edge for Blackwell/sm_120) |
+| `rig comfy start [--cpu\|--edge]` | Start ComfyUI (default GPU stable, `--cpu` for lighter workflows, `--edge` for Blackwell/sm_120) |
 | `rig comfy stop` | Stop ComfyUI |
 | `rig comfy workflows` | List saved workflow JSON files |
 
@@ -119,7 +119,7 @@ rig <command> [subcommand] [flags]
 
 | Command | Description |
 |---|---|
-| `rig status` | Active services, loaded models, active presets |
+| `rig status` | Active services, loaded models, runtime mode, build flavor |
 | `rig stats` | GPU VRAM, watt, temp, active containers, tokens/sec |
 
 ---
@@ -135,6 +135,7 @@ graph TD
       VS["vllm-stable\nPyTorch stable · CUDA runtime"]
       VE["vllm-edge\nPyTorch nightly · CUDA 13.x"]
       CS["comfyui-stable\nPyTorch stable · CUDA runtime"]
+      CC["comfyui-cpu\nPyTorch CPU · light workflows"]
       CE["comfyui-edge\nPyTorch nightly · CUDA 13.x"]
       OL["ollama\n--cpu default · --gpu flag"]
     end
@@ -155,13 +156,13 @@ graph TD
     end
   end
 
-  TF --> VS & VE & CS & CE & OL & RA & LF
+  TF --> VS & VE & CS & CC & CE & OL & RA & LF
   RA --> QD
   RA --> VS
   LF --> PG
 
-  VS & VE & CS & CE & OL -.->|bind mount| M
-  RA & VS & CS -.->|bind mount| D
+  VS & VE & CS & CC & CE & OL -.->|bind mount| M
+  RA & VS & VE & CS & CC & CE -.->|bind mount| D
 ```
 
 ---

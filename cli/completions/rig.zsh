@@ -122,7 +122,7 @@ _rig_serve() {
 }
 
 _rig_comfy() {
-    # rig comfy start [--edge] | stop | workflows
+    # rig comfy start [--cpu|--edge] | stop | workflows
     local -a subcmds=(
         'start:Start ComfyUI'
         'stop:Stop ComfyUI container'
@@ -139,7 +139,11 @@ _rig_comfy() {
         ;;
     args)
         if [[ "${words[1]}" == "start" ]]; then
-            _arguments '--edge[Use Blackwell/sm_120 edge container]'
+            if (( ${words[(Ie)--cpu]} == 0 && ${words[(Ie)--edge]} == 0 )); then
+                _arguments \
+                    '--cpu[Run ComfyUI on CPU for lighter workflows]' \
+                    '--edge[Use Blackwell/sm_120 edge container]'
+            fi
         fi
         ;;
     esac
@@ -252,7 +256,15 @@ _rig() {
         ollama)  _rig_ollama ;;
         rag)     _rig_rag ;;
         models)  _rig_models_cmd ;;
-        status|stats) ;;
+        status)
+            _arguments \
+                '--vllm[Detailed vLLM status view]' \
+                '--ollama[Detailed Ollama status view]' \
+                '--comfy[Detailed ComfyUI status view]' \
+                '--rag[Detailed RAG API status view]' \
+                '--help[Show help]'
+            ;;
+        stats) ;;
         esac
         ;;
     esac

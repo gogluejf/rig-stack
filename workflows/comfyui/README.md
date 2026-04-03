@@ -25,7 +25,9 @@ cat workflows/comfyui/<workflow>/README.md
 rig models install <hf-repo> --path <artifact-path> --descr "Explain what the artifact does for your workflow"
 
 # 3. Start ComfyUI
-rig comfy start --edge
+rig comfy start         # default: GPU stable
+# rig comfy start --cpu # lighter workflows / keep GPU free
+# rig comfy start --edge # Blackwell / nightly
 
 # 4. Open the UI, load your workflow JSON
 # http://localhost/comfy
@@ -35,3 +37,5 @@ rig comfy start --edge
 
 Export from ComfyUI: **Save (API format)** → save to `$DATA_ROOT/workflows/comfyui/<name>.json`
 They appear immediately in `rig comfy workflows`.
+
+For heavier workflows such as larger FLUX or multi-node pipelines, prefer GPU stable or GPU edge over CPU mode.

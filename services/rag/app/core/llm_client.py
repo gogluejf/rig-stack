@@ -15,8 +15,8 @@ async def list_models() -> dict:
 
 
 async def resolve_chat_model(model: str = "default") -> str:
-    """Map rig-rag aliases to the active upstream vLLM model."""
-    if model and model not in {"default", "rig-rag"}:
+    """Resolve the default chat model to the active upstream vLLM model."""
+    if model and model != "default":
         return model
 
     try:
@@ -28,7 +28,7 @@ async def resolve_chat_model(model: str = "default") -> str:
     except Exception:
         pass
 
-    return model
+    return model or "default"
 
 
 async def chat(
