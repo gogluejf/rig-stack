@@ -11,17 +11,19 @@ cmd_models() {
             echo "  rig models                              list installed models"
             echo "  rig models init [--minimal|--all]"
             echo "  rig models install <source> [--file <path>] [--type <hf|ollama|comfy>]"
-            echo "  rig models show <source>                files and size"
-            echo "  rig models remove <source>              delete from disk or ollama"
+            echo "  rig models show <source> [--file <path>] [--type <hf|ollama|comfy>]"
+            echo "  rig models remove <source> [--file <path>] [--type <hf|ollama|comfy>]"
             echo ""
             echo "Examples:"
             echo "  rig models init --minimal"
             echo "  rig models install Kbenkhaled/Qwen3.5-27B-NVFP4"
             echo "  rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy"
             echo "  rig models install phi3:mini --type ollama"
+            echo "  rig models show phi3:mini --type ollama"
+            echo "  rig models show TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy"
             echo "  rig models install black-forest-labs/FLUX.1-dev --type comfy"
             echo "  rig models remove Qwen/Qwen-Image-2512"
-            echo "  rig models remove ollama/phi3:mini"
+            echo "  rig models remove phi3:mini --type ollama"
             ;;
         ""|list)
             _models_list
