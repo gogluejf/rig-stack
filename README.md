@@ -173,6 +173,7 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 
 ## Future features
 
+- **Comfy Workflows** — export and serve ComfyUI workflows with `rig comfy workflows`
 - **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
 - **Broader edge support** — edge builds for GPUs beyond RTX 5090 / Blackwell architecture
 - **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
