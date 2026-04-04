@@ -65,9 +65,10 @@ RUN pip3 install --no-cache-dir \
     wheel \
     ninja
 
-# Build vLLM — pin confirmed-working version for Blackwell/sm_120
-RUN pip3 install --no-cache-dir vllm==0.17.1 \
-    --index-url https://wheels.vllm.ai/nightly
+# Build vLLM from nightly index (Blackwell/sm_120 support)
+RUN pip3 install --no-cache-dir vllm \
+    --index-url https://wheels.vllm.ai/nightly \
+    --extra-index-url https://pypi.org/simple
 
 ENV HF_HOME=/root/.cache/huggingface
 ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
