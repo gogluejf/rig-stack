@@ -24,6 +24,7 @@ FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS base
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV CUDA_HOME=/usr/local/cuda
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 
 RUN apt-get update && apt-get install -y --allow-change-held-packages --no-install-recommends \
     python3.12 \
