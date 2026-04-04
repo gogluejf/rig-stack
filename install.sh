@@ -161,6 +161,19 @@ else
 fi
 
 run_step "${SETUP_DIR}/02-install-docker.sh"          "02 — Docker CE"
+
+# Docker group membership changes require a new shell session.
+# If docker daemon access is not available yet, stop cleanly here.
+if ! docker info >/dev/null 2>&1; then
+    echo -e "\n${YELLOW}Docker daemon is not accessible in this current shell yet.${RESET}"
+    echo -e "${YELLOW}Applying docker-group remediation for user ${USER}...${RESET}"
+    sudo groupadd -f docker || true
+    sudo usermod -aG docker "${USER}" || true
+    echo -e "${YELLOW}Group membership update applied.${RESET}"
+    echo "Open a new login shell (or run: newgrp docker), then re-run ./install.sh."
+    exit 0
+fi
+
 run_step "${SETUP_DIR}/03-install-nvidia-toolkit.sh"  "03 — NVIDIA Container Toolkit"
 run_step "${SETUP_DIR}/04-build-edge-images.sh"       "04 — Build edge images"
 run_step "${SETUP_DIR}/05-install-cli.sh"             "05 — Install rig CLI"
