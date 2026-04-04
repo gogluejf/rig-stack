@@ -40,13 +40,8 @@ create_dirs() {
 # Model subdirs (e.g. llm/qwen3-5-27b/) are created by `rig models init` / install-model.sh
 echo "Initialising $MODELS_ROOT (category structure)..."
 create_dirs "${MODELS_ROOT}" \
-    llm \
-    diffusion \
-    controlnet \
-    upscalers \
-    face \
-    starvector \
-    embeddings \
+    hf \
+    comfy \
     ollama
 
 # ── $DATA_ROOT — full runtime tree ────────────────────────────────────────────
