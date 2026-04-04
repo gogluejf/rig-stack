@@ -53,7 +53,7 @@ Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a privat
 
 - Ubuntu 24.04 (or Debian-family with `OS_FAMILY=debian` in `.env`)
 - NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell features require RTX 50xx)
-- NVIDIA driver ≥ 550
+- NVIDIA driver ≥ 580
 - Docker CE (not snap)
 - NVIDIA Container Toolkit
 

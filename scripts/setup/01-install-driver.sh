@@ -2,7 +2,7 @@
 # scripts/setup/01-install-driver.sh
 #
 # What it does: Installs the NVIDIA driver via ubuntu-drivers.
-#               Validates the recommended driver is ≥550 before proceeding.
+#               Validates the recommended driver is ≥580 before proceeding.
 #               Prompts before installing and before rebooting.
 #
 # What it expects:
@@ -25,7 +25,7 @@ source "${SCRIPT_DIR}/lib/os-guard.sh"
 require_supported_os
 
 GPU_MODEL="${GPU_MODEL:-unknown}"
-MIN_DRIVER_VERSION=550
+MIN_DRIVER_VERSION=580
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RESET='\033[0m'
 
@@ -57,7 +57,7 @@ echo "Recommended: ${RECOMMENDED} (version ${VERSION})"
 
 if (( VERSION < MIN_DRIVER_VERSION )); then
     echo -e "${RED}Recommended driver ${VERSION} is below minimum ${MIN_DRIVER_VERSION}.${RESET}"
-    echo "The RTX 5090 requires driver ≥550 for CUDA 12.8 support."
+    echo "The RTX 5090 requires driver ≥580 for CUDA 12.8 support."
     echo "Check https://www.nvidia.com/drivers for the latest."
     exit 1
 fi
