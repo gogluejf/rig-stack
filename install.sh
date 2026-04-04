@@ -68,6 +68,18 @@ run_step() {
 }
 
 prompt_reboot() {
+    if $DRY_RUN; then
+        echo -e "\n${YELLOW}[dry-run] A reboot would be required at this point (simulated).${RESET}"
+        read -rp "Reboot now? [y/N] " choice
+        if [[ "${choice,,}" == "y" ]]; then
+            echo -e "${YELLOW}[dry-run] Simulating reboot and continuing preview...${RESET}"
+            return 0
+        else
+            echo -e "${YELLOW}[dry-run] Reboot not confirmed. Stopping at reboot checkpoint.${RESET}"
+            exit 0
+        fi
+    fi
+
     echo -e "\n${YELLOW}A reboot is required to continue.${RESET}"
     read -rp "Reboot now? [y/N] " choice
     if [[ "${choice,,}" == "y" ]]; then
