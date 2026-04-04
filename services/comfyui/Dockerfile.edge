@@ -38,11 +38,10 @@ RUN apt-get update && apt-get install -y --allow-change-held-packages --no-insta
 RUN ln -sf /usr/bin/python3.12 /usr/bin/python3 && \
     ln -sf /usr/bin/python3.12 /usr/bin/python
 
-# Install PyTorch nightly cu130 — confirmed working on Blackwell/sm_120
-# Pin: torch 2.11.0.dev20260123+cu130, cuDNN 9.1.5.01
-# Source: baremetal RTX 5090 setup (driver 580.126.09, host CUDA 12.8 irrelevant in container)
+# Install PyTorch nightly cu130 for current Blackwell support.
+# Note: nightly wheel versions rotate frequently, so avoid hard pinning date tags.
 RUN pip3 install --no-cache-dir \
-    torch==2.11.0.dev20260123+cu130 \
+    torch \
     torchvision \
     torchaudio \
     --index-url https://download.pytorch.org/whl/nightly/cu130
