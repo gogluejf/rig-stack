@@ -25,6 +25,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV CUDA_HOME=/usr/local/cuda
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_ROOT_USER_ACTION=ignore
 
 RUN apt-get update && apt-get install -y --allow-change-held-packages --no-install-recommends \
     python3.12 \
@@ -73,16 +74,7 @@ RUN pip3 install --no-cache-dir vllm \
 ENV HF_HOME=/root/.cache/huggingface
 ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-CMD ["sh", "-c", "python -m vllm.entrypoints.openai.api_server \
-    --model ${MODEL_PATH:-/models/llm/qwen3-5-27b} \
-    $([ -n "${TOKENIZER}" ] && echo --tokenizer ${TOKENIZER}) \
-    --served-model-name ${MODEL_ID:-default} \
-    --max-model-len ${MAX_MODEL_LEN:-32768} \
-    --kv-cache-dtype ${KV_CACHE_DTYPE:-auto} \
-    $([ \"${ENABLE_PREFIX_CACHING}\" = \"true\" ] && echo --enable-prefix-caching) \
-    $([ -n \"${TOOL_CALL_PARSER}\" ] && echo --tool-call-parser ${TOOL_CALL_PARSER}) \
-    --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION:-0.82} \
-    --tensor-parallel-size ${TENSOR_PARALLEL_SIZE:-1} \
-    --dtype ${DTYPE:-auto} \
-    $([ \"${TRUST_REMOTE_CODE}\" = \"true\" ] && echo --trust-remote-code) \
-    --host 0.0.0.0 --port 8000"]
+COPY entrypoint.edge.sh /usr/local/bin/entrypoint-vllm-edge.sh
+RUN chmod +x /usr/local/bin/entrypoint-vllm-edge.sh
+
+CMD ["/usr/local/bin/entrypoint-vllm-edge.sh"]
