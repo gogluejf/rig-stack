@@ -26,6 +26,7 @@ require_supported_os
 
 GPU_MODEL="${GPU_MODEL:-unknown}"
 MIN_DRIVER_VERSION=580
+SKIP_EXIT_CODE=20
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RESET='\033[0m'
 
@@ -36,6 +37,21 @@ if ! lspci | grep -qi nvidia; then
 fi
 
 echo "GPU model (configured): ${GPU_MODEL}"
+
+# Skip cleanly if an active driver already satisfies requirements.
+if command -v nvidia-smi &>/dev/null; then
+    ACTIVE_VERSION=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -1 || true)
+    ACTIVE_MAJOR="${ACTIVE_VERSION%%.*}"
+
+    if [[ -n "${ACTIVE_VERSION}" && "${ACTIVE_MAJOR}" =~ ^[0-9]+$ ]] && (( ACTIVE_MAJOR >= MIN_DRIVER_VERSION )); then
+        echo -e "${GREEN}Detected active NVIDIA driver: ${ACTIVE_VERSION} (meets ≥${MIN_DRIVER_VERSION}).${RESET}"
+        read -rp "Driver already installed. Reinstall anyway? [y/N] " reinstall
+        if [[ "${reinstall,,}" != "y" ]]; then
+            echo "Driver installation skipped by user (already compliant)."
+            exit "${SKIP_EXIT_CODE}"
+        fi
+    fi
+fi
 
 # Install ubuntu-drivers-common if needed
 if ! command -v ubuntu-drivers &>/dev/null; then
@@ -64,7 +80,10 @@ fi
 
 echo -e "${GREEN}Driver ${VERSION} meets minimum requirement (≥${MIN_DRIVER_VERSION}).${RESET}"
 read -rp "Install ${RECOMMENDED}? [y/N] " confirm
-[[ "${confirm,,}" == "y" ]] || { echo "Aborted."; exit 0; }
+if [[ "${confirm,,}" != "y" ]]; then
+    echo "Driver installation skipped by user."
+    exit "${SKIP_EXIT_CODE}"
+fi
 
 echo "Running ubuntu-drivers autoinstall..."
 sudo ubuntu-drivers autoinstall

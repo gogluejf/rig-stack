@@ -67,6 +67,34 @@ run_step() {
     fi
 }
 
+run_step_allow_skip() {
+    local script="$1"
+    local label="$2"
+    local skip_code="$3"
+
+    echo -e "\n${CYAN}${BOLD}▶  ${label}${RESET}"
+    if $DRY_RUN; then
+        echo -e "  ${YELLOW}[dry-run] would run: ${script}${RESET}"
+        return 0
+    fi
+
+    set +e
+    bash "${script}"
+    local step_rc=$?
+    set -e
+
+    if [[ "${step_rc}" -eq "${skip_code}" ]]; then
+        echo -e "${YELLOW}Step skipped by user. Continuing without reboot checkpoint.${RESET}"
+        return "${skip_code}"
+    fi
+
+    if [[ "${step_rc}" -ne 0 ]]; then
+        return "${step_rc}"
+    fi
+
+    return 0
+}
+
 prompt_reboot() {
     if $DRY_RUN; then
         echo -e "\n${YELLOW}[dry-run] A reboot would be required at this point (simulated).${RESET}"
@@ -113,10 +141,24 @@ read -rp "Proceed with installation? [y/N] " confirm
 [[ "${confirm,,}" == "y" ]] || { echo "Aborted."; exit 0; }
 
 run_step "${SETUP_DIR}/00-init-dirs.sh"    "00 — Initialise directory trees"
-run_step "${SETUP_DIR}/01-install-driver.sh" "01 — NVIDIA driver"
+step01_skipped=false
+if run_step_allow_skip "${SETUP_DIR}/01-install-driver.sh" "01 — NVIDIA driver" 20; then
+    step01_skipped=false
+else
+    step01_rc=$?
+    if [[ "${step01_rc}" -eq 20 ]]; then
+        step01_skipped=true
+    else
+        exit "${step01_rc}"
+    fi
+fi
 
-echo -e "\n${YELLOW}Step 01 installs the NVIDIA driver. A reboot is required before Docker.${RESET}"
-prompt_reboot
+if ! $step01_skipped; then
+    echo -e "\n${YELLOW}Step 01 installs the NVIDIA driver. A reboot is required before Docker.${RESET}"
+    prompt_reboot
+else
+    echo -e "\n${YELLOW}Step 01 skipped. Not prompting for reboot.${RESET}"
+fi
 
 run_step "${SETUP_DIR}/02-install-docker.sh"          "02 — Docker CE"
 run_step "${SETUP_DIR}/03-install-nvidia-toolkit.sh"  "03 — NVIDIA Container Toolkit"
