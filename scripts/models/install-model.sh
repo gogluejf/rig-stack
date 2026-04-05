@@ -65,7 +65,25 @@ if [[ "${TYPE}" == "hf" ]]; then
     [[ -n "${FILE}" ]] && echo -e "  File: ${FILE}"
     echo -e "  Destination: ${local_dir}"
 
-    local_args=(huggingface-cli download "${SOURCE}" --local-dir "${local_dir}" --local-dir-use-symlinks False)
+    # huggingface_hub>=1.x exposes `hf`; older images may still expose
+    # `huggingface-cli`. Wait briefly for either command to become available.
+    cli_attempts=0
+    until docker exec rig-hf sh -lc 'command -v hf >/dev/null 2>&1 || command -v huggingface-cli >/dev/null 2>&1'; do
+        (( cli_attempts++ ))
+        [[ ${cli_attempts} -ge 30 ]] && {
+            echo -e "${RED}HF CLI not found in rig-hf (neither 'hf' nor 'huggingface-cli').${RESET}"
+            echo -e "  Recreate downloader service: ${BOLD}rig infra stop hf && rig infra start hf${RESET}"
+            exit 1
+        }
+        sleep 1
+    done
+
+    if docker exec rig-hf sh -lc 'command -v hf >/dev/null 2>&1'; then
+        local_args=(hf download "${SOURCE}" --local-dir "${local_dir}")
+    else
+        local_args=(huggingface-cli download "${SOURCE}" --local-dir "${local_dir}" --local-dir-use-symlinks False)
+    fi
+
     [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}")
 
     docker exec rig-hf "${local_args[@]}"
