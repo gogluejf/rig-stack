@@ -184,7 +184,15 @@ If your server uses different paths than `/models`, `/data`, `/docker`, edit `.e
 MODELS_ROOT=/your/models/path
 DATA_ROOT=/your/data/path
 DOCKER_ROOT=/your/docker/path
+
 ```
+
+`DOCKER_ROOT` has two roles:
+
+- **Always used** for rig-stack control-plane bind mounts (for example Traefik/Qdrant config and active preset files).
+- **Optionally used** for Docker engine + containerd storage during setup step 02, only if you explicitly confirm the relocation prompt.
+
+If Docker already runs other workloads on the host, keep existing engine/containerd roots unless you intentionally migrate data first.
 
 Run `bash scripts/setup/00-init-dirs.sh` to create the subdirectory tree at the new paths.
 
