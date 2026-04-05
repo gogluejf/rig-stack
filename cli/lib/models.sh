@@ -132,7 +132,7 @@ _models_list() {
             done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
         done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     fi
-    ${found_hf} || echo -e "  ${DIM}No HF models downloaded yet — rig models install <hf-repo-id>${RESET}"
+    ${found_hf} || echo -e "  ${DIM}No HF models downloaded yet — rig models install <source>${RESET}"
     echo ""
 
     # ── Ollama models ──────────────────────────────────────────────────────────
