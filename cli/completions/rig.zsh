@@ -54,7 +54,7 @@ _rig_commands() {
         'ollama:Manage Ollama (local models)'
         'rag:Manage RAG API and Qdrant'
         'models:Install and manage models'
-        'service:Manage infrastructure services (hf, qdrant, langfuse, traefik)'
+        'infra:Manage infrastructure services (hf, qdrant, langfuse, traefik)'
         'status:Show active services and models'
         'stats:Show GPU stats and container metrics'
     )
@@ -208,8 +208,8 @@ _rig_models_cmd() {
     esac
 }
 
-_rig_service() {
-    # rig service status | start <svc> | stop <svc>
+_rig_infra() {
+    # rig infra status | start <svc> | stop <svc>
     local -a subcmds=(
         'status:Show all infrastructure services (running / stopped)'
         'start:Start an infrastructure service'
@@ -260,7 +260,7 @@ _rig() {
         ollama)  _rig_ollama ;;
         rag)     _rig_rag ;;
         models)  _rig_models_cmd ;;
-        service) _rig_service ;;
+        infra)   _rig_infra ;;
         status|stats) ;;
         esac
         ;;

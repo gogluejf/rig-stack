@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# cli/lib/service.sh — rig service subcommand
+# cli/lib/infra.sh — rig infra subcommand
 #
 # Manages infrastructure/support services (not AI workloads).
 # AI workloads (vllm, comfyui, ollama) have their own dedicated commands.
 
-cmd_service() {
+cmd_infra() {
     case "${1:-}" in
         --help|-h)
-            echo -e "\n${BOLD}rig service${RESET} — manage infrastructure services"
+            echo -e "\n${BOLD}rig infra${RESET} — manage infrastructure services"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig service ${BOLD}status${RESET}                      ${DIM}show all services (running / stopped)${RESET}"
+            echo -e "  rig infra ${BOLD}status${RESET}                        ${DIM}show all services (running / stopped)${RESET}"
             echo ""
-            echo -e "  rig service ${BOLD}start${RESET} ${CYAN}<service|all>${RESET}         ${DIM}start one or all services${RESET}"
+            echo -e "  rig infra ${BOLD}start${RESET} ${CYAN}<service|all>${RESET}           ${DIM}start one or all services${RESET}"
             echo ""
-            echo -e "  rig service ${BOLD}stop${RESET} ${CYAN}<service|all>${RESET}          ${DIM}stop one or all services${RESET}"
+            echo -e "  rig infra ${BOLD}stop${RESET} ${CYAN}<service|all>${RESET}            ${DIM}stop one or all services${RESET}"
             echo ""
             echo -e "${GREEN}Services:${RESET}"
             echo -e "  hf          ${DIM}HuggingFace downloader (rig-hf)${RESET}"
@@ -24,36 +24,36 @@ cmd_service() {
             echo -e "  all         ${DIM}All of the above${RESET}"
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
-            echo "  rig service status"
-            echo -e "  rig service start ${DIM}hf${RESET}"
-            echo -e "  rig service stop ${DIM}langfuse${RESET}"
-            echo -e "  rig service start ${DIM}all${RESET}"
+            echo "  rig infra status"
+            echo -e "  rig infra start ${DIM}hf${RESET}"
+            echo -e "  rig infra stop ${DIM}langfuse${RESET}"
+            echo -e "  rig infra start ${DIM}all${RESET}"
             echo ""
             ;;
         status)
-            _service_status
+            _infra_status
             ;;
         "")
-            cmd_service --help
+            cmd_infra --help
             ;;
         start)
             shift
-            _service_start "${1:-}"
+            _infra_start "${1:-}"
             ;;
         stop)
             shift
-            _service_stop "${1:-}"
+            _infra_stop "${1:-}"
             ;;
         *)
-            echo -e "${RED}Unknown service subcommand: ${1}${RESET}"
-            echo "Run 'rig service --help' for usage."
+            echo -e "${RED}Unknown infra subcommand: ${1}${RESET}"
+            echo "Run 'rig infra --help' for usage."
             exit 1
             ;;
     esac
 }
 
-_service_indicator() {
-    # _service_indicator <container-name>
+_infra_indicator() {
+    # _infra_indicator <container-name>
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${1}$"; then
         echo -e "${GREEN}●${RESET}"
     else
@@ -61,25 +61,25 @@ _service_indicator() {
     fi
 }
 
-_service_status() {
+_infra_status() {
     require_docker
     echo ""
     printf "  %s  %-12s  %s\n" \
-        "$(_service_indicator rig-traefik)" "traefik" "rig-traefik"
+        "$(_infra_indicator rig-traefik)" "traefik" "rig-traefik"
     printf "  %s  %-12s  %s\n" \
-        "$(_service_indicator rig-hf)" "hf" "rig-hf"
+        "$(_infra_indicator rig-hf)" "hf" "rig-hf"
     printf "  %s  %-12s  %s\n" \
-        "$(_service_indicator rig-qdrant)" "qdrant" "rig-qdrant"
+        "$(_infra_indicator rig-qdrant)" "qdrant" "rig-qdrant"
     printf "  %s  %-12s  %s\n" \
-        "$(_service_indicator rig-langfuse)" "langfuse" "rig-langfuse  rig-postgres"
+        "$(_infra_indicator rig-langfuse)" "langfuse" "rig-langfuse  rig-postgres"
     echo ""
 }
 
-_service_start() {
+_infra_start() {
     local svc="${1:-}"
     [[ -z "${svc}" ]] && {
         echo -e "${RED}Service name required.${RESET}"
-        echo "  rig service start <hf|qdrant|langfuse|traefik|all>"
+        echo "  rig infra start <hf|qdrant|langfuse|traefik|all>"
         exit 1
     }
     require_docker
@@ -87,7 +87,7 @@ _service_start() {
         hf)
             echo -e "${CYAN}Starting hf...${RESET}"
             rig_compose --profile hf up -d hf
-            _service_wait_ready rig-hf
+            _infra_wait_ready rig-hf
             echo -e "${GREEN}✓  rig-hf running${RESET}"
             ;;
         qdrant)
@@ -106,10 +106,10 @@ _service_start() {
             echo -e "${GREEN}✓  rig-traefik running${RESET}"
             ;;
         all)
-            _service_start hf
-            _service_start qdrant
-            _service_start langfuse
-            _service_start traefik
+            _infra_start hf
+            _infra_start qdrant
+            _infra_start langfuse
+            _infra_start traefik
             ;;
         *)
             echo -e "${RED}Unknown service: ${svc}${RESET}"
@@ -119,11 +119,11 @@ _service_start() {
     esac
 }
 
-_service_stop() {
+_infra_stop() {
     local svc="${1:-}"
     [[ -z "${svc}" ]] && {
         echo -e "${RED}Service name required.${RESET}"
-        echo "  rig service stop <hf|qdrant|langfuse|traefik|all>"
+        echo "  rig infra stop <hf|qdrant|langfuse|traefik|all>"
         exit 1
     }
     require_docker
@@ -149,10 +149,10 @@ _service_stop() {
             echo -e "${GREEN}✓  rig-traefik stopped${RESET}"
             ;;
         all)
-            _service_stop hf
-            _service_stop qdrant
-            _service_stop langfuse
-            _service_stop traefik
+            _infra_stop hf
+            _infra_stop qdrant
+            _infra_stop langfuse
+            _infra_stop traefik
             ;;
         *)
             echo -e "${RED}Unknown service: ${svc}${RESET}"
@@ -162,8 +162,8 @@ _service_stop() {
     esac
 }
 
-_service_wait_ready() {
-    # _service_wait_ready <container-name>  — wait until container is running
+_infra_wait_ready() {
+    # _infra_wait_ready <container-name>  — wait until container is running
     local container="${1}"
     local attempts=0
     until docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${container}$"; do
@@ -178,12 +178,17 @@ _service_wait_ready() {
 
 # Called transparently by install-model.sh / models list when rig-hf is needed.
 # Ensures rig-hf is running; starts it if not.
-service_ensure_hf() {
+infra_ensure_hf() {
     if ! container_running rig-hf; then
         echo -e "${CYAN}Starting rig-hf...${RESET}"
         rig_compose --profile hf up -d hf
-        _service_wait_ready rig-hf
+        _infra_wait_ready rig-hf
         # Give pip a moment to finish installing packages inside the container
         sleep 3
     fi
+}
+
+# Backward-compatible alias for old internal name.
+service_ensure_hf() {
+    infra_ensure_hf "$@"
 }

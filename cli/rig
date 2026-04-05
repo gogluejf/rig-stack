@@ -16,7 +16,7 @@ export RIG_ROOT="$(dirname "${CLI_DIR}")"
 
 # ── Load env and libs ─────────────────────────────────────────────────────────
 source "${CLI_DIR}/lib/utils.sh"
-source "${CLI_DIR}/lib/service.sh"
+source "${CLI_DIR}/lib/infra.sh"
 source "${CLI_DIR}/lib/vllm.sh"
 source "${CLI_DIR}/lib/comfy.sh"
 source "${CLI_DIR}/lib/ollama.sh"
@@ -81,7 +81,7 @@ print_help() {
     _help_cmd_row "" "" "${DIM}show${RESET} ${CYAN}<source>${RESET}" "show <source>" "show one model (use --type for Ollama or ComfyUI)"
     _help_cmd_row "" "" "${DIM}remove${RESET} ${CYAN}<source>${RESET}" "remove <source>" "remove one model (use --type for Ollama or ComfyUI)"
     echo ""
-    _help_cmd_row "${BOLD}service${RESET}" "service" "${DIM}status${RESET}" "status" "show infrastructure services (hf, qdrant, langfuse, traefik)"
+    _help_cmd_row "${BOLD}infra${RESET}" "infra" "${DIM}status${RESET}" "status" "show infrastructure services (hf, qdrant, langfuse, traefik)"
     _help_cmd_row "" "" "${DIM}start${RESET} ${CYAN}<service|all>${RESET}" "start <service|all>" "start an infrastructure service"
     _help_cmd_row "" "" "${DIM}stop${RESET} ${CYAN}<service|all>${RESET}" "stop <service|all>" "stop an infrastructure service"
     echo ""
@@ -101,8 +101,8 @@ print_help() {
     echo -e "    rig comfy start ${YELLOW_SOFT}--edge${RESET}"
     echo -e "    rig comfy workflows"
     echo -e "    rig ollama start"
-    echo -e "    rig service status"
-    echo -e "    rig service start ${DIM}hf${RESET}"
+    echo -e "    rig infra status"
+    echo -e "    rig infra start ${DIM}hf${RESET}"
     echo -e "    rig models init ${YELLOW_SOFT}--minimal${RESET}"
     echo -e "    rig models install ${DIM}Kbenkhaled/Qwen3.5-27B-NVFP4${RESET}"
     echo -e "    rig models install ${DIM}TencentARC/GFPGAN${RESET} ${YELLOW_SOFT}--file${RESET} ${DIM}GFPGANv1.4.pth${RESET}"
@@ -122,7 +122,7 @@ case "${COMMAND}" in
     ollama)     cmd_ollama "$@" ;;
     rag)        cmd_rag "$@" ;;
     models)     cmd_models "$@" ;;
-    service)    cmd_service "$@" ;;
+    infra)      cmd_infra "$@" ;;
     status)     cmd_status "$@" ;;
     stats)      cmd_stats "$@" ;;
     --help|-h|help|"")  print_help ;;

@@ -49,7 +49,7 @@ _rig_completions() {
 
     # ── Level 1: top-level command ────────────────────────────────────────────
     if [[ "${cword}" -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "serve comfy ollama rag models service status stats --help" -- "${cur}"))
+        COMPREPLY=($(compgen -W "serve comfy ollama rag models infra status stats --help" -- "${cur}"))
         return
     fi
 
@@ -148,8 +148,8 @@ _rig_completions() {
         esac
         ;;
 
-    # ── rig service ───────────────────────────────────────────────────────────
-    service)
+    # ── rig infra ─────────────────────────────────────────────────────────────
+    infra)
         if [[ "${cword}" -eq 2 ]]; then
             COMPREPLY=($(compgen -W "start stop status --help" -- "${cur}"))
             return
