@@ -91,7 +91,11 @@ _serve_list() {
             marker="${RED}●${RESET}"
             echo -e "  ${marker} ${RED}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
         else
+            if [[ "${name}" == "${active_preset}" ]]; then
+            echo -e "  ${marker} ${GREEN}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+        else
             echo -e "  ${marker} ${name_f} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+        fi
         fi
     done
     hr 118
