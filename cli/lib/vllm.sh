@@ -48,12 +48,14 @@ _serve_list() {
     local preset_dir="${RIG_ROOT}/presets/vllm"
     local active_preset=""
     local active_file="${RIG_ROOT}/.env.active.vllm"
+    local models_root="${MODELS_ROOT:-/models}"
     [[ -f "${active_file}" ]] && active_preset=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
 
+    echo ""
     print_header "vLLM presets"
-    hr
+    hr 118
     printf "  ${BOLD}  %-28s %-20s %-10s %-6s %-6s %s${RESET}\n" "PRESET" "MODEL" "CTX" "KV" "GPU" "DESCRIPTION"
-    hr
+    hr 118
     for f in "${preset_dir}"/*.env; do
         [[ -f "${f}" ]] || continue
         local name model ctx kv gpu desc marker
@@ -68,10 +70,32 @@ _serve_list() {
         else
             marker=" "
         fi
-        printf "  ${marker} %-28s %-20s %-10s %-6s %-6s %s\n" "${name}" "${model:0:18}" "${ctx}" "${kv}" "${gpu}" "${desc:0:45}"
+        # pre-pad fields so colors don't break alignment
+        local name_f ctx_f kv_f gpu_f
+        printf -v name_f "%-28s" "${name}"
+        printf -v ctx_f  "%-10s" "${ctx}"
+        printf -v kv_f   "%-6s"  "${kv}"
+        printf -v gpu_f  "%-6s"  "${gpu}"
+        # model: dim org/ + white repo, padded to 20
+        local model_short="${model:0:18}"
+        local org="${model_short%%/*}"
+        local repo="${model_short#*/}"
+        local pad=$(( 20 - ${#model_short} ))
+        local model_pad=""
+        printf -v model_pad "%${pad}s" ""
+        local model_f="${DIM}${org}/${RESET}${repo}${model_pad}"
+        # truncate description at word boundary to fit hr width
+        local desc_t="${desc:0:38}"
+        [[ "${#desc}" -gt 38 ]] && desc_t="${desc_t% *}…"
+        if [[ ! -d "${models_root}/hf/${model}" ]]; then
+            marker="${RED}●${RESET}"
+            echo -e "  ${marker} ${RED}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+        else
+            echo -e "  ${marker} ${name_f} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+        fi
     done
-    hr
-    echo -e "  ${DIM}✓ = active preset (used on next start)${RESET}"
+    hr 118
+    echo -e "  ${DIM}✓ = active  ${RED}●${RESET}${DIM} = model not downloaded${RESET}"
     echo -e "  ${DIM}Set: rig serve preset set <preset>${RESET}"
     echo ""
 }
