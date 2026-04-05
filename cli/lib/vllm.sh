@@ -12,9 +12,9 @@ cmd_serve() {
             echo ""
             echo -e "  rig serve ${BOLD}stop${RESET}                     ${DIM}stop vLLM${RESET}"
             echo ""
-            echo -e "  rig serve preset ${BOLD}set${RESET} ${CYAN}<name>${RESET}        ${DIM}set active preset (used on next start)${RESET}"
-            echo ""
             echo -e "  rig serve preset ${BOLD}list${RESET}              ${DIM}list available presets${RESET}"
+            echo ""
+            echo -e "  rig serve preset ${BOLD}set${RESET} ${CYAN}<name>${RESET}        ${DIM}set active preset (used on next start)${RESET}"
             echo ""
             echo -e "  rig serve preset ${BOLD}show${RESET} ${CYAN}[<name>]${RESET}     ${DIM}show preset config (active if no name given)${RESET}"
             echo ""
@@ -22,8 +22,8 @@ cmd_serve() {
             echo -e "  rig serve ${DIM}qwen3-5-27b${RESET}"
             echo -e "  rig serve ${DIM}qwen3-5-27b-fast${RESET} ${YELLOW_SOFT}--edge${RESET}"
             echo -e "  rig serve"
-            echo -e "  rig serve preset set ${DIM}qwen3-5-27b-fast${RESET}"
             echo "  rig serve preset list"
+            echo -e "  rig serve preset set ${DIM}qwen3-5-27b-fast${RESET}"
             echo -e "  rig serve preset show ${DIM}qwen3-5-27b${RESET}"
             echo ""
             ;;
@@ -171,11 +171,14 @@ _serve_preset() {
             shift
             _serve_preset_show "$@"
             ;;
-        --help|-h|"")
+        --help|-h)
             echo "Usage:"
-            echo "  rig serve preset list               list available presets"
-            echo "  rig serve preset set <name>        set active preset (used on next start)"
+            echo "  rig serve preset [list]             list available presets"
+            echo "  rig serve preset set <name>         set active preset (used on next start)"
             echo "  rig serve preset show [<name>]     show preset config (active if no name given)"
+            ;;
+        "")
+            _serve_list
             ;;
         *)
             echo -e "${RED}Unknown preset subcommand: ${1}${RESET}"

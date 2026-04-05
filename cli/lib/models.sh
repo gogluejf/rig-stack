@@ -113,8 +113,9 @@ _models_list() {
 
     echo ""
 
-    # ── HF models (host filesystem scan of ${MODELS_ROOT}/hf/) ───────────────
-    echo -e "  ${BOLD}── HF models${RESET}  ${DIM}(${models_root}/hf)${RESET}"
+    # ── HF models ─────────────────────────────────────────────────────────────
+    echo -e "  ${BOLD}${CYAN}── HF models${RESET}  ${DIM}(${models_root}/hf)${RESET}"
+    echo -e "  ${DIM}$(hr 66)${RESET}"
     local found_hf=false
     if [[ -d "${models_root}/hf" ]]; then
         while IFS= read -r -d '' org_dir; do
@@ -124,31 +125,35 @@ _models_list() {
                 local repo size
                 repo="$(basename "${repo_dir}")"
                 size=$(du -sh "${repo_dir}" 2>/dev/null | cut -f1 || echo "?")
-                printf "  %-8s  %s/%s\n" "${size}" "${org}" "${repo}"
+                printf "  ${YELLOW_SOFT}%6s${RESET}  ${DIM}%s/${RESET}%s\n" "${size}" "${org}" "${repo}"
                 found_hf=true
             done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
         done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     fi
-    ${found_hf} || echo -e "  ${DIM}No HF models downloaded yet — rig models install <source>${RESET}"
+    ${found_hf} || echo -e "  ${DIM}No HF models yet — rig models install <source>${RESET}"
+    echo ""
     echo ""
 
     # ── Ollama models ──────────────────────────────────────────────────────────
-    echo -e "  ${BOLD}── Ollama models${RESET}"
+    echo -e "  ${BOLD}${CYAN}── Ollama models${RESET}  ${DIM}(${models_root}/ollama)${RESET}"
+    echo -e "  ${DIM}$(hr 66)${RESET}"
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
         docker exec rig-ollama ollama list 2>/dev/null | sed 's/^/  /'
     else
-        echo -e "  ${DIM}Ollama not running — rig ollama start${RESET}"
+        echo -e "  ${DIM}Ollama not running — rig ollama${RESET}"
     fi
+    echo ""
     echo ""
 
     # ── ComfyUI models ────────────────────────────────────────────────────────
-    echo -e "  ${BOLD}── ComfyUI models${RESET}"
     local comfy_container
     comfy_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -m1 '^rig-comfyui' || true)
+    echo -e "  ${BOLD}${CYAN}── ComfyUI models${RESET}  ${DIM}(${models_root}/comfy)${RESET}"
+    echo -e "  ${DIM}$(hr 66)${RESET}"
     if [[ -n "${comfy_container}" ]]; then
         docker exec "${comfy_container}" comfy model list 2>/dev/null | sed 's/^/  /'
     else
-        echo -e "  ${DIM}ComfyUI not running — rig comfy start${RESET}"
+        echo -e "  ${DIM}ComfyUI not running — rig comfy${RESET}"
     fi
     echo ""
 }
