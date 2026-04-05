@@ -378,7 +378,7 @@ _status_plain_state() {
 
 _status_summary() {
     local vllm_container comfy_container
-    local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state
+    local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state
     local vllm_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
 
     vllm_container="$(_status_vllm_container 2>/dev/null || true)"
@@ -392,6 +392,7 @@ _status_summary() {
     langfuse_state="$(_status_state "rig-langfuse")"
     postgres_state="$(_status_state "rig-postgres")"
     traefik_state="$(_status_state "rig-traefik")"
+    hf_state="$(_status_state "rig-hf")"
 
     if [[ "${vllm_state}" == "running" ]]; then
         vllm_model="$(_status_vllm_primary_model)"
@@ -437,6 +438,8 @@ _status_summary() {
         "langfuse" "$(_status_trim "$(_status_value_if_running "${langfuse_state}" "http://rig-langfuse:3000")" 30)" "$(_status_value_if_running "${langfuse_state}" "/langfuse")" "$(_status_icon "${langfuse_state}")" "$(_status_label "${langfuse_state}")"
     printf "  %-12s %-30s %-12s %b %b\n" \
         "postgres" "$(_status_trim "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")" 30)" "-" "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
+    printf "  %-12s %-30s %-12s %b %b\n" \
+        "hf" "-" "-" "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
     hr 85
     echo -e "  ${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
     echo ""
