@@ -74,7 +74,7 @@ RUN pip3 install --no-cache-dir vllm \
 ENV HF_HOME=/root/.cache/huggingface
 ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
 
-COPY entrypoint.edge.sh /usr/local/bin/entrypoint-vllm-edge.sh
-RUN chmod +x /usr/local/bin/entrypoint-vllm-edge.sh
+COPY entrypoint.sh /usr/local/bin/entrypoint-vllm.sh
+RUN chmod +x /usr/local/bin/entrypoint-vllm.sh
 
-CMD ["/usr/local/bin/entrypoint-vllm-edge.sh"]
+CMD ["/usr/local/bin/entrypoint-vllm.sh"]

@@ -46,9 +46,9 @@ ENV COMFYUI_INPUT_DIR=/inputs
 
 EXPOSE 8188
 
-CMD ["sh", "-c", "python main.py \
-    --cpu \
-    --listen ${COMFYUI_LISTEN:-0.0.0.0} \
-    --port ${COMFYUI_PORT:-8188} \
-    --output-directory /outputs \
-    --input-directory /inputs"]
+COPY entrypoint.sh /usr/local/bin/entrypoint-comfyui.sh
+RUN chmod +x /usr/local/bin/entrypoint-comfyui.sh
+
+ENV COMFYUI_CPU=true
+
+CMD ["/usr/local/bin/entrypoint-comfyui.sh"]
