@@ -8,7 +8,7 @@ cmd_models() {
             echo -e "\n${BOLD}rig models${RESET} — model management"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig ${BOLD}models${RESET}                         ${DIM}list installed models${RESET}"
+            echo -e "  rig models ${BOLD}[list]${RESET}                    ${DIM}list installed models${RESET}"
             echo ""
             echo -e "  rig models ${BOLD}init${RESET} ${YELLOW_SOFT}[--minimal|--all]${RESET}  ${DIM}install a curated model bundle${RESET}"
             echo -e "    ${YELLOW_SOFT}--minimal${RESET}                        ${DIM}install the minimal model bundle${RESET}"
@@ -38,10 +38,7 @@ cmd_models() {
             echo -e "  rig models remove ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
             echo ""
             ;;
-        "")
-            cmd_models --help
-            ;;
-        list)
+        ""|list)
             _models_list
             ;;
         init)

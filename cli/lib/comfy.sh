@@ -7,7 +7,7 @@ cmd_comfy() {
             echo -e "\n${BOLD}rig comfy${RESET} — manage ComfyUI"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig comfy ${BOLD}start${RESET} ${YELLOW_SOFT}[--cpu|--edge]${RESET}     ${DIM}start ComfyUI (default: GPU stable)${RESET}"
+            echo -e "  rig comfy ${BOLD}[start]${RESET} ${YELLOW_SOFT}[--cpu|--edge]${RESET}   ${DIM}start ComfyUI (default: GPU stable)${RESET}"
             echo -e "    ${YELLOW_SOFT}--cpu${RESET}                            ${DIM}use CPU mode${RESET}"
             echo -e "    ${YELLOW_SOFT}--edge${RESET}                           ${DIM}use Blackwell/sm_120 edge mode${RESET}"
             echo ""
@@ -18,8 +18,9 @@ cmd_comfy() {
             echo -e "  rig comfy ${BOLD}workflows${RESET}                ${DIM}list saved workflow files${RESET}"
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
-            echo "  rig comfy start"
-            echo -e "  rig comfy start ${YELLOW_SOFT}--cpu${RESET}"
+            echo "  rig comfy"
+            echo -e "  rig comfy ${YELLOW_SOFT}--cpu${RESET}"
+            echo -e "  rig comfy ${YELLOW_SOFT}--edge${RESET}"
             echo -e "  rig comfy start ${YELLOW_SOFT}--edge${RESET}"
             echo "  rig comfy list"
             echo "  rig comfy workflows"
@@ -38,8 +39,8 @@ cmd_comfy() {
         workflows)
             _comfy_workflows
             ;;
-        "")
-            cmd_comfy --help
+        --cpu|--edge|"")
+            _comfy_start "$@"
             ;;
         *)
             echo -e "${RED}Unknown comfy subcommand: ${1}${RESET}"

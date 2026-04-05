@@ -70,7 +70,7 @@ _rig_completions() {
             for p in ${presets}; do
                 [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
             done
-            COMPREPLY=($(compgen -W "${marked} stop preset --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${marked} start stop preset --help" -- "${cur}"))
             return
         fi
 
@@ -83,8 +83,24 @@ _rig_completions() {
                     COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
                 fi
                 ;;
+            start)
+                # Explicit start — offer presets at cword=3, then --edge
+                if [[ "${cword}" -eq 3 ]]; then
+                    local active
+                    active="$(_rig_active_preset vllm 2>/dev/null)"
+                    local marked=""
+                    local p
+                    for p in ${presets}; do
+                        [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
+                    done
+                    COMPREPLY=($(compgen -W "${marked} --edge" -- "${cur}"))
+                else
+                    _rig_contains "--edge" "${words[@]}" || \
+                        COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
+                fi
+                ;;
             *)
-                # Preset already given — offer --edge if not yet present
+                # Preset given as shortcut — offer --edge if not yet present
                 _rig_contains "--edge" "${words[@]}" || \
                     COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
                 ;;
@@ -94,28 +110,38 @@ _rig_completions() {
     # ── rig comfy ─────────────────────────────────────────────────────────────
     comfy)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop list workflows --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop list workflows --cpu --edge --help" -- "${cur}"))
             return
         fi
 
-        if [[ "${sub}" == "start" ]]; then
-            if ! _rig_contains "--cpu" "${words[@]}" && ! _rig_contains "--edge" "${words[@]}"; then
-                COMPREPLY=($(compgen -W "--cpu --edge" -- "${cur}"))
-            fi
-        fi
+        case "${sub}" in
+            start)
+                if ! _rig_contains "--cpu" "${words[@]}" && ! _rig_contains "--edge" "${words[@]}"; then
+                    COMPREPLY=($(compgen -W "--cpu --edge" -- "${cur}"))
+                fi
+                ;;
+            --cpu|--edge)
+                # flag used as shortcut — mutually exclusive, nothing more to offer
+                ;;
+        esac
         ;;
 
     # ── rig ollama ────────────────────────────────────────────────────────────
     ollama)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop list --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop list --gpu --help" -- "${cur}"))
             return
         fi
 
-        if [[ "${sub}" == "start" ]]; then
-            _rig_contains "--gpu" "${words[@]}" || \
-                COMPREPLY=($(compgen -W "--gpu" -- "${cur}"))
-        fi
+        case "${sub}" in
+            start)
+                _rig_contains "--gpu" "${words[@]}" || \
+                    COMPREPLY=($(compgen -W "--gpu" -- "${cur}"))
+                ;;
+            --gpu)
+                # flag used as shortcut — nothing more to offer
+                ;;
+        esac
         ;;
 
     # ── rig rag ───────────────────────────────────────────────────────────────

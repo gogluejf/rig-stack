@@ -10,7 +10,7 @@ cmd_infra() {
             echo -e "\n${BOLD}rig infra${RESET} — manage infrastructure services"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig infra ${BOLD}status${RESET}                        ${DIM}show all services (running / stopped)${RESET}"
+            echo -e "  rig infra ${BOLD}[status]${RESET}                      ${DIM}show all services (running / stopped)${RESET}"
             echo ""
             echo -e "  rig infra ${BOLD}start${RESET} ${CYAN}<service|all>${RESET}           ${DIM}start one or all services${RESET}"
             echo ""
@@ -24,17 +24,15 @@ cmd_infra() {
             echo -e "  all         ${DIM}All of the above${RESET}"
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
+            echo "  rig infra"
             echo "  rig infra status"
             echo -e "  rig infra start ${DIM}hf${RESET}"
             echo -e "  rig infra stop ${DIM}langfuse${RESET}"
             echo -e "  rig infra start ${DIM}all${RESET}"
             echo ""
             ;;
-        status)
+        status|"")
             _infra_status
-            ;;
-        "")
-            cmd_infra --help
             ;;
         start)
             shift

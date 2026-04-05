@@ -7,18 +7,19 @@ cmd_rag() {
             echo -e "\n${BOLD}rig rag${RESET} — manage RAG API"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig rag ${BOLD}start${RESET}                     ${DIM}start RAG API + Qdrant${RESET}"
+            echo -e "  rig rag ${BOLD}[start]${RESET}                   ${DIM}start RAG API + Qdrant${RESET}"
             echo ""
             echo -e "  rig rag ${BOLD}stop${RESET}                      ${DIM}stop RAG API + Qdrant${RESET}"
             echo ""
             echo -e "  rig rag ${BOLD}status${RESET}                    ${DIM}show RAG API health${RESET}"
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
+            echo "  rig rag"
             echo "  rig rag start"
             echo "  rig rag status"
             echo ""
             ;;
-        start)
+        start|"")
             require_docker
             echo -e "${CYAN}Starting RAG API and Qdrant...${RESET}"
             rig_compose --profile rag up -d
@@ -40,9 +41,6 @@ cmd_rag() {
             else
                 echo -e "${YELLOW}RAG API not responding${RESET}: ${url}"
             fi
-            ;;
-        "")
-            cmd_rag --help
             ;;
         *)
             echo -e "${RED}Unknown rag subcommand: ${1:-}${RESET}"

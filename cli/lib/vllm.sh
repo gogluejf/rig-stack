@@ -7,7 +7,7 @@ cmd_serve() {
             echo -e "\n${BOLD}rig serve${RESET} — start vLLM inference$"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig ${BOLD}serve${RESET} ${CYAN}[<preset>]${RESET} ${YELLOW_SOFT}[--edge]${RESET}      ${DIM}start vLLM (uses active preset if none given)${RESET}"
+            echo -e "  rig ${BOLD}serve${RESET} ${BOLD}[start]${RESET} ${CYAN}[<preset>]${RESET} ${YELLOW_SOFT}[--edge]${RESET}  ${DIM}start vLLM (uses active preset if none given)${RESET}"
             echo -e "    ${YELLOW_SOFT}--edge${RESET}                           ${DIM}use Blackwell/sm_120 edge container${RESET}"
             echo ""
             echo -e "  rig serve ${BOLD}stop${RESET}                     ${DIM}stop vLLM${RESET}"
@@ -26,6 +26,10 @@ cmd_serve() {
             echo "  rig serve preset list"
             echo -e "  rig serve preset show ${DIM}qwen3-5-27b${RESET}"
             echo ""
+            ;;
+        start)
+            shift
+            _serve_start "$@"
             ;;
         stop)
             _serve_stop
