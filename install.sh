@@ -180,7 +180,7 @@ run_step "${SETUP_DIR}/05-install-cli.sh"             "05 — Install rig CLI"
 
 echo -e "\n${GREEN}${BOLD}✓  rig-stack install complete.${RESET}"
 echo -e "\nNext steps:"
-echo -e "  1. Download models:  ${CYAN}bash scripts/models/init-models.sh${RESET}"
+echo -e "  1. Download models:  ${CYAN}rig models init${RESET}"
 echo -e "  2. Start serving:    ${CYAN}rig serve qwen3-5-27b${RESET}"
 echo -e "  3. Check status:     ${CYAN}rig status${RESET}"
 echo -e "  4. GPU stats:        ${CYAN}rig stats${RESET}"
