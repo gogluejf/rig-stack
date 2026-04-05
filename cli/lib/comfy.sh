@@ -135,6 +135,9 @@ _comfy_list() {
 }
 
 _comfy_workflows() {
+    echo -e "${DIM}Workflows not implemented yet.${RESET}"
+    return 0
+
     local scaffold_dir="${RIG_ROOT}/workflows/comfyui"
     local data_dir="${DATA_ROOT:-/data}/workflows/comfyui"
 
