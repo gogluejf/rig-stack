@@ -1,38 +1,41 @@
-# rig-stack
+# RigStack
 
-Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a private AI cloud, easy to manage, for your local network — unified endpoint, GPU-optimized inference, and a CLI that manages the whole rig. Built to run inside a network you trust.
+Squeeze every FLOP from your NVIDIA GPU. RigStack turns your RTX into a private AI cloud — unified endpoint, GPU-optimized inference, and a CLI to manage the entire rig. Built to run inside a network you trust.
+
+Run LLMs, image generation, and utility models locally on your own hardware. With a single command, serve multiple models optimized for your GPU, manage them through a clean CLI, and route everything through one endpoint.
+
+No cloud. No per-token costs. Just raw local inference power.
+
+RigStack abstracts the complexity of running multiple inference engines while keeping full control and extensibility. Deploy fast, learn the stack, and build custom applications on top of your own infrastructure.
 
 ## Features
 
-- **Dual PyTorch builds**
-  Stable release plus nightly edge compiled for Blackwell (sm_120). Up to 40-60% faster inference on RTX 5090 with the edge build, while still supporting older GPUs with the stable build.
+- **Single endpoint**  
+  All services routed through Traefik on port 80. One host, one entry point.
 
-- **Smart GPU/CPU split**
-  Large LLMs run on GPU via vLLM, while utility models and lighter workflows can move to CPU. Use the whole machine.
+- **Unified model registry**  
+  Manage models across vLLM, Ollama, and ComfyUI from one interface, no more models spaghetti.
 
-- **Preset-driven inference**
-  Switch quantization, context length, and throughput with one command. Keep multiple serving setups ready to go.
+- **Inference presets**  
+  Define multiple configs for the same model (quantization, context length, throughput) and switch instantly with `rig serve <preset>`.
 
-- **Native CLI**
-  `rig` follows Debian UX conventions: subcommands, flags, tab completion. No YAML archaeology.
+- **Edge GPU builds**  
+  Unlock 40–60% more performance on modern GPUs (e.g. RTX 5090) with containerized nightly PyTorch builds. Use stable for compatibility, or switch to edge for maximum throughput.
 
-- **Single endpoint**
-  Every service sits behind Traefik on port 80. One host, one port.
+- **Clear model/data separation**  
+  Models and data live outside containers (`$MODELS_ROOT`, `$DATA_ROOT`). Rebuild services without touching assets.
 
-- **Unified model registry**
-  Download, inspect, or remove any model across vLLM, Ollama, and ComfyUI with one command.
+- **Built-in RAG**  
+  `/rag` endpoint powered by Qdrant, ready to plug into apps.
 
-- **Clear model/data separation**
-  Models and data live on host paths like `$MODELS_ROOT` and `$DATA_ROOT`, independent of the containers serving them. That abstraction lets you rebuild, replace, or upgrade an inference server without touching the stored assets.
-
-- **Built-in RAG**
-  Vector retrieval API on `/rag` backed by Qdrant, ready to wire into any workflow.
-
-- **Self-hosted observability**
+- **Self-hosted observability**  
   Langfuse traces every request. Nothing leaves your network.
 
-- **Trusted-network design**
-  No auth overhead, no cloud dependency, no per-token cost.
+- **Trusted-network design**  
+  No auth overhead, no cloud dependency.
+
+- **Containerized stack**  
+  Docker-based, reproducible, easy to start, easy to evolve.
 
 ---
 
@@ -42,8 +45,8 @@ Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a privat
 |---|---|---|
 | LLM inference | vLLM (stable + Blackwell-edge) | `/v1` |
 | Image/Video generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
-| Utility models | Ollama (CPU/GPU) | `/ollama` |
-| RAG API | FastAPI + Qdrant | `/rag` |
+| Utility models | Ollama (CPU/GPU) | `/ollama/v1/` |
+| RAG API | FastAPI + Qdrant | `/rag/v1` |
 | Observability | Langfuse (self-hosted) | `/langfuse` |
 | Gateway | Traefik | port 80 |
 
@@ -51,7 +54,7 @@ Squeeze every FLOP from your NVIDIA card. rig-stack turns your RTX into a privat
 
 ## Prerequisites
 
-- Ubuntu 24.04 (or Debian-family with `OS_FAMILY=debian` in `.env`)
+- Ubuntu 24.04 (tested) (or Debian-family with `OS_FAMILY=debian` in `.env`)
 - NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell features require RTX 50xx)
 - NVIDIA driver ≥ 580
 - Docker CE (not snap)
@@ -212,7 +215,7 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 
 ## Future features
 
-- **Comfy Workflows** — export and serve ComfyUI workflows with `rig comfy workflows`
+- **Comfy Workflows** — manage workflows, download modeles via `rig comfy workflow` 
 - **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
 - **Broader edge support** — edge builds for GPUs beyond RTX 5090 / Blackwell architecture
 - **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
