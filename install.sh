@@ -52,8 +52,8 @@ if [[ -f "${SCRIPT_DIR}/.env" ]]; then
     set +a
 else
     echo -e "${YELLOW}No .env found. Copy .env.example to .env and edit it first.${RESET}"
-    echo -e "  cp .env.example .env"
-    echo -e "  See README storage layout notes for MODELS_ROOT / DATA_ROOT / DOCKER_ROOT behavior."
+    echo -e " cp .env.example .env"
+    echo -e " If you have an Hugginface token (required for some gated models), set HF_TOKEN in your .env."
     exit 1
 fi
 

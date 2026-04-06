@@ -87,7 +87,13 @@ if [[ "${TYPE}" == "hf" ]]; then
     [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}")
 
     docker exec rig-hf "${local_args[@]}"
-    echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${local_dir}${RESET}"
+
+    # If a specific file was requested, verify it actually landed on disk.
+    if [[ -n "${FILE}" ]] && [[ ! -f "${MODELS_ROOT}/hf/${SOURCE}/${FILE}" ]]; then
+        echo -e "${YELLOW}⚠  ${SOURCE} (${FILE}) — file not found in repo, skipping${RESET}"
+    else
+        echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${local_dir}${RESET}"
+    fi
 fi
 
 # ── ollama ────────────────────────────────────────────────────────────────────

@@ -130,7 +130,7 @@ rig models install TencentARC/GFPGAN --file GFPGANv1.4.pth --type comfy
 
 ```
 
-For gated models (some Llama, Qwen variants), set `HF_TOKEN` in your `.env`.
+For gated models (some Llama, Qwen variants), and faster download,  set `HF_TOKEN` in your `.env`.
 
 ---
 
