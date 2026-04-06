@@ -24,8 +24,7 @@ cmd_rag() {
             echo -e "${CYAN}Starting RAG API and Qdrant...${RESET}"
             rig_compose --profile rag up -d
             echo -e "${GREEN}✓  RAG stack running${RESET}"
-            echo -e "  API      : http://localhost:${RAG_PORT:-8001}/health"
-            echo -e "  Via proxy: http://localhost:${TRAEFIK_PORT:-80}/rag/health"
+            echo -e "  API      : http://localhost:${TRAEFIK_PORT:-80}/rag/health"
             echo -e "  Qdrant   : http://localhost:${QDRANT_PORT:-6333}/dashboard"
             ;;
         stop)
