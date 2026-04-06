@@ -175,7 +175,11 @@ _models_init() {
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
-        _install hf Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-GGUF Qwen3.5-27B.Q4_K_M.gguf
+        _install hf Jackrong/Qwopus3.5-27B-v3-GGUF Qwopus3.5-27B-v3-Q6_K.gguf
+        _install hf Jackrong/Qwopus3.5-27B-v3 tokenizer.json
+        _install hf Jackrong/Qwopus3.5-27B-v3 tokenizer_config.json
+        _install hf Jackrong/Qwopus3.5-27B-v3 chat_template.jinja
+        _install hf Jackrong/Qwopus3.5-27B-v3 config.json
         _install hf nomic-ai/nomic-embed-text-v1.5
     }
 

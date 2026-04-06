@@ -19,7 +19,8 @@ Downloaded to `${MODELS_ROOT}/hf/<org>/<repo>`. Used by vllm.
 | Source | Bundle | Description |
 |---|---|---|
 | `Kbenkhaled/Qwen3.5-27B-NVFP4` | minimal | Main LLM — chat, reasoning, coding, tool-calling |
-| `Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled-GGUF` + `qwen3.5-27b-q4_k_m.gguf` | minimal | Distilled GGUF LLM for the `qwen3-5-27b-distilled` vLLM preset |
+| `Jackrong/Qwopus3.5-27B-v3-GGUF` + `Qwopus3.5-27B-v3-Q6_K.gguf` | minimal | Distilled Opus 4.6 offering strong reasoning — `qwopus3-5-27b` vLLM preset |
+| `Jackrong/Qwopus3.5-27B-v3` (tokenizer files only) | minimal | Tokenizer for the Qwopus GGUF preset — no safetensors downloaded |
 | `nomic-ai/nomic-embed-text-v1.5` | minimal | RAG embeddings |
 | `starvector/starvector-8b-im2svg` | all | Image → SVG conversion |
 

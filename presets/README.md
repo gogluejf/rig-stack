@@ -33,7 +33,7 @@ See `presets/vllm/README.md` for the parameter reference and available presets.
 |---|---|---|
 | `MODEL_ID` | HuggingFace model identifier (display/metadata) | `Kbenkhaled/Qwen3.5-27B-NVFP4` |
 | `MODEL_PATH` | Path inside container to model weights or a specific GGUF file | `/models/hf/Kbenkhaled/Qwen3.5-27B-NVFP4` |
-| `TOKENIZER` | Optional tokenizer identifier when model weights and tokenizer come from different sources | `Jackrong/Qwen3.5-27B-Claude-4.6-Opus-Reasoning-Distilled` |
+| `TOKENIZER` | Optional tokenizer identifier when model weights and tokenizer come from different sources | |
 | `MAX_MODEL_LEN` | Maximum context length in tokens | `65536` |
 | `KV_CACHE_DTYPE` | KV cache quantization (`auto`, `fp8`, `fp16`) | `fp8` |
 | `ENABLE_PREFIX_CACHING` | Cache prompt prefixes for repeated contexts | `true` |
