@@ -227,3 +227,4 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 - **Extended RAG system prompts** — built-in instruction architectures for custom-branded endpoints
 - **MCP server** — tooling layer over your private cloud AI endpoint
 - **Authentication** — access control for your self-hosted AI cloud
+- **SSL/TLS support** — secure your endpoint with HTTPS, even on local network
