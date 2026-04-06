@@ -1,5 +1,7 @@
 # RigStack
 
+## Turn your GPU into a managed private AI cloud.
+
 Squeeze every FLOP from your NVIDIA GPU. RigStack turns your RTX into a private AI cloud — unified endpoint, GPU-optimized inference, and a CLI to manage the entire rig. Built to run inside a network you trust.
 
 Run LLMs, image generation, and utility models locally on your own hardware. With a single command, serve multiple models optimized for your GPU, manage them through a clean CLI, and route everything through one endpoint.
@@ -19,11 +21,14 @@ RigStack abstracts the complexity of running multiple inference engines while ke
 - **Inference presets**  
   Define multiple configs for the same model (quantization, context length, throughput) and switch instantly with `rig serve <preset>`.
 
+- **Smart GPU/CPU split**  
+  Place each model on GPU or CPU based on your needs. Optimize your rig for the current workload and switch configurations in one command.
+
 - **Edge GPU builds**  
   Unlock 40–60% more performance on modern GPUs (e.g. RTX 5090) with containerized nightly PyTorch builds. Use stable for compatibility, or switch to edge for maximum throughput.
 
-- **Clear model/data separation**  
-  Models and data live outside containers (`$MODELS_ROOT`, `$DATA_ROOT`). Rebuild services without touching assets.
+- **Native CLI**  
+  Manage your entire AI stack with a single command. Switch presets, move models between CPU/GPU, and control all services with a fast, composable CLI.
 
 - **Built-in RAG**  
   `/rag` endpoint powered by Qdrant, ready to plug into apps.
