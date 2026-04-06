@@ -104,6 +104,20 @@ _status_trim() {
     fi
 }
 
+_status_field() {
+    # _status_field <width> <value>
+    # Pre-pads value to exact width (truncating if needed); dims the value if it is "-"
+    local width="$1" val="$2"
+    [[ ${#val} -gt ${width} ]] && val="${val:0:$((width-1))}…"
+    local padded
+    printf -v padded "%-${width}s" "${val}"
+    if [[ "${val}" == "-" ]]; then
+        printf '%b' "${DIM}${padded}${RESET}"
+    else
+        printf '%b' "${padded}"
+    fi
+}
+
 _status_limit_lines() {
     local max="${1:-8}"
     awk -v max="${max}" '
@@ -365,7 +379,9 @@ _status_print_triptych() {
 }
 
 _status_metadata_line() {
-    printf "  ${CYAN}%-14s${RESET} %s\n" "$1" "$2"
+    local val="$2"
+    [[ "${val}" == "-" ]] && val="${DIM}-${RESET}"
+    printf "  ${CYAN}%-14s${RESET} %s\n" "$1" "${val}"
 }
 
 _status_plain_state() {
@@ -409,17 +425,37 @@ _status_summary() {
     hr 105
     printf "  ${BOLD}%-12s %-24s %-8s %-8s %-16s %-12s %s${RESET}\n" "SERVICE" "ACTIVE MODEL" "RUNTIME" "BUILD" "ROUTE" "MEMORY" "STATUS"
     hr 105
-    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
-        "vllm" "$(_status_trim "$(_status_value_if_running "${vllm_state}" "${vllm_model}")" 24)" "$(_status_value_if_running "${vllm_state}" "GPU")" "$(_status_value_if_running "${vllm_state}" "$(_status_vllm_build)")" "$(_status_value_if_running "${vllm_state}" "/v1")" "$(_status_trim "$(_status_value_if_running "${vllm_state}" "${vllm_memory:--}")" 12)" \
+    printf "  %b %b %b %b %b %b %b %b\n" \
+        "$(_status_field 12 "vllm")" \
+        "$(_status_field 24 "$(_status_value_if_running "${vllm_state}" "${vllm_model}")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "GPU")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "$(_status_vllm_build)")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${vllm_state}" "/v1")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${vllm_state}" "${vllm_memory:--}")")" \
         "$(_status_icon "${vllm_state}")" "$(_status_label "${vllm_state}")"
-    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
-        "ollama" "-" "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")" "-" "$(_status_value_if_running "${ollama_state}" "/ollama/v1")" "$(_status_trim "$(_status_value_if_running "${ollama_state}" "${ollama_memory:--}")" 12)" \
+    printf "  %b %b %b %b %b %b %b %b\n" \
+        "$(_status_field 12 "ollama")" \
+        "$(_status_field 24 "-")" \
+        "$(_status_field 8  "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")")" \
+        "$(_status_field 8  "-")" \
+        "$(_status_field 16 "$(_status_value_if_running "${ollama_state}" "/ollama/v1")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${ollama_state}" "${ollama_memory:--}")")" \
         "$(_status_icon "${ollama_state}")" "$(_status_label "${ollama_state}")"
-    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
-        "comfyui" "-" "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_runtime)")" "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_build)")" "$(_status_value_if_running "${comfy_state}" "/comfy")" "$(_status_trim "$(_status_value_if_running "${comfy_state}" "${comfy_memory:--}")" 12)" \
+    printf "  %b %b %b %b %b %b %b %b\n" \
+        "$(_status_field 12 "comfyui")" \
+        "$(_status_field 24 "-")" \
+        "$(_status_field 8  "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_runtime)")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_build)")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${comfy_state}" "/comfy")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${comfy_state}" "${comfy_memory:--}")")" \
         "$(_status_icon "${comfy_state}")" "$(_status_label "${comfy_state}")"
-    printf "  %-12s %-24s %-8s %-8s %-16s %-12s %b %b\n" \
-        "rag" "-" "$(_status_value_if_running "${rag_state}" "CPU")" "-" "$(_status_value_if_running "${rag_state}" "/rag/v1")" "$(_status_trim "$(_status_value_if_running "${rag_state}" "${rag_memory:--}")" 12)" \
+    printf "  %b %b %b %b %b %b %b %b\n" \
+        "$(_status_field 12 "rag")" \
+        "$(_status_field 24 "-")" \
+        "$(_status_field 8  "$(_status_value_if_running "${rag_state}" "CPU")")" \
+        "$(_status_field 8  "-")" \
+        "$(_status_field 16 "$(_status_value_if_running "${rag_state}" "/rag/v1")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${rag_state}" "${rag_memory:--}")")" \
         "$(_status_icon "${rag_state}")" "$(_status_label "${rag_state}")"
     hr 105
     echo ""
@@ -428,18 +464,36 @@ _status_summary() {
     hr 85
     printf "  ${BOLD}%-12s %-30s %-12s %s${RESET}\n" "SERVICE" "ADDRESS" "ROUTE" "STATUS"
     hr 85
-    printf "  %-12s %-30s %-12s %b %b\n" \
-        "traefik" "$(_status_trim "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_PORT:-80}")" 30)" "$(_status_value_if_running "${traefik_state}" "/")" "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
-    printf "  %-12s %-30s %-12s %b %b\n" \
-        "dashboard" "$(_status_trim "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_DASHBOARD_PORT:-8080}")" 30)" "-" "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
-    printf "  %-12s %-30s %-12s %b %b\n" \
-        "qdrant" "$(_status_trim "$(_status_value_if_running "${qdrant_state}" "http://rig-qdrant:6333")" 30)" "-" "$(_status_icon "${qdrant_state}")" "$(_status_label "${qdrant_state}")"
-    printf "  %-12s %-30s %-12s %b %b\n" \
-        "langfuse" "$(_status_trim "$(_status_value_if_running "${langfuse_state}" "http://rig-langfuse:3000")" 30)" "$(_status_value_if_running "${langfuse_state}" "/langfuse")" "$(_status_icon "${langfuse_state}")" "$(_status_label "${langfuse_state}")"
-    printf "  %-12s %-30s %-12s %b %b\n" \
-        "postgres" "$(_status_trim "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")" 30)" "-" "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
-    printf "  %-12s %-30s %-12s %b %b\n" \
-        "hf" "-" "-" "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
+    printf "  %b %b %b %b %b\n" \
+        "$(_status_field 12 "traefik")" \
+        "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_PORT:-80}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "/")")" \
+        "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
+    printf "  %b %b %b %b %b\n" \
+        "$(_status_field 12 "dashboard")" \
+        "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_DASHBOARD_PORT:-8080}")")" \
+        "$(_status_field 12 "-")" \
+        "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
+    printf "  %b %b %b %b %b\n" \
+        "$(_status_field 12 "qdrant")" \
+        "$(_status_field 30 "$(_status_value_if_running "${qdrant_state}" "http://rig-qdrant:6333")")" \
+        "$(_status_field 12 "-")" \
+        "$(_status_icon "${qdrant_state}")" "$(_status_label "${qdrant_state}")"
+    printf "  %b %b %b %b %b\n" \
+        "$(_status_field 12 "langfuse")" \
+        "$(_status_field 30 "$(_status_value_if_running "${langfuse_state}" "http://rig-langfuse:3000")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "/langfuse")")" \
+        "$(_status_icon "${langfuse_state}")" "$(_status_label "${langfuse_state}")"
+    printf "  %b %b %b %b %b\n" \
+        "$(_status_field 12 "postgres")" \
+        "$(_status_field 30 "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")")" \
+        "$(_status_field 12 "-")" \
+        "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
+    printf "  %b %b %b %b %b\n" \
+        "$(_status_field 12 "hf")" \
+        "$(_status_field 30 "-")" \
+        "$(_status_field 12 "-")" \
+        "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
     hr 85
     echo -e "  ${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
     echo ""
