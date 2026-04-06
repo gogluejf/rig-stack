@@ -10,9 +10,6 @@ entryPoints:
     address: ":80"
 
 providers:
-  docker:
-    exposedByDefault: false
-    network: rig-net
   file:
     filename: /etc/traefik/dynamic.yaml
     watch: true

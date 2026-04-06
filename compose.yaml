@@ -32,7 +32,7 @@ services:
 
   # ── Traefik — unified gateway ──────────────────────────────────────────────
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.3
     container_name: rig-traefik
     restart: unless-stopped
     ports:

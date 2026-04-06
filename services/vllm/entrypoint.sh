@@ -8,8 +8,7 @@
 set -euo pipefail
 
 args=(
-  python -m vllm.entrypoints.openai.api_server
-  --model "${MODEL_PATH:-/models/llm/qwen3-5-27b}"
+  vllm serve "${MODEL_PATH:-/models/llm/qwen3-5-27b}"
   --served-model-name "${MODEL_ID:-default}"
   --max-model-len "${MAX_MODEL_LEN:-32768}"
   --kv-cache-dtype "${KV_CACHE_DTYPE:-auto}"

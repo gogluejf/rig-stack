@@ -77,4 +77,4 @@ ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
 COPY entrypoint.sh /usr/local/bin/entrypoint-vllm.sh
 RUN chmod +x /usr/local/bin/entrypoint-vllm.sh
 
-CMD ["/usr/local/bin/entrypoint-vllm.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint-vllm.sh"]

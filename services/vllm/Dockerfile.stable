@@ -7,7 +7,7 @@
 # Base image pins a known-good vLLM release.
 # To update: change the tag and rebuild with `rig presets rebuild vllm-stable`.
 
-ARG VLLM_VERSION=v0.6.6
+ARG VLLM_VERSION=latest
 FROM vllm/vllm-openai:${VLLM_VERSION}
 
 # Model files are bind-mounted from $MODELS_ROOT — never copied into the image.
@@ -16,7 +16,9 @@ FROM vllm/vllm-openai:${VLLM_VERSION}
 ENV HF_HOME=/root/.cache/huggingface
 ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
 
+RUN pip install --no-cache-dir "transformers>=5.2.0"
+
 COPY entrypoint.sh /usr/local/bin/entrypoint-vllm.sh
 RUN chmod +x /usr/local/bin/entrypoint-vllm.sh
 
-CMD ["/usr/local/bin/entrypoint-vllm.sh"]
+ENTRYPOINT ["/usr/local/bin/entrypoint-vllm.sh"]

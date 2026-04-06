@@ -4,7 +4,6 @@
 
 http:
   middlewares:
-    # Add CORS headers for local dev access from browsers
     cors-headers:
       headers:
         accessControlAllowMethods:
@@ -19,8 +18,95 @@ http:
           - "*"
         accessControlMaxAge: 86400
 
-    # Rate limiting (adjust as needed)
     rate-limit:
       rateLimit:
         average: 200
         burst: 50
+
+    rag-strip:
+      stripPrefix:
+        prefixes:
+          - /rag
+
+    ollama-strip:
+      stripPrefix:
+        prefixes:
+          - /ollama
+
+    comfyui-strip:
+      stripPrefix:
+        prefixes:
+          - /comfy
+
+    langfuse-strip:
+      stripPrefix:
+        prefixes:
+          - /langfuse
+
+  routers:
+    vllm:
+      rule: "PathPrefix(`/v1`) || PathPrefix(`/openai`)"
+      service: vllm
+      entryPoints:
+        - web
+
+    rag:
+      rule: "PathPrefix(`/rag`)"
+      middlewares:
+        - rag-strip
+      service: rag
+      entryPoints:
+        - web
+
+    ollama:
+      rule: "PathPrefix(`/ollama`)"
+      middlewares:
+        - ollama-strip
+      service: ollama
+      entryPoints:
+        - web
+
+    comfyui:
+      rule: "PathPrefix(`/comfy`)"
+      middlewares:
+        - comfyui-strip
+      service: comfyui
+      entryPoints:
+        - web
+
+    langfuse:
+      rule: "PathPrefix(`/langfuse`)"
+      middlewares:
+        - langfuse-strip
+      service: langfuse
+      entryPoints:
+        - web
+
+  services:
+    vllm:
+      loadBalancer:
+        servers:
+          - url: "http://rig-vllm-stable:8000"
+          - url: "http://rig-vllm-edge:8000"
+
+    rag:
+      loadBalancer:
+        servers:
+          - url: "http://rig-rag-api:8001"
+
+    ollama:
+      loadBalancer:
+        servers:
+          - url: "http://rig-ollama:11434"
+
+    comfyui:
+      loadBalancer:
+        servers:
+          - url: "http://rig-comfyui-stable:8188"
+          - url: "http://rig-comfyui-edge:8188"
+          - url: "http://rig-comfyui-cpu:8188"
+
+    langfuse:
+      loadBalancer:
+        servers:
+          - url: "http://rig-langfuse:3000"
