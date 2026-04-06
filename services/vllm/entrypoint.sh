@@ -35,4 +35,8 @@ if [[ "${TRUST_REMOTE_CODE:-false}" == "true" ]]; then
   args+=(--trust-remote-code)
 fi
 
+if [[ "${ENFORCE_EAGER:-false}" == "true" ]]; then
+  args+=(--enforce-eager)
+fi
+
 exec "${args[@]}"

@@ -56,7 +56,11 @@ RUN pip3 install --no-cache-dir \
 # Verify torch install; arch list can be empty in non-GPU build contexts.
 RUN python3 -c "import torch; archs = torch.cuda.get_arch_list(); print('Torch CUDA:', torch.version.cuda, 'CUDA archs:', archs); (archs and ('sm_120' in archs or any('12' in a for a in archs))) or (not archs and print('WARN: empty arch list during build context; runtime GPU check required'))"
 
-# Step 3: Install vLLM from latest main (sm_120 support merged post-0.6)
+# Step 3: Install vLLM from nightly index (sm_120 support merged post-0.6)
+# Pin: vLLM 0.17.1 — confirmed working on RTX 5090 with Qwen3.5-27B-NVFP4
+# To update: change the version pin below and rebuild with:
+#   docker compose build vllm-edge
+# or: scripts/setup/04-build-edge-images.sh
 ENV TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0 12.0"
 ENV VLLM_INSTALL_PUNICA_KERNELS=1
 
@@ -67,12 +71,15 @@ RUN pip3 install --no-cache-dir \
     ninja
 
 # Build vLLM from nightly index (Blackwell/sm_120 support)
-RUN pip3 install --no-cache-dir vllm \
+# Pin to 0.17.1 — confirmed working on RTX 5090 with this model
+RUN pip3 install --no-cache-dir vllm==0.17.1 \
     --index-url https://wheels.vllm.ai/nightly \
     --extra-index-url https://pypi.org/simple
 
 ENV HF_HOME=/root/.cache/huggingface
 ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
+
+RUN pip3 install --no-cache-dir "transformers>=5.2.0"
 
 COPY entrypoint.sh /usr/local/bin/entrypoint-vllm.sh
 RUN chmod +x /usr/local/bin/entrypoint-vllm.sh
