@@ -7,7 +7,7 @@
 
 # Generated at runtime — not committed
 config/models-registry.tsv
-.env.active.*
+.preset.active.*
 
 # OS
 .DS_Store

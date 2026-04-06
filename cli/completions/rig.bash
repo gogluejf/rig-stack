@@ -25,9 +25,9 @@ _rig_active_preset() {
     # _rig_active_preset <service>  — name of the current active preset
     local root
     root="$(_rig_root)" || return
-    local f="${root}/.env.active.${1}"
-    [[ -f "${f}" ]] || return
-    grep -m1 '^# Preset:' "${f}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}'
+    local link="${root}/.preset.active.${1}"
+    [[ -L "${link}" ]] || return
+    basename "$(readlink "${link}")" .env
 }
 
 _rig_contains() {

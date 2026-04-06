@@ -17,9 +17,8 @@ _rig_preset_items() {
     local root service="$1"
     root="$(_rig_root)" || return
     local active_name=""
-    local active_file="${root}/.env.active.${service}"
-    [[ -f "${active_file}" ]] && \
-        active_name="$(grep -m1 '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')"
+    local link="${root}/.preset.active.${service}"
+    [[ -L "${link}" ]] && active_name="$(basename "$(readlink "${link}")" .env)"
 
     local f name desc
     local -a items=()
@@ -27,7 +26,6 @@ _rig_preset_items() {
         [[ -f "${f}" ]] || continue
         name="$(basename "${f}" .env)"
         desc="$(grep -m1 '^# Use:' "${f}" 2>/dev/null | sed 's/^# Use: *//')"
-        [[ -z "${desc}" ]] && desc="$(grep -m1 '^# Preset:' "${f}" 2>/dev/null | sed 's/^# Preset: *//')"
         [[ "${name}" == "${active_name}" ]] && desc="(active) ${desc}"
         items+=("${name}:${desc}")
     done

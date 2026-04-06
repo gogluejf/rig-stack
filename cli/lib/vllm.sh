@@ -47,9 +47,8 @@ cmd_serve() {
 _serve_list() {
     local preset_dir="${RIG_ROOT}/presets/vllm"
     local active_preset=""
-    local active_file="${RIG_ROOT}/.env.active.vllm"
     local models_root="${MODELS_ROOT:-/models}"
-    [[ -f "${active_file}" ]] && active_preset=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
+    active_preset=$(get_active_preset_name vllm)
 
     echo ""
     print_header "vLLM presets"
@@ -132,9 +131,8 @@ _serve_start() {
 
     # Fall back to active preset if none given
     if [[ -z "${preset_name}" ]]; then
-        local active_file="${RIG_ROOT}/.env.active.vllm"
-        if [[ -f "${active_file}" ]]; then
-            preset_name=$(grep '^# Preset:' "${active_file}" 2>/dev/null | sed 's/^# Preset: *//' | awk '{print $1}')
+        preset_name=$(get_active_preset_name vllm)
+        if [[ -n "${preset_name}" ]]; then
             echo -e "${DIM}  Using active preset: ${preset_name}${RESET}"
         else
             echo -e "${RED}No preset given and no active preset set.${RESET}"
@@ -217,15 +215,19 @@ _serve_preset() {
 
 _serve_preset_set() {
     local name="${1:-}"
+    local available
+    available=$(ls "${RIG_ROOT}/presets/vllm/"*.env 2>/dev/null | xargs -I{} basename {} .env | sort | tr '\n' ' ')
     if [[ -z "${name}" ]]; then
         echo -e "${RED}Preset name required.${RESET}"
-        echo "Run 'rig serve preset list' to see available presets."
+        echo -e "Available: ${available}"
+        echo "Usage: rig serve preset set <name>"
         exit 1
     fi
     local preset_file="${RIG_ROOT}/presets/vllm/${name}.env"
     if [[ ! -f "${preset_file}" ]]; then
         echo -e "${RED}Preset '${name}' not found.${RESET}"
-        echo "Run 'rig serve preset list' to see available presets."
+        echo -e "Available: ${available}"
+        echo "Usage: rig serve preset set <name>"
         exit 1
     fi
     set_active_preset "vllm" "${preset_file}"
@@ -246,12 +248,12 @@ _serve_preset_show() {
         fi
         header="vLLM preset: ${name}"
     else
-        source_file="${RIG_ROOT}/.env.active.vllm"
+        source_file="${RIG_ROOT}/.preset.active.vllm"
         if [[ ! -f "${source_file}" ]]; then
             echo -e "${DIM}No active preset set. Run: rig serve <preset>${RESET}"
             exit 0
         fi
-        name=$(grep '^# Preset:' "${source_file}" | sed 's/^# Preset: *//' | awk '{print $1}')
+        name=$(get_active_preset_name vllm)
         header="Active vLLM preset: ${name}"
     fi
 

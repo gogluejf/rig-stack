@@ -223,7 +223,7 @@ _status_ollama_runtime() {
 }
 
 _status_vllm_active_model() {
-    local active="${RIG_ROOT}/presets/.env.active.vllm"
+    local active="${RIG_ROOT}/.preset.active.vllm"
     if [[ -f "${active}" ]]; then
         grep -m1 '^MODEL_ID=' "${active}" 2>/dev/null | cut -d= -f2
     fi

@@ -60,7 +60,14 @@ rig_compose() {
 set_active_preset() {
     local service="$1"
     local preset_file="$2"
-    cp "${preset_file}" "${RIG_ROOT}/.env.active.${service}"
+    ln -sf "${preset_file}" "${RIG_ROOT}/.preset.active.${service}"
+}
+
+get_active_preset_name() {
+    local link="${RIG_ROOT}/.preset.active.${1}"
+    if [[ -L "${link}" ]]; then
+        basename "$(readlink "${link}")" .env
+    fi
 }
 
 # ── Print helpers ─────────────────────────────────────────────────────────────
