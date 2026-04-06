@@ -255,6 +255,7 @@ _serve_preset_show() {
         header="Active vLLM preset: ${name}"
     fi
 
+    echo ""
     print_header "${header}"
     hr
     grep '^#' "${source_file}" | head -5 | sed 's/^#/  /'

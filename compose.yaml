@@ -14,6 +14,7 @@
 #   docker compose --profile vllm-stable up -d
 #
 # All bind mounts use env vars from .env — set MODELS_ROOT, DATA_ROOT, DOCKER_ROOT.
+# Repo config files are referenced with relative paths (./config/...).
 
 x-logging: &default-logging
   driver: json-file
@@ -39,8 +40,8 @@ services:
       - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ${DOCKER_ROOT}/rig-stack/config/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
-      - ${DOCKER_ROOT}/rig-stack/config/traefik/dynamic.yaml:/etc/traefik/dynamic.yaml:ro
+      - ./config/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./config/traefik/dynamic.yaml:/etc/traefik/dynamic.yaml:ro
     networks:
       - rig-net
     logging: *default-logging
@@ -58,7 +59,7 @@ services:
     shm_size: '16gb'
     env_file:
       - .env
-      - ${DOCKER_ROOT}/rig-stack/.env.active.vllm
+      - ./.env.active.vllm
     volumes:
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
@@ -91,7 +92,7 @@ services:
     shm_size: '16gb'
     env_file:
       - .env
-      - ${DOCKER_ROOT}/rig-stack/.env.active.vllm
+      - ./.env.active.vllm
     volumes:
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
@@ -257,7 +258,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${DATA_ROOT}/qdrant:/qdrant/storage
-      - ${DOCKER_ROOT}/rig-stack/config/qdrant/config.yaml:/qdrant/config/production.yaml:ro
+      - ./config/qdrant/config.yaml:/qdrant/config/production.yaml:ro
     networks:
       - rig-net
     logging: *default-logging
