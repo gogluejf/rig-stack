@@ -128,33 +128,17 @@ _status_limit_lines() {
 
 _status_json_model_ids() {
     command -v python3 >/dev/null 2>&1 || return 0
-    python3 - <<'PY'
-import json
-import sys
-
+    python3 -c '
+import json, sys
 try:
     data = json.load(sys.stdin)
+    for item in (data.get("data") or data.get("models") or []):
+        if isinstance(item, dict):
+            v = item.get("id") or item.get("name") or item.get("model")
+            if v: print(v)
 except Exception:
-    raise SystemExit(0)
-
-items = []
-if isinstance(data, dict):
-    if isinstance(data.get("data"), list):
-        for item in data["data"]:
-            if isinstance(item, dict):
-                value = item.get("id") or item.get("name") or item.get("model")
-                if value:
-                    items.append(str(value))
-    elif isinstance(data.get("models"), list):
-        for item in data["models"]:
-            if isinstance(item, dict):
-                value = item.get("name") or item.get("model") or item.get("id")
-                if value:
-                    items.append(str(value))
-
-for value in items:
-    print(value)
-PY
+    pass
+' 2>/dev/null
 }
 
 _status_vllm_container() {
@@ -224,19 +208,22 @@ _status_ollama_runtime() {
 
 _status_vllm_active_model() {
     local active="${RIG_ROOT}/.preset.active.vllm"
-    if [[ -f "${active}" ]]; then
-        local cmd
-        cmd=$(grep -m1 '^VLLM_CMD=' "${active}" 2>/dev/null | cut -d= -f2-)
+    [[ -f "${active}" ]] || return 0
+    local cmd
+    cmd=$(grep -m1 '^VLLM_CMD=' "${active}" 2>/dev/null | cut -d= -f2-)
+    if [[ -n "${cmd}" ]]; then
         echo "$cmd" | grep -oP '(?<=--served-model-name )\S+' 2>/dev/null || true
+    else
+        grep -m1 '^MODEL_ID=' "${active}" 2>/dev/null | cut -d= -f2
     fi
 }
 
 _status_vllm_live_models() {
-    curl -sf "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d'
+    curl -sf "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
 }
 
 _status_rag_live_models() {
-    curl -sf "$(_status_proxy_base)/rag/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d'
+    curl -sf "$(_status_proxy_base)/rag/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
 }
 
 _status_vllm_primary_model() {
