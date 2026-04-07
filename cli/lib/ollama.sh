@@ -82,8 +82,7 @@ _ollama_start() {
     done
 
     echo -e "${GREEN}✓  Ollama running${RESET}"
-    echo -e "  Endpoint  : http://localhost:${port}"
-    echo -e "  Via proxy : http://localhost:${TRAEFIK_PORT:-80}/ollama"
+    echo -e "  Endpoint : http://localhost:${TRAEFIK_PORT:-80}/ollama"
 }
 
 _ollama_stop() {

@@ -530,7 +530,7 @@ _status_detail_vllm() {
     if [[ "${state}" == "running" ]]; then
         models="$(_status_vllm_live_models | _status_limit_lines 10)"
         endpoints=$'GET  /v1/models\nPOST /v1/chat/completions\nPOST /v1/completions\nPOST /v1/embeddings'
-        aux=$'GET  /openai/models\nPOST /openai/chat/completions\nPOST /openai/completions\nPOST /openai/embeddings\nGET  /metrics (internal)\nGET  /health  (internal)'
+        aux=$'GET  /openai/models\nPOST /openai/chat/completions\nPOST /openai/completions\nPOST /openai/embeddings\nGET  /metrics\nGET  /health'
     else
         model="-"
         models="-"
@@ -552,6 +552,7 @@ _status_detail_vllm() {
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/v1")"
     _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/openai")"
+    _status_metadata_line "metrics" "$(_status_value_if_running "${state}" "http://localhost:${VLLM_PORT:-8000}/metrics")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
     echo ""
