@@ -163,6 +163,53 @@ _status_comfy_container() {
     return 1
 }
 
+_status_vllm_log_stats() {
+    local container="$1"
+    [[ -n "${container}" ]] || return 0
+    container_running "${container}" || return 0
+    docker logs "${container}" 2>&1 | python3 -c "
+import sys, re
+
+want = {
+    'model_mem':    r'Model loading took ([\d.]+) GiB memory and ([\d.]+) seconds',
+    'weights_time': r'Loading weights took ([\d.]+) seconds',
+    'kv_mem':       r'Available KV cache memory: ([\d.]+) GiB',
+    'kv_tokens':    r'GPU KV cache size: ([\d,]+) tokens',
+    'max_conc':     r'Maximum concurrency for .* per request: ([\d.]+x)',
+    'cfg_max_len':  r\"'max_model_len': (\d+)\",
+    'cfg_gpu_util': r\"'gpu_memory_utilization': ([\d.]+)\",
+    'cfg_kv_dtype': r\"'kv_cache_dtype': '([^']+)'\",
+    'cfg_prefix':   r\"'enable_prefix_caching': (True|False)\",
+    'cfg_eager':    r\"'enforce_eager': (True|False)\",
+}
+found = {}
+for line in sys.stdin:
+    for key, pat in list(want.items()):
+        if key in found:
+            continue
+        m = re.search(pat, line)
+        if not m:
+            continue
+        if key == 'model_mem':
+            found['model_mem'] = m.group(1) + ' GiB'
+            found['load_time'] = m.group(2) + 's'
+        elif key == 'kv_mem':
+            found[key] = m.group(1) + ' GiB'
+        elif key == 'cfg_max_len':
+            found[key] = '{:,} tokens'.format(int(m.group(1)))
+        elif key == 'cfg_gpu_util':
+            found[key] = str(int(float(m.group(1)) * 100)) + '%'
+        elif key in ('cfg_prefix', 'cfg_eager'):
+            found[key] = 'on' if m.group(1) == 'True' else 'off'
+        else:
+            found[key] = m.group(1)
+    if all(k in found for k in want):
+        break
+for k, v in found.items():
+    print(k + '=' + v)
+" 2>/dev/null
+}
+
 _status_vllm_lib_versions() {
     local container="$1"
     [[ -n "${container}" ]] || return 0
@@ -543,6 +590,14 @@ _status_detail_vllm() {
     local lib_versions=""
     [[ "${state}" == "running" ]] && lib_versions="$(_status_vllm_lib_versions "${container}")"
 
+    # Parse log stats into associative array
+    declare -A vstats
+    if [[ "${state}" == "running" ]]; then
+        while IFS='=' read -r key val; do
+            [[ -n "${key}" ]] && vstats["${key}"]="${val}"
+        done < <(_status_vllm_log_stats "${container}")
+    fi
+
     echo ""
     print_header "vLLM status"
     hr 108
@@ -563,6 +618,28 @@ _status_detail_vllm() {
         while IFS=' ' read -r key val; do
             _status_metadata_line "${key}" "${val}"
         done <<< "${lib_versions}"
+        echo ""
+    fi
+
+    if [[ ${#vstats[@]} -gt 0 ]]; then
+        # Build combined max tokens + concurrency value
+        local max_tokens_val="-"
+        if [[ -n "${vstats[cfg_max_len]:-}" ]]; then
+            max_tokens_val="${vstats[cfg_max_len]}"
+            [[ -n "${vstats[max_conc]:-}" ]] && max_tokens_val+=" (${vstats[max_conc]})"
+        fi
+
+        print_header "Model Load"
+        hr 108
+        _status_metadata_line "gpu alloc"    "${vstats[cfg_gpu_util]:--}"
+        _status_metadata_line "model mem"    "${vstats[model_mem]:--}"
+        _status_metadata_line "kv mem avail" "${vstats[kv_mem]:--}"
+        _status_metadata_line "kv dtype"     "${vstats[cfg_kv_dtype]:--}"
+        _status_metadata_line "kv size"      "${vstats[kv_tokens]:+${vstats[kv_tokens]} tokens}"
+        [[ -z "${vstats[kv_tokens]:-}" ]] && _status_metadata_line "kv size" "-"
+        _status_metadata_line "max tokens"   "${max_tokens_val}"
+        _status_metadata_line "prefix cache" "${vstats[cfg_prefix]:--}"
+        _status_metadata_line "enforce eager" "${vstats[cfg_eager]:--}"
         echo ""
     fi
 
