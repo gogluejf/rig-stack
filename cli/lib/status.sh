@@ -167,15 +167,9 @@ _status_vllm_lib_versions() {
     local container="$1"
     [[ -n "${container}" ]] || return 0
     container_running "${container}" || return 0
-    docker exec "${container}" python3 -c "import vllm, torch, transformers; print(vllm.__version__); print(torch.__version__); print(transformers.__version__); print(torch.cuda.is_available()); print(torch.version.cuda); print(torch.backends.cudnn.version())" 2>/dev/null || true
-}
-
-_status_vllm_lib_versions() {
-    local container="$1"
-    [[ -n "${container}" ]] || return 0
-    container_running "${container}" || return 0
     docker exec "${container}" python3 -c "
-import vllm, torch, transformers
+import sys, vllm, torch, transformers
+print('python', sys.version.split()[0])
 print('vllm', vllm.__version__)
 print('torch', torch.__version__)
 print('transformers', transformers.__version__)
