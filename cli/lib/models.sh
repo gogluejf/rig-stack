@@ -8,7 +8,7 @@ cmd_models() {
             echo -e "\n${BOLD}rig models${RESET} — model management"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig models ${BOLD}[list]${RESET}                    ${DIM}list installed models${RESET}"
+            echo -e "  rig models ${BOLD}[list]${RESET}                  ${DIM}list installed models${RESET}"
             echo ""
             echo -e "  rig models ${BOLD}init${RESET} ${YELLOW_SOFT}[--minimal|--all]${RESET}  ${DIM}install a curated model bundle${RESET}"
             echo -e "    ${YELLOW_SOFT}--minimal${RESET}                        ${DIM}install the minimal model bundle${RESET}"
