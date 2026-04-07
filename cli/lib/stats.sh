@@ -11,12 +11,12 @@ cmd_stats() {
     else
         nvidia-smi --query-gpu=name,driver_version,temperature.gpu,power.draw,memory.used,memory.free,memory.total,utilization.gpu \
             --format=csv,noheader,nounits 2>/dev/null | while IFS=',' read -r name driver temp power mem_used mem_free mem_total util; do
-            printf "  %-24s %s\n" "GPU" "${name// /}"
-            printf "  %-24s %s\n" "Driver" "${driver// /}"
-            printf "  %-24s %s °C\n" "Temperature" "${temp// /}"
-            printf "  %-24s %s W\n" "Power draw" "${power// /}"
-            printf "  %-24s %s / %s MiB  (%s MiB free)\n" "VRAM" "${mem_used// /}" "${mem_total// /}" "${mem_free// /}"
-            printf "  %-24s %s %%\n" "GPU utilisation" "${util// /}"
+            printf "  ${DIM}%-24s${RESET} %s\n" "GPU" "${name// /}"
+            printf "  ${DIM}%-24s${RESET} %s\n" "Driver" "${driver// /}"
+            printf "  ${DIM}%-24s${RESET} %s °C\n" "Temperature" "${temp// /}"
+            printf "  ${DIM}%-24s${RESET} %s W\n" "Power draw" "${power// /}"
+            printf "  ${DIM}%-24s${RESET} %s / %s MiB  (%s MiB free)\n" "VRAM" "${mem_used// /}" "${mem_total// /}" "${mem_free// /}"
+            printf "  ${DIM}%-24s${RESET} %s %%\n" "GPU utilisation" "${util// /}"
         done
     fi
 
@@ -36,22 +36,22 @@ cmd_stats() {
     local total_cores=$(( ${cpu_sockets:-1} * ${cpu_cores:-1} ))
     local total_threads=$(( total_cores * ${cpu_threads:-1} ))
 
-    printf "  %-24s %s\n" "CPU" "${cpu_model:-unknown}"
-    printf "  %-24s %s\n" "Architecture" "${cpu_arch:-unknown}"
-    printf "  %-24s %s cores  (%s threads)\n" "Cores" "${total_cores}" "${total_threads}"
-    [[ -n "${cpu_mhz}" ]] && printf "  %-24s %s MHz\n" "Frequency" "${cpu_mhz}"
-    printf "  %-24s %s\n" "Load (1/5/15m)" "${cpu_load:-unknown}"
+    printf "  ${DIM}%-24s${RESET} %s\n" "CPU" "${cpu_model:-unknown}"
+    printf "  ${DIM}%-24s${RESET} %s\n" "Architecture" "${cpu_arch:-unknown}"
+    printf "  ${DIM}%-24s${RESET} %s cores  (%s threads)\n" "Cores" "${total_cores}" "${total_threads}"
+    [[ -n "${cpu_mhz}" ]] && printf "  ${DIM}%-24s${RESET} %s MHz\n" "Frequency" "${cpu_mhz}"
+    printf "  ${DIM}%-24s${RESET} %s\n" "Load (1/5/15m)" "${cpu_load:-unknown}"
 
     if command -v sensors &>/dev/null; then
         cpu_temp=$(sensors 2>/dev/null | awk '/^Package id 0/ {gsub(/[^0-9.]/, "", $4); printf "%s", $4; exit}')
-        [[ -n "${cpu_temp}" ]] && printf "  %-24s %s °C\n" "Temperature" "${cpu_temp}"
+        [[ -n "${cpu_temp}" ]] && printf "  ${DIM}%-24s${RESET} %s °C\n" "Temperature" "${cpu_temp}"
     fi
 
     local mem_total mem_free mem_used mem_type mem_speed
     mem_total=$(awk '/^MemTotal/  {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
     mem_free=$(awk  '/^MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
     mem_used=$(( ${mem_total:-0} - ${mem_free:-0} ))
-    printf "  %-24s %s / %s MiB  (%s MiB free)\n" "DRAM" "${mem_used}" "${mem_total}" "${mem_free}"
+    printf "  ${DIM}%-24s${RESET} %s / %s MiB  (%s MiB free)\n" "DRAM" "${mem_used}" "${mem_total}" "${mem_free}"
 
     if command -v dmidecode &>/dev/null; then
         local dmi_out
@@ -59,12 +59,12 @@ cmd_stats() {
         mem_type=$(awk  '/^\s+Type:/ && !/Unknown|None|Error/ {print $2; exit}' <<< "${dmi_out}")
         mem_speed=$(awk '/^\s+Speed:/ && /MT\/s/              {print $2" "$3; exit}' <<< "${dmi_out}")
         if [[ -n "${mem_type}" || -n "${mem_speed}" ]]; then
-            printf "  %-24s %s\n" "DRAM type" "${mem_type}${mem_type:+  }${mem_speed}"
+            printf "  ${DIM}%-24s${RESET} %s\n" "DRAM type" "${mem_type}${mem_type:+  }${mem_speed}"
         else
-            printf "  %-24s \033[2m(require sudo)\033[0m\n" "DRAM type"
+            printf "  ${DIM}%-24s${RESET} ${DIM}(require sudo)${RESET}\n" "DRAM type"
         fi
     else
-        printf "  %-24s \033[2m(require sudo)\033[0m\n" "DRAM type"
+        printf "  ${DIM}%-24s${RESET} ${DIM}(require sudo)${RESET}\n" "DRAM type"
     fi
 
     echo ""

@@ -391,7 +391,7 @@ _status_print_triptych() {
 _status_metadata_line() {
     local val="$2"
     [[ "${val}" == "-" ]] && val="${DIM}-${RESET}"
-    printf "  ${CYAN}%-14s${RESET} %b\n" "$1" "${val}"
+    printf "  ${DIM}%-14s${RESET} %b\n" "$1" "${val}"
 }
 
 _status_plain_state() {
