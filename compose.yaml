@@ -2,7 +2,7 @@
 #
 # All services are profile-gated. Only what you start runs.
 # Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-cpu,
-#           comfyui-edge, ollama, rag, observability, hf
+#           comfyui-edge, ollama, rag, observability, hf, comfy-tools
 #
 # Traefik always runs as the unified gateway.
 #
@@ -325,6 +325,21 @@ services:
       - HF_HUB_ENABLE_HF_TRANSFER=1
     volumes:
       - ${MODELS_ROOT}/hf:/models/hf
+    networks:
+      - rig-net
+    logging: *default-logging
+
+  # ── ComfyUI tools — lightweight comfy-cli for model downloads (no GPU) ────
+  comfy-tools:
+    image: python:3.12-slim
+    container_name: rig-comfy-tools
+    profiles: [comfy-tools]
+    command: >
+      sh -c "pip install -q comfy-cli && sleep infinity"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - ${MODELS_ROOT}/comfy:/root/ComfyUI/models
     networks:
       - rig-net
     logging: *default-logging

@@ -218,6 +218,7 @@ _rig_infra() {
         'qdrant:Vector database (rig-qdrant)'
         'langfuse:LLM observability (rig-langfuse + rig-postgres)'
         'traefik:Unified gateway (rig-traefik)'
+        'comfy-tools:ComfyUI model tools — no GPU (rig-comfy-tools)'
         'all:All of the above'
     )
     _arguments -C \

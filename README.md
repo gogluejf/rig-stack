@@ -60,6 +60,8 @@ RigStack abstracts the complexity of running multiple inference engines while ke
 ## Prerequisites
 
 - Ubuntu 24.04 (tested) (or Debian-family with `OS_FAMILY=debian` in `.env`)
+- 16GB+ RAM (32GB+ recommended for larger models)
+- 2tb+ disk (for models, data, and Docker storage)
 - NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell features require RTX 50xx)
 - NVIDIA driver ≥ 580
 - Docker CE (not snap)

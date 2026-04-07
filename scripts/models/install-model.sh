@@ -5,8 +5,8 @@
 #
 # Supported types:
 #   hf     — download from HuggingFace via rig-hf (auto-started if needed)
-#   ollama — pull via rig-ollama (must be running: rig ollama start)
-#   comfy  — download via rig-comfyui (must be running: rig comfy start)
+#   ollama — pull via headless docker run (no service required)
+#   comfy  — download via rig-comfy-tools (auto-started if needed)
 
 set -euo pipefail
 
@@ -98,31 +98,43 @@ fi
 
 # ── ollama ────────────────────────────────────────────────────────────────────
 if [[ "${TYPE}" == "ollama" ]]; then
-
     local_model="${SOURCE}"
-    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
-        echo -e "${RED}Ollama container is not running.${RESET}"
-        echo -e "  Start it first: ${BOLD}rig ollama start${RESET}"
-        exit 1
-    fi
     echo -e "${CYAN}Pulling Ollama model: ${local_model}${RESET}"
-    docker exec rig-ollama ollama pull "${local_model}"
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
+        docker exec rig-ollama ollama pull "${local_model}"
+    else
+        docker run --rm \
+            -e "OLLAMA_MODELS=/models/ollama" \
+            -v "${MODELS_ROOT}/ollama:/models/ollama" \
+            --entrypoint sh \
+            ollama/ollama -c "
+                ollama serve >/dev/null 2>&1 &
+                until ollama list >/dev/null 2>&1; do sleep 1; done
+                ollama pull '${local_model}'
+            "
+    fi
     echo -e "${GREEN}${BOLD}✓  ${local_model} pulled${RESET}"
 fi
 
 # ── comfy ─────────────────────────────────────────────────────────────────────
 if [[ "${TYPE}" == "comfy" ]]; then
-    comfy_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -m1 '^rig-comfyui' || true)
-    if [[ -z "${comfy_container}" ]]; then
-        echo -e "${RED}No ComfyUI container is running.${RESET}"
-        echo -e "  Start it first: ${BOLD}rig comfy start${RESET}"
-        exit 1
+    # Auto-start rig-comfy-tools if not running (mirrors rig-hf auto-start pattern)
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-comfy-tools$'; then
+        echo -e "${CYAN}Starting rig-comfy-tools...${RESET}"
+        docker compose -f "${ROOT_DIR}/compose.yaml" --profile comfy-tools up -d comfy-tools
+        local_attempts=0
+        until docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-comfy-tools$'; do
+            (( local_attempts++ ))
+            [[ ${local_attempts} -ge 30 ]] && { echo -e "${RED}rig-comfy-tools failed to start${RESET}"; exit 1; }
+            sleep 1
+        done
+        sleep 5  # allow pip install comfy-cli to complete
     fi
 
     url="https://huggingface.co/${SOURCE}"
     [[ -n "${FILE}" ]] && url="https://huggingface.co/${SOURCE}/resolve/main/${FILE}"
 
-    echo -e "${CYAN}Downloading via ComfyUI: ${url}${RESET}"
-    docker exec "${comfy_container}" comfy model download --url "${url}"
-    echo -e "${GREEN}${BOLD}✓  Downloaded via ${comfy_container}${RESET}"
+    echo -e "${CYAN}Downloading via comfy-tools: ${url}${RESET}"
+    docker exec rig-comfy-tools comfy model download --url "${url}"
+    echo -e "${GREEN}${BOLD}✓  Downloaded${RESET}"
 fi

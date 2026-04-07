@@ -114,47 +114,70 @@ _models_list() {
     echo ""
 
     # ── HF models ─────────────────────────────────────────────────────────────
-    echo -e "  ${BOLD}${CYAN}── HF models${RESET}  ${DIM}(${models_root}/hf)${RESET}"
-    echo -e "  ${DIM}$(hr 66)${RESET}"
+    echo -e "${BOLD}${CYAN}HF models${RESET}  ${DIM}(${models_root}/hf)${RESET}"
+    echo ""
+    printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
+    hr 108
     local found_hf=false
     if [[ -d "${models_root}/hf" ]]; then
         while IFS= read -r -d '' org_dir; do
             local org
             org="$(basename "${org_dir}")"
             while IFS= read -r -d '' repo_dir; do
-                local repo size
+                local repo size_mib size pad model_f
                 repo="$(basename "${repo_dir}")"
-                size=$(du -sh "${repo_dir}" 2>/dev/null | cut -f1 || echo "?")
-                printf "  ${YELLOW_SOFT}%6s${RESET}  ${DIM}%s/${RESET}%s\n" "${size}" "${org}" "${repo}"
+                size_mib=$(du -sk "${repo_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
+                size=$(fmt_mem "${size_mib:-0}")
+                pad=$(( 44 - ${#org} - 1 - ${#repo} ))
+                (( pad < 0 )) && pad=0
+                model_f="${DIM}${org}/${RESET}${repo}$(printf '%*s' "${pad}" '')"
+                printf "  %b  %s\n" "${model_f}" "${size}"
                 found_hf=true
             done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
         done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
     fi
     ${found_hf} || echo -e "  ${DIM}No HF models yet — rig models install <source>${RESET}"
     echo ""
-    echo ""
 
     # ── Ollama models ──────────────────────────────────────────────────────────
-    echo -e "  ${BOLD}${CYAN}── Ollama models${RESET}  ${DIM}(${models_root}/ollama)${RESET}"
-    echo -e "  ${DIM}$(hr 66)${RESET}"
-    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-ollama$'; then
-        docker exec rig-ollama ollama list 2>/dev/null | sed 's/^/  /'
-    else
-        echo -e "  ${DIM}Ollama not running — rig ollama${RESET}"
-    fi
+    echo -e "${BOLD}${CYAN}Ollama models${RESET}  ${DIM}(${models_root}/ollama)${RESET}"
     echo ""
+    printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
+    hr 108
+    local ollama_manifests="${models_root}/ollama/manifests/registry.ollama.ai/library"
+    local found_ollama=false
+    if [[ -d "${ollama_manifests}" ]]; then
+        while IFS= read -r manifest; do
+            local tag model
+            tag="$(basename "${manifest}")"
+            model="$(basename "$(dirname "${manifest}")")"
+            printf "  %-44s  %b\n" "${model}:${tag}" "${DIM}-${RESET}"
+            found_ollama=true
+        done < <(find "${ollama_manifests}" -mindepth 2 -maxdepth 2 -type f 2>/dev/null | sort)
+    fi
+    ${found_ollama} || echo -e "  ${DIM}No Ollama models yet — rig models install <source> --type ollama${RESET}"
     echo ""
 
     # ── ComfyUI models ────────────────────────────────────────────────────────
-    local comfy_container
-    comfy_container=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -m1 '^rig-comfyui' || true)
-    echo -e "  ${BOLD}${CYAN}── ComfyUI models${RESET}  ${DIM}(${models_root}/comfy)${RESET}"
-    echo -e "  ${DIM}$(hr 66)${RESET}"
-    if [[ -n "${comfy_container}" ]]; then
-        docker exec "${comfy_container}" comfy model list 2>/dev/null | sed 's/^/  /'
-    else
-        echo -e "  ${DIM}ComfyUI not running — rig comfy${RESET}"
+    echo -e "${BOLD}${CYAN}ComfyUI models${RESET}  ${DIM}(${models_root}/comfy)${RESET}"
+    echo ""
+    printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
+    hr 108
+    local found_comfy=false
+    if [[ -d "${models_root}/comfy" ]]; then
+        while IFS= read -r -d '' type_dir; do
+            local type_name file_count size_mib size s
+            type_name="$(basename "${type_dir}")"
+            file_count=$(find "${type_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+            [[ "${file_count}" -gt 0 ]] || continue
+            size_mib=$(du -sk "${type_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
+            size=$(fmt_mem "${size_mib:-0}")
+            s="$([[ ${file_count} -eq 1 ]] && echo '' || echo 's')"
+            printf "  %-44s  %s\n" "${type_name}/  ${DIM}(${file_count} file${s})${RESET}" "${size}"
+            found_comfy=true
+        done < <(find "${models_root}/comfy" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
     fi
+    ${found_comfy} || echo -e "  ${DIM}No ComfyUI models yet — rig models install <source> --type comfy${RESET}"
     echo ""
 }
 
@@ -185,7 +208,6 @@ _models_init() {
 
     minimal_comfy() {
         echo -e "\n${BOLD}── ComfyUI models ────────────────────────────────${RESET}"
-        echo -e "${DIM}  Requires ComfyUI running: rig comfy start${RESET}\n"
         _install comfy black-forest-labs/FLUX.1-dev
         _install comfy black-forest-labs/FLUX.2-klein
         _install comfy Qwen/Qwen-Image-2512
@@ -194,7 +216,6 @@ _models_init() {
 
     minimal_ollama() {
         echo -e "\n${BOLD}── Ollama models ─────────────────────────────────${RESET}"
-        echo -e "${DIM}  Requires Ollama running: rig ollama start${RESET}\n"
         _install ollama nomic-embed-text
         _install ollama phi3:mini
         _install ollama deepseek-coder:6.7b
@@ -210,7 +231,6 @@ _models_init() {
 
     extra_comfy() {
         echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
-        echo -e "${DIM}  Requires ComfyUI running: rig comfy start${RESET}\n"
 
         _install comfy black-forest-labs/FLUX.1-Fill-dev
 
@@ -234,7 +254,6 @@ _models_init() {
 
     extra_ollama() {
         echo -e "\n${BOLD}── Ollama models (additional) ────────────────────${RESET}"
-        echo -e "${DIM}  Requires Ollama running: rig ollama start${RESET}\n"
 
         _install ollama mxbai-embed-large
         _install ollama all-minilm
