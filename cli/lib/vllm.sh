@@ -57,12 +57,13 @@ _serve_list() {
     hr 118
     for f in "${preset_dir}"/*.env; do
         [[ -f "${f}" ]] || continue
-        local name model ctx kv gpu desc marker
+        local name vllm_cmd model ctx kv gpu desc marker
         name=$(basename "${f}" .env)
-        model=$(grep '^MODEL_ID=' "${f}" | cut -d= -f2)
-        ctx=$(grep '^MAX_MODEL_LEN=' "${f}" | cut -d= -f2 || echo "—")
-        kv=$(grep '^KV_CACHE_DTYPE=' "${f}" | cut -d= -f2 || echo "—")
-        gpu=$(grep '^GPU_MEMORY_UTILIZATION=' "${f}" | cut -d= -f2 || echo "—")
+        vllm_cmd=$(grep '^VLLM_CMD=' "${f}" | cut -d= -f2-)
+        model=$(echo "$vllm_cmd" | grep -oP '(?<=--served-model-name )\S+')
+        ctx=$(echo "$vllm_cmd" | grep -oP '(?<=--max-model-len )\S+' || echo "—")
+        kv=$(echo "$vllm_cmd" | grep -oP '(?<=--kv-cache-dtype )\S+' || echo "—")
+        gpu=$(echo "$vllm_cmd" | grep -oP '(?<=--gpu-memory-utilization )\S+' || echo "—")
         desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
         if [[ "${name}" == "${active_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
@@ -86,7 +87,7 @@ _serve_list() {
         # truncate description at word boundary to fit hr width
         local desc_t="${desc:0:38}"
         [[ "${#desc}" -gt 38 ]] && desc_t="${desc_t% *}…"
-        if [[ ! -d "${models_root}/hf/${model}" ]]; then
+        if [[ ! -d "${models_root}/hf/${model}" && ! -e "${models_root}/hf/${model}" ]]; then
             marker="${RED}●${RESET}"
             echo -e "  ${marker} ${RED}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
         else
@@ -257,15 +258,15 @@ _serve_preset_show() {
         header="Active vLLM preset: ${name}"
     fi
 
+    local vllm_cmd
+    vllm_cmd=$(grep '^VLLM_CMD=' "${source_file}" | cut -d= -f2-)
+
     echo ""
     print_header "${header}"
     hr
     grep '^#' "${source_file}" | head -5 | sed 's/^#/  /'
     hr
-    grep -v '^#' "${source_file}" | grep -v '^$' | while IFS= read -r line; do
-        key="${line%%=*}"; val="${line#*=}"
-        printf "  ${CYAN}%-35s${RESET} %s\n" "${key}" "${val}"
-    done
+    echo "$vllm_cmd" | sed 's/ --/\n    --/g' | sed 's/^/  /'
     hr
     echo ""
 }
