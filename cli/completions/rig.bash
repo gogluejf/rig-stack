@@ -70,7 +70,7 @@ _rig_completions() {
             for p in ${presets}; do
                 [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
             done
-            COMPREPLY=($(compgen -W "${marked} start stop preset --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${marked} start stop preset --edge --help" -- "${cur}"))
             return
         fi
 
