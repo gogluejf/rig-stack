@@ -42,6 +42,9 @@ RigStack abstracts the complexity of running multiple inference engines while ke
 - **Containerized stack**  
   Docker-based, reproducible, easy to start, easy to evolve.
 
+- **Observability**  
+  One command to see endpoints availability, system actual configuration and memory distribution: `rig status`.
+
 ---
 
 ## What's included
@@ -59,10 +62,13 @@ RigStack abstracts the complexity of running multiple inference engines while ke
 
 ## Prerequisites
 
+### System requirements
 - Ubuntu 24.04 (tested) (or Debian-family with `OS_FAMILY=debian` in `.env`)
 - 16GB+ RAM (32GB+ recommended for larger models)
 - 2tb+ disk (for models, data, and Docker storage)
-- NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell features require RTX 50xx)
+- NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell built (--edge) require RTX 50xx)
+
+### Package requirements
 - NVIDIA driver ≥ 580
 - Docker CE (not snap)
 - NVIDIA Container Toolkit
