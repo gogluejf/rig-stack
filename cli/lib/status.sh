@@ -163,6 +163,27 @@ _status_comfy_container() {
     return 1
 }
 
+_status_vllm_lib_versions() {
+    local container="$1"
+    [[ -n "${container}" ]] || return 0
+    container_running "${container}" || return 0
+    docker exec "${container}" python3 -c "import vllm, torch, transformers; print(vllm.__version__); print(torch.__version__); print(transformers.__version__); print(torch.cuda.is_available()); print(torch.version.cuda); print(torch.backends.cudnn.version())" 2>/dev/null || true
+}
+
+_status_vllm_lib_versions() {
+    local container="$1"
+    [[ -n "${container}" ]] || return 0
+    container_running "${container}" || return 0
+    docker exec "${container}" python3 -c "
+import vllm, torch, transformers
+print('vllm', vllm.__version__)
+print('torch', torch.__version__)
+print('transformers', transformers.__version__)
+print('CUDA', str(torch.version.cuda) + '  (available: ' + str(torch.cuda.is_available()) + ')')
+print('cuDNN', str(torch.backends.cudnn.version()))
+" 2>/dev/null || true
+}
+
 _status_vllm_build() {
     local container
     container="$(_status_vllm_container 2>/dev/null || true)"
@@ -370,7 +391,7 @@ _status_print_triptych() {
 _status_metadata_line() {
     local val="$2"
     [[ "${val}" == "-" ]] && val="${DIM}-${RESET}"
-    printf "  ${CYAN}%-14s${RESET} %s\n" "$1" "${val}"
+    printf "  ${CYAN}%-14s${RESET} %b\n" "$1" "${val}"
 }
 
 _status_plain_state() {
@@ -512,6 +533,9 @@ _status_detail_vllm() {
     [[ -n "${model}" ]] || model="-"
     [[ -n "${models}" ]] || models="-"
 
+    local lib_versions=""
+    [[ "${state}" == "running" ]] && lib_versions="$(_status_vllm_lib_versions "${container}")"
+
     echo ""
     print_header "vLLM status"
     hr 108
@@ -523,10 +547,20 @@ _status_detail_vllm() {
     _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/openai")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
-    hr 108
-    _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr 108
     echo ""
+
+    if [[ -n "${lib_versions}" ]]; then
+        print_header "vLLM Build"
+        hr 108
+        while IFS=' ' read -r key val; do
+            _status_metadata_line "${key}" "${val}"
+        done <<< "${lib_versions}"
+        echo ""
+    fi
+
+    _status_print_triptych "${endpoints}" "${aux}" "${models}"
+    echo ""
+
 }
 
 _status_detail_ollama() {
@@ -555,9 +589,8 @@ _status_detail_ollama() {
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/ollama/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "warming" "$(_status_value_if_running "${state}" "[x] = loaded via 'ollama ps'")"
-    hr 108
+    echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr 108
     echo ""
 }
 
@@ -590,9 +623,8 @@ _status_detail_comfy() {
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/comfy")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "models" "$(_status_value_if_running "${state}" "best-effort file inventory from container")"
-    hr 108
+    echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr 108
     echo ""
 }
 
@@ -618,12 +650,9 @@ _status_detail_rag() {
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "rig-rag-api")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "CPU")"
-    _status_metadata_line "build" "-"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/rag/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
-    _status_metadata_line "mode" "$(_status_value_if_running "${state}" "first-class /v1 endpoints + legacy native routes")"
-    hr 108
+    echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
-    hr 108
     echo ""
 }
