@@ -61,8 +61,8 @@ services:
       - "${VLLM_PORT:-8000}:8000"
     env_file:
       - .env
-      - ./.preset.active.vllm
     volumes:
+      - ./.preset.active.vllm:/preset/vllm.sh:ro
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
       - ${DATA_ROOT}/outputs/vllm:/outputs
@@ -96,8 +96,8 @@ services:
       - "${VLLM_PORT:-8000}:8000"
     env_file:
       - .env
-      - ./.preset.active.vllm
     volumes:
+      - ./.preset.active.vllm:/preset/vllm.sh:ro
       - ${MODELS_ROOT}:/models:ro
       - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
       - ${DATA_ROOT}/outputs/vllm:/outputs

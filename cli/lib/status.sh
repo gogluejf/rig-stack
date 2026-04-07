@@ -272,12 +272,7 @@ _status_vllm_active_model() {
     local active="${RIG_ROOT}/.preset.active.vllm"
     [[ -f "${active}" ]] || return 0
     local cmd
-    cmd=$(grep -m1 '^VLLM_CMD=' "${active}" 2>/dev/null | cut -d= -f2-)
-    if [[ -n "${cmd}" ]]; then
-        echo "$cmd" | grep -oP '(?<=--served-model-name )\S+' 2>/dev/null || true
-    else
-        grep -m1 '^MODEL_ID=' "${active}" 2>/dev/null | cut -d= -f2
-    fi
+    grep -m1 -- '--served-model-name' "${active}" 2>/dev/null | awk '{print $NF}'
 }
 
 _status_vllm_live_models() {

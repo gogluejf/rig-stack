@@ -16,8 +16,8 @@ _rig_presets() {
     local root
     root="$(_rig_root)" || return
     local f
-    for f in "${root}/presets/${1}/"*.env; do
-        [[ -f "${f}" ]] && basename "${f}" .env
+    for f in "${root}/presets/${1}/"*.sh; do
+        [[ -f "${f}" ]] && basename "${f}" .sh
     done
 }
 
@@ -27,7 +27,7 @@ _rig_active_preset() {
     root="$(_rig_root)" || return
     local link="${root}/.preset.active.${1}"
     [[ -L "${link}" ]] || return
-    basename "$(readlink "${link}")" .env
+    basename "$(readlink "${link}")" .sh
 }
 
 _rig_contains() {

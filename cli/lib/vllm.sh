@@ -55,15 +55,17 @@ _serve_list() {
     hr 118
     printf "  ${BOLD}  %-28s %-20s %-10s %-6s %-6s %s${RESET}\n" "PRESET" "MODEL" "CTX" "KV" "GPU" "DESCRIPTION"
     hr 118
-    for f in "${preset_dir}"/*.env; do
+    for f in "${preset_dir}"/*.sh; do
         [[ -f "${f}" ]] || continue
-        local name vllm_cmd model ctx kv gpu desc marker
-        name=$(basename "${f}" .env)
-        vllm_cmd=$(grep '^VLLM_CMD=' "${f}" | cut -d= -f2-)
-        model=$(echo "$vllm_cmd" | grep -oP '(?<=--served-model-name )\S+')
-        ctx=$(echo "$vllm_cmd" | grep -oP '(?<=--max-model-len )\S+' || echo "—")
-        kv=$(echo "$vllm_cmd" | grep -oP '(?<=--kv-cache-dtype )\S+' || echo "—")
-        gpu=$(echo "$vllm_cmd" | grep -oP '(?<=--gpu-memory-utilization )\S+' || echo "—")
+        local name model ctx kv gpu desc marker
+        name=$(basename "${f}" .sh)
+        model=$(grep -m1 -- '--served-model-name' "${f}" | awk '{print $NF}')
+        ctx=$(grep -m1 -- '--max-model-len' "${f}" | awk '{print $NF}')
+        kv=$(grep -m1 -- '--kv-cache-dtype' "${f}" | awk '{print $NF}')
+        gpu=$(grep -m1 -- '--gpu-memory-utilization' "${f}" | awk '{print $NF}')
+        [[ -z "${ctx}" ]] && ctx="—"
+        [[ -z "${kv}" ]] && kv="—"
+        [[ -z "${gpu}" ]] && gpu="—"
         desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
         if [[ "${name}" == "${active_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
@@ -143,7 +145,7 @@ _serve_start() {
         fi
     fi
 
-    local preset_file="${RIG_ROOT}/presets/vllm/${preset_name}.env"
+    local preset_file="${RIG_ROOT}/presets/vllm/${preset_name}.sh"
     if [[ ! -f "${preset_file}" ]]; then
         echo -e "${RED}Preset '${preset_name}' not found.${RESET}"
         echo "Run 'rig serve preset list' to see available presets."
@@ -218,14 +220,14 @@ _serve_preset() {
 _serve_preset_set() {
     local name="${1:-}"
     local available
-    available=$(ls "${RIG_ROOT}/presets/vllm/"*.env 2>/dev/null | xargs -I{} basename {} .env | sort | tr '\n' ' ')
+    available=$(ls "${RIG_ROOT}/presets/vllm/"*.sh 2>/dev/null | xargs -I{} basename {} .sh | sort | tr '\n' ' ')
     if [[ -z "${name}" ]]; then
         echo -e "${RED}Preset name required.${RESET}"
         echo -e "Available: ${available}"
         echo "Usage: rig serve preset set <name>"
         exit 1
     fi
-    local preset_file="${RIG_ROOT}/presets/vllm/${name}.env"
+    local preset_file="${RIG_ROOT}/presets/vllm/${name}.sh"
     if [[ ! -f "${preset_file}" ]]; then
         echo -e "${RED}Preset '${name}' not found.${RESET}"
         echo -e "Available: ${available}"
@@ -242,7 +244,7 @@ _serve_preset_show() {
     local source_file header
 
     if [[ -n "${name}" ]]; then
-        source_file="${RIG_ROOT}/presets/vllm/${name}.env"
+        source_file="${RIG_ROOT}/presets/vllm/${name}.sh"
         if [[ ! -f "${source_file}" ]]; then
             echo -e "${RED}Preset '${name}' not found.${RESET}"
             echo "Run 'rig serve preset list' to see available presets."
@@ -259,15 +261,36 @@ _serve_preset_show() {
         header="Active vLLM preset: ${name}"
     fi
 
-    local vllm_cmd
-    vllm_cmd=$(grep '^VLLM_CMD=' "${source_file}" | cut -d= -f2-)
-
     echo ""
     print_header "${header}"
     hr
-    grep '^#' "${source_file}" | head -5 | sed 's/^#/  /'
+    while IFS= read -r line; do
+        [[ "${line}" =~ ^#! ]] && continue
+        [[ "${line}" =~ ^# ]] && echo -e "  ${DIM}${line}${RESET}"
+    done < "${source_file}"
+    echo ""
+    print_header "vLLM arguments"
     hr
-    echo "$vllm_cmd" | sed 's/ --/\n    --/g' | sed 's/^/  /'
-    hr
+    while IFS= read -r line; do
+        [[ -z "${line// }" ]] && continue
+        [[ "${line}" =~ ^\s*# ]] && continue
+        # strip leading whitespace for matching, preserve for output indent
+        local trimmed="${line#"${line%%[! ]*}"}"
+        if [[ "${line}" =~ VLLM_ARGS ]] || [[ "${trimmed}" == ")" ]]; then
+            echo -e "  ${DIM}${line}${RESET}"
+        elif [[ "${trimmed}" =~ ^vllm\ serve ]]; then
+            local path="${trimmed#vllm serve }"
+            echo -e "  ${GREEN}vllm serve${RESET} ${path}"
+        elif [[ "${trimmed}" =~ ^-- ]]; then
+            local flag="${trimmed%% *}"
+            local val="${trimmed#"${flag}"}"
+            val="${val# }"
+            if [[ -n "${val}" ]]; then
+                echo -e "  ${YELLOW_SOFT}${flag}${RESET} ${val}"
+            else
+                echo -e "  ${YELLOW_SOFT}${flag}${RESET}"
+            fi
+        fi
+    done < "${source_file}"
     echo ""
 }

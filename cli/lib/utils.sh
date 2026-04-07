@@ -66,7 +66,7 @@ set_active_preset() {
 get_active_preset_name() {
     local link="${RIG_ROOT}/.preset.active.${1}"
     if [[ -L "${link}" ]]; then
-        basename "$(readlink "${link}")" .env
+        basename "$(readlink "${link}")" .sh
     fi
 }
 
