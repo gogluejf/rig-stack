@@ -71,6 +71,30 @@ get_active_preset_name() {
 }
 
 # ── Print helpers ─────────────────────────────────────────────────────────────
+fmt_mem() {
+    # Takes a number in MiB, returns "X.X GiB" or "X.X MiB"
+    awk -v m="$1" 'BEGIN { if (m+0 >= 1000) printf "%.1f GiB", m/1024; else printf "%.1f MiB", m }'
+}
+
+fmt_mem_str() {
+    # Normalizes docker-stats-style strings ("3.131GiB", "269.3MiB") through fmt_mem
+    local raw="${1// /}"
+    if [[ "${raw}" =~ ^([0-9.]+)(GiB|GB)$ ]]; then
+        fmt_mem "$(awk -v n="${BASH_REMATCH[1]}" 'BEGIN { printf "%.0f", n*1024 }')"
+    elif [[ "${raw}" =~ ^([0-9.]+)(MiB|MB)$ ]]; then
+        fmt_mem "$(awk -v n="${BASH_REMATCH[1]}" 'BEGIN { printf "%.0f", n }')"
+    elif [[ "${raw}" =~ ^([0-9.]+)(KiB|KB)$ ]]; then
+        fmt_mem "$(awk -v n="${BASH_REMATCH[1]}" 'BEGIN { printf "%.0f", n/1024 }')"
+    else
+        printf '%s' "${1}"
+    fi
+}
+
+fmt_freq() {
+    # Takes a number in MHz, returns "X.X GHz" or "XXX MHz"
+    awk -v f="$1" 'BEGIN { if (f+0 >= 1000) printf "%.1f GHz", f/1000; else printf "%.0f MHz", f }'
+}
+
 print_header() {
     echo -e "${BOLD}${CYAN}$*${RESET}"
 }

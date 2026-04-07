@@ -308,11 +308,13 @@ _status_container_gpu_mem_usage() {
         ')
 
     [[ -n "${total}" && "${total}" != "0" ]] || return 1
-    echo "${total} MiB"
+    fmt_mem "${total}"
 }
 
 _status_container_ram_usage() {
-    docker stats --no-stream --format '{{.MemUsage}}' "$1" 2>/dev/null | awk -F' / ' 'NR==1 {print $1}'
+    local raw
+    raw=$(docker stats --no-stream --format '{{.MemUsage}}' "$1" 2>/dev/null | awk -F' / ' 'NR==1 {print $1}')
+    [[ -n "${raw}" ]] && fmt_mem_str "${raw}" || true
 }
 
 _status_memory_for() {
@@ -322,7 +324,7 @@ _status_memory_for() {
     container_running "${container}" || { echo "-"; return 0; }
 
     if [[ "${runtime}" == "GPU" ]]; then
-        _status_container_gpu_mem_usage "${container}" 2>/dev/null || _status_container_ram_usage "${container}" || echo "-"
+        _status_container_gpu_mem_usage "${container}" 2>/dev/null || echo "-"
     else
         _status_container_ram_usage "${container}" || echo "-"
     fi
@@ -406,6 +408,7 @@ _status_summary() {
     local vllm_container comfy_container
     local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state
     local vllm_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
+    local traefik_memory="" qdrant_memory="" langfuse_memory="" postgres_memory=""
 
     vllm_container="$(_status_vllm_container 2>/dev/null || true)"
     comfy_container="$(_status_comfy_container 2>/dev/null || true)"
@@ -429,10 +432,14 @@ _status_summary() {
     comfy_memory="$(_status_memory_for "${comfy_container}" "$(_status_comfy_runtime)")"
     ollama_memory="$(_status_memory_for "rig-ollama" "$(_status_ollama_runtime)")"
     rag_memory="$(_status_memory_for "rig-rag-api" "CPU")"
+    traefik_memory="$(_status_memory_for "rig-traefik" "CPU")"
+    qdrant_memory="$(_status_memory_for "rig-qdrant" "CPU")"
+    langfuse_memory="$(_status_memory_for "rig-langfuse" "CPU")"
+    postgres_memory="$(_status_memory_for "rig-postgres" "CPU")"
 
     echo ""
     print_header "Primary services"
-    hr 105
+    echo ""
     printf "  ${BOLD}%-12s %-24s %-8s %-8s %-16s %-12s %s${RESET}\n" "SERVICE" "ACTIVE MODEL" "RUNTIME" "BUILD" "ROUTE" "MEMORY" "STATUS"
     hr 105
     printf "  %b %b %b %b %b %b %b %b\n" \
@@ -467,45 +474,51 @@ _status_summary() {
         "$(_status_field 16 "$(_status_value_if_running "${rag_state}" "/rag/v1")")" \
         "$(_status_field 12 "$(_status_value_if_running "${rag_state}" "${rag_memory:--}")")" \
         "$(_status_icon "${rag_state}")" "$(_status_label "${rag_state}")"
-    hr 105
     echo ""
 
     print_header "Backing services"
-    hr 85
-    printf "  ${BOLD}%-12s %-30s %-12s %s${RESET}\n" "SERVICE" "ADDRESS" "ROUTE" "STATUS"
-    hr 85
-    printf "  %b %b %b %b %b\n" \
+    echo ""
+    printf "  ${BOLD}%-12s %-30s %-12s %-12s %s${RESET}\n" "SERVICE" "ADDRESS" "ROUTE" "MEMORY" "STATUS"
+    hr 105
+    printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "traefik")" \
         "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_PORT:-80}")")" \
         "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "/")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "${traefik_memory:--}")")" \
         "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
-    printf "  %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "dashboard")" \
         "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_DASHBOARD_PORT:-8080}")")" \
         "$(_status_field 12 "-")" \
+        "$(_status_field 12 "-")" \
         "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
-    printf "  %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "qdrant")" \
         "$(_status_field 30 "$(_status_value_if_running "${qdrant_state}" "http://rig-qdrant:6333")")" \
         "$(_status_field 12 "-")" \
+        "$(_status_field 12 "$(_status_value_if_running "${qdrant_state}" "${qdrant_memory:--}")")" \
         "$(_status_icon "${qdrant_state}")" "$(_status_label "${qdrant_state}")"
-    printf "  %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "langfuse")" \
         "$(_status_field 30 "$(_status_value_if_running "${langfuse_state}" "http://rig-langfuse:3000")")" \
         "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "/langfuse")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "${langfuse_memory:--}")")" \
         "$(_status_icon "${langfuse_state}")" "$(_status_label "${langfuse_state}")"
-    printf "  %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "postgres")" \
         "$(_status_field 30 "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")")" \
         "$(_status_field 12 "-")" \
+        "$(_status_field 12 "$(_status_value_if_running "${postgres_state}" "${postgres_memory:--}")")" \
         "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
-    printf "  %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "hf")" \
         "$(_status_field 30 "-")" \
         "$(_status_field 12 "-")" \
+        "$(_status_field 12 "-")" \
         "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
-    hr 85
-    echo -e "  ${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
+
+    echo ""
+    echo -e "${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
     echo ""
 }
 
@@ -558,6 +571,8 @@ _status_detail_vllm() {
         echo ""
     fi
 
+    print_header "Endpoints"
+    echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 
@@ -589,6 +604,9 @@ _status_detail_ollama() {
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/ollama/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "warming" "$(_status_value_if_running "${state}" "[x] = loaded via 'ollama ps'")"
+    echo ""
+
+    print_header "Endpoints"
     echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
@@ -624,6 +642,9 @@ _status_detail_comfy() {
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "models" "$(_status_value_if_running "${state}" "best-effort file inventory from container")"
     echo ""
+    
+    print_header "Endpoints"
+    echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 }
@@ -652,6 +673,9 @@ _status_detail_rag() {
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "CPU")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/rag/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    echo ""
+    
+    print_header "Endpoints"
     echo ""
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""

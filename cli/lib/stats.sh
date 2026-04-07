@@ -15,7 +15,7 @@ cmd_stats() {
             printf "  ${DIM}%-24s${RESET} %s\n" "Driver" "${driver// /}"
             printf "  ${DIM}%-24s${RESET} %s °C\n" "Temperature" "${temp// /}"
             printf "  ${DIM}%-24s${RESET} %s W\n" "Power draw" "${power// /}"
-            printf "  ${DIM}%-24s${RESET} %s / %s MiB  (%s MiB free)\n" "VRAM" "${mem_used// /}" "${mem_total// /}" "${mem_free// /}"
+            printf "  ${DIM}%-24s${RESET} %s / %s  (%s free)\n" "VRAM" "$(fmt_mem "${mem_used// /}")" "$(fmt_mem "${mem_total// /}")" "$(fmt_mem "${mem_free// /}")"
             printf "  ${DIM}%-24s${RESET} %s %%\n" "GPU utilisation" "${util// /}"
         done
     fi
@@ -39,7 +39,7 @@ cmd_stats() {
     printf "  ${DIM}%-24s${RESET} %s\n" "CPU" "${cpu_model:-unknown}"
     printf "  ${DIM}%-24s${RESET} %s\n" "Architecture" "${cpu_arch:-unknown}"
     printf "  ${DIM}%-24s${RESET} %s cores  (%s threads)\n" "Cores" "${total_cores}" "${total_threads}"
-    [[ -n "${cpu_mhz}" ]] && printf "  ${DIM}%-24s${RESET} %s MHz\n" "Frequency" "${cpu_mhz}"
+    [[ -n "${cpu_mhz}" ]] && printf "  ${DIM}%-24s${RESET} %s\n" "Frequency" "$(fmt_freq "${cpu_mhz}")"
     printf "  ${DIM}%-24s${RESET} %s\n" "Load (1/5/15m)" "${cpu_load:-unknown}"
 
     if command -v sensors &>/dev/null; then
@@ -51,7 +51,7 @@ cmd_stats() {
     mem_total=$(awk '/^MemTotal/  {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
     mem_free=$(awk  '/^MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
     mem_used=$(( ${mem_total:-0} - ${mem_free:-0} ))
-    printf "  ${DIM}%-24s${RESET} %s / %s MiB  (%s MiB free)\n" "DRAM" "${mem_used}" "${mem_total}" "${mem_free}"
+    printf "  ${DIM}%-24s${RESET} %s / %s  (%s free)\n" "DRAM" "$(fmt_mem "${mem_used}")" "$(fmt_mem "${mem_total}")" "$(fmt_mem "${mem_free}")"
 
     if command -v dmidecode &>/dev/null; then
         local dmi_out
@@ -82,7 +82,7 @@ cmd_stats() {
         stats=$(docker stats --no-stream --format "{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" \
             $(docker ps --filter "name=rig-" --format "{{.Names}}" 2>/dev/null) 2>/dev/null || echo "")
 
-        printf "  ${BOLD}%-20s %-26s %-8s %-12s %-12s %s${RESET}\n" "CONTAINER" "STATUS" "CPU" "RAM" "VRAM" "IMAGE"
+        printf "  ${BOLD}%-20s %-26s %-8s %-12s %-12s %s${RESET}\n" "CONTAINER" "STATUS" "CPU" "DRAM" "VRAM" "IMAGE"
         hr 108
         while IFS=$'\t' read -r name status image; do
             local cpu="-" ram="-" vram="-"
@@ -91,14 +91,13 @@ cmd_stats() {
                 sline=$(grep "^${name}"$'\t' <<< "${stats}" || true)
                 if [[ -n "${sline}" ]]; then
                     cpu=$(cut -f2 <<< "${sline}")
-                    ram=$(cut -f3 <<< "${sline}" | awk -F' / ' '{print $1}')
+                    ram=$(fmt_mem_str "$(cut -f3 <<< "${sline}" | awk -F' / ' '{print $1}')")
                 fi
             fi
             vram="$(_status_container_gpu_mem_usage "${name}" 2>/dev/null || echo "-")"
             [[ -z "${vram}" ]] && vram="-"
             printf "  %-20s %-26s %-8s %-12s %-12s %s\n" "${name}" "${status}" "${cpu}" "${ram}" "${vram}" "${image}"
         done <<< "${containers}"
-        hr 108
     fi
 
     echo ""
