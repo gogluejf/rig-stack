@@ -148,10 +148,13 @@ _models_list() {
     local found_ollama=false
     if [[ -d "${ollama_manifests}" ]]; then
         while IFS= read -r manifest; do
-            local tag model
+            local tag model total_bytes size
             tag="$(basename "${manifest}")"
             model="$(basename "$(dirname "${manifest}")")"
-            printf "  %-44s  %b\n" "${model}:${tag}" "${DIM}-${RESET}"
+            total_bytes=$(grep -o '"size":[0-9]*' "${manifest}" 2>/dev/null \
+                | awk -F: '{s+=$2} END{printf "%d", s+0}')
+            size=$(fmt_mem $(( ${total_bytes:-0} / 1024 / 1024 )))
+            printf "  %-44s  %s\n" "${model}:${tag}" "${size}"
             found_ollama=true
         done < <(find "${ollama_manifests}" -mindepth 2 -maxdepth 2 -type f 2>/dev/null | sort)
     fi
