@@ -57,6 +57,8 @@ services:
     restart: unless-stopped
     <<: *gpu-runtime
     shm_size: '16gb'
+    ports:
+      - "${VLLM_PORT:-8000}:8000"
     env_file:
       - .env
       - ./.preset.active.vllm
@@ -90,6 +92,8 @@ services:
     restart: unless-stopped
     <<: *gpu-runtime
     shm_size: '16gb'
+    ports:
+      - "${VLLM_PORT:-8000}:8000"
     env_file:
       - .env
       - ./.preset.active.vllm
