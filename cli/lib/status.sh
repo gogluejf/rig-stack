@@ -167,7 +167,7 @@ _status_vllm_log_stats() {
     local container="$1"
     [[ -n "${container}" ]] || return 0
     container_running "${container}" || return 0
-    docker logs "${container}" 2>&1 | python3 -c "
+    docker logs "${container}" 2>&1 | head -n 500 | python3 -c "
 import sys, re
 
 want = {
@@ -281,7 +281,7 @@ _status_vllm_active_model() {
 }
 
 _status_vllm_live_models() {
-    curl -sf "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
+    curl -sf --max-time 3 "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
 }
 
 _status_rag_live_models() {
@@ -352,9 +352,26 @@ _status_container_gpu_mem_usage() {
     fmt_mem "${total}"
 }
 
+declare -gA _RAM_STATS=()
+
+_status_prefetch_ram_stats() {
+    # Single docker stats call for all running containers; results cached in _RAM_STATS.
+    local line name raw
+    while IFS= read -r line; do
+        name="${line%% *}"
+        raw="${line#* }"
+        raw="${raw%% / *}"  # take only the "used" side before " / "
+        [[ -n "${name}" && -n "${raw}" ]] && _RAM_STATS["${name}"]="${raw}"
+    done < <(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null)
+}
+
 _status_container_ram_usage() {
     local raw
-    raw=$(docker stats --no-stream --format '{{.MemUsage}}' "$1" 2>/dev/null | awk -F' / ' 'NR==1 {print $1}')
+    if [[ ${#_RAM_STATS[@]} -gt 0 ]]; then
+        raw="${_RAM_STATS[$1]:-}"
+    else
+        raw=$(docker stats --no-stream --format '{{.MemUsage}}' "$1" 2>/dev/null | awk -F' / ' 'NR==1 {print $1}')
+    fi
     [[ -n "${raw}" ]] && fmt_mem_str "${raw}" || true
 }
 
@@ -450,6 +467,8 @@ _status_summary() {
     local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state comfy_tools_state
     local vllm_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
     local traefik_memory="" qdrant_memory="" langfuse_memory="" postgres_memory="" hf_memory="" comfy_tools_memory=""
+
+    _status_prefetch_ram_stats
 
     vllm_container="$(_status_vllm_container 2>/dev/null || true)"
     comfy_container="$(_status_comfy_container 2>/dev/null || true)"
