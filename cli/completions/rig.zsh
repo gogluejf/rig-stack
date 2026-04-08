@@ -201,6 +201,21 @@ _rig_models_cmd() {
                 '--file[Filename to download from the HuggingFace repo]:filename:' \
                 '--type[Force model type]:type:(hf ollama comfy)'
             ;;
+        show|remove)
+            local type_val=""
+            for ((i=1; i<${#words[@]}; i++)); do
+                [[ "${words[i]}" == "--type" ]] && type_val="${words[i+1]:-}"
+            done
+            local raw model_names=()
+            raw=$(rig models names ${type_val:+--type "${type_val}"} 2>/dev/null)
+            while IFS= read -r name; do
+                [[ -n "${name}" ]] && model_names+=("${name}")
+            done <<< "${raw}"
+            _arguments -C \
+                '--type[Backend type]:type:(hf ollama comfy)' \
+                '*: :->model'
+            [[ "${state}" == "model" ]] && _describe 'installed model' model_names
+            ;;
         esac
         ;;
     esac

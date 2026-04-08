@@ -49,6 +49,12 @@ cmd_models() {
             shift
             _models_install "$@"
             ;;
+        names)
+            shift
+            local _type_filter=""
+            [[ "${1:-}" == "--type" ]] && _type_filter="${2:-}"
+            _models_names "${_type_filter}"
+            ;;
         show)
             shift
             bash "${RIG_ROOT}/scripts/models/show-model.sh" "$@"
@@ -107,9 +113,51 @@ _models_install() {
     bash "${RIG_ROOT}/scripts/models/install-model.sh" "${args[@]}"
 }
 
+_models_names() {
+    # Outputs one installed model name per line (disk-based, no service needed).
+    # Optional arg: type filter (hf|ollama|comfy). Empty = all.
+    load_env
+    local models_root="${MODELS_ROOT:-/models}"
+    local type_filter="${1:-}"
+
+    # ── HF ── org/repo from directory structure
+    if [[ -z "${type_filter}" || "${type_filter}" == "hf" ]]; then
+        if [[ -d "${models_root}/hf" ]]; then
+            while IFS= read -r -d '' org_dir; do
+                local org; org="$(basename "${org_dir}")"
+                while IFS= read -r -d '' repo_dir; do
+                    echo "${org}/$(basename "${repo_dir}")"
+                done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+            done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+        fi
+    fi
+
+    # ── Ollama ── model:tag from manifest files
+    if [[ -z "${type_filter}" || "${type_filter}" == "ollama" ]]; then
+        local ollama_manifests="${models_root}/ollama/manifests/registry.ollama.ai/library"
+        if [[ -d "${ollama_manifests}" ]]; then
+            while IFS= read -r manifest; do
+                echo "$(basename "$(dirname "${manifest}")"):$(basename "${manifest}")"
+            done < <(find "${ollama_manifests}" -mindepth 2 -maxdepth 2 -type f 2>/dev/null | sort)
+        fi
+    fi
+
+    # ── ComfyUI ── type directory names (non-empty dirs only)
+    if [[ -z "${type_filter}" || "${type_filter}" == "comfy" ]]; then
+        if [[ -d "${models_root}/comfy" ]]; then
+            while IFS= read -r -d '' type_dir; do
+                local file_count
+                file_count=$(find "${type_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+                [[ "${file_count}" -gt 0 ]] && echo "$(basename "${type_dir}")"
+            done < <(find "${models_root}/comfy" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
+        fi
+    fi
+}
+
 _models_list() {
     load_env
     local models_root="${MODELS_ROOT:-/models}"
+    local ollama_manifests="${models_root}/ollama/manifests/registry.ollama.ai/library"
 
     echo ""
 
@@ -119,23 +167,16 @@ _models_list() {
     printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
     hr 108
     local found_hf=false
-    if [[ -d "${models_root}/hf" ]]; then
-        while IFS= read -r -d '' org_dir; do
-            local org
-            org="$(basename "${org_dir}")"
-            while IFS= read -r -d '' repo_dir; do
-                local repo size_mib size pad model_f
-                repo="$(basename "${repo_dir}")"
-                size_mib=$(du -sk "${repo_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
-                size=$(fmt_mem "${size_mib:-0}")
-                pad=$(( 44 - ${#org} - 1 - ${#repo} ))
-                (( pad < 0 )) && pad=0
-                model_f="${DIM}${org}/${RESET}${repo}$(printf '%*s' "${pad}" '')"
-                printf "  %b  %s\n" "${model_f}" "${size}"
-                found_hf=true
-            done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
-        done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
-    fi
+    while IFS= read -r name; do
+        local org repo size_mib size pad model_f
+        org="${name%%/*}"; repo="${name#*/}"
+        size_mib=$(du -sk "${models_root}/hf/${name}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
+        size=$(fmt_mem "${size_mib:-0}")
+        pad=$(( 44 - ${#org} - 1 - ${#repo} )); (( pad < 0 )) && pad=0
+        model_f="${DIM}${org}/${RESET}${repo}$(printf '%*s' "${pad}" '')"
+        printf "  %b  %s\n" "${model_f}" "${size}"
+        found_hf=true
+    done < <(_models_names hf)
     ${found_hf} || echo -e "  ${DIM}No HF models yet — rig models install <source>${RESET}"
     echo ""
 
@@ -144,20 +185,17 @@ _models_list() {
     echo ""
     printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
     hr 108
-    local ollama_manifests="${models_root}/ollama/manifests/registry.ollama.ai/library"
     local found_ollama=false
-    if [[ -d "${ollama_manifests}" ]]; then
-        while IFS= read -r manifest; do
-            local tag model total_bytes size
-            tag="$(basename "${manifest}")"
-            model="$(basename "$(dirname "${manifest}")")"
-            total_bytes=$(grep -o '"size":[0-9]*' "${manifest}" 2>/dev/null \
-                | awk -F: '{s+=$2} END{printf "%d", s+0}')
-            size=$(fmt_mem $(( ${total_bytes:-0} / 1024 / 1024 )))
-            printf "  %-44s  %s\n" "${model}:${tag}" "${size}"
-            found_ollama=true
-        done < <(find "${ollama_manifests}" -mindepth 2 -maxdepth 2 -type f 2>/dev/null | sort)
-    fi
+    while IFS= read -r name; do
+        local model tag manifest total_bytes size
+        model="${name%%:*}"; tag="${name#*:}"
+        manifest="${ollama_manifests}/${model}/${tag}"
+        total_bytes=$(grep -o '"size":[0-9]*' "${manifest}" 2>/dev/null \
+            | awk -F: '{s+=$2} END{printf "%d", s+0}')
+        size=$(fmt_mem $(( ${total_bytes:-0} / 1024 / 1024 )))
+        printf "  %-44s  %s\n" "${name}" "${size}"
+        found_ollama=true
+    done < <(_models_names ollama)
     ${found_ollama} || echo -e "  ${DIM}No Ollama models yet — rig models install <source> --type ollama${RESET}"
     echo ""
 
@@ -167,19 +205,16 @@ _models_list() {
     printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
     hr 108
     local found_comfy=false
-    if [[ -d "${models_root}/comfy" ]]; then
-        while IFS= read -r -d '' type_dir; do
-            local type_name file_count size_mib size s
-            type_name="$(basename "${type_dir}")"
-            file_count=$(find "${type_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
-            [[ "${file_count}" -gt 0 ]] || continue
-            size_mib=$(du -sk "${type_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
-            size=$(fmt_mem "${size_mib:-0}")
-            s="$([[ ${file_count} -eq 1 ]] && echo '' || echo 's')"
-            printf "  %-44s  %s\n" "${type_name}/  ${DIM}(${file_count} file${s})${RESET}" "${size}"
-            found_comfy=true
-        done < <(find "${models_root}/comfy" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
-    fi
+    while IFS= read -r name; do
+        local type_dir file_count size_mib size s
+        type_dir="${models_root}/comfy/${name}"
+        file_count=$(find "${type_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+        size_mib=$(du -sk "${type_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
+        size=$(fmt_mem "${size_mib:-0}")
+        s="$([[ ${file_count} -eq 1 ]] && echo '' || echo 's')"
+        printf "  %-44s  %s\n" "${name}/  ${DIM}(${file_count} file${s})${RESET}" "${size}"
+        found_comfy=true
+    done < <(_models_names comfy)
     ${found_comfy} || echo -e "  ${DIM}No ComfyUI models yet — rig models install <source> --type comfy${RESET}"
     echo ""
 }
