@@ -174,8 +174,6 @@ _rig_completions() {
             show|remove)
                 if [[ "${prev}" == "--type" ]]; then
                     COMPREPLY=($(compgen -W "hf ollama comfy" -- "${cur}"))
-                elif [[ "${cur}" == --* ]]; then
-                    COMPREPLY=($(compgen -W "--type" -- "${cur}"))
                 else
                     local type_val=""
                     for ((i=2; i<cword; i++)); do
@@ -187,7 +185,10 @@ _rig_completions() {
                     else
                         names=$(rig models names 2>/dev/null)
                     fi
-                    COMPREPLY=($(compgen -W "${names}" -- "${cur}"))
+                    # include --type flag unless already used
+                    local flags=""
+                    _rig_contains "--type" "${words[@]}" || flags="--type "
+                    COMPREPLY=($(compgen -W "${flags}${names}" -- "${cur}"))
                 fi
                 ;;
         esac
