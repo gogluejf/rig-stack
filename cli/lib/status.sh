@@ -268,6 +268,16 @@ _status_ollama_runtime() {
     fi
 }
 
+_status_ollama_warm_models() {
+    container_running "rig-ollama" || return 0
+
+    docker exec rig-ollama ollama ps 2>/dev/null \
+        | awk 'NR>1 {print $1}' \
+        | sed '/^$/d' \
+        | paste -sd',' - \
+        | sed 's/,/, /g' || true
+}
+
 _status_vllm_active_model() {
     local active="${RIG_ROOT}/.preset.active.vllm"
     [[ -f "${active}" ]] || return 0
@@ -460,7 +470,7 @@ _status_plain_state() {
 _status_summary() {
     local vllm_container comfy_container
     local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state comfy_tools_state
-    local vllm_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
+    local vllm_model="" ollama_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
     local traefik_memory="" qdrant_memory="" langfuse_memory="" postgres_memory="" hf_memory="" comfy_tools_memory=""
 
     _status_prefetch_ram_stats
@@ -483,6 +493,11 @@ _status_summary() {
         vllm_model="$(_status_vllm_primary_model)"
     fi
     [[ -n "${vllm_model}" ]] || vllm_model="-"
+
+    if [[ "${ollama_state}" == "running" ]]; then
+        ollama_model="$(_status_ollama_warm_models)"
+    fi
+    [[ -n "${ollama_model}" ]] || ollama_model="-"
 
     vllm_memory="$(_status_memory_for "${vllm_container}" "GPU")"
     comfy_memory="$(_status_memory_for "${comfy_container}" "$(_status_comfy_runtime)")"
@@ -510,7 +525,7 @@ _status_summary() {
         "$(_status_icon "${vllm_state}")" "$(_status_label "${vllm_state}")"
     printf "  %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "ollama")" \
-        "$(_status_field 24 "-")" \
+        "$(_status_field 24 "$(_status_value_if_running "${ollama_state}" "${ollama_model}")")" \
         "$(_status_field 8  "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")")" \
         "$(_status_field 8  "-")" \
         "$(_status_field 16 "$(_status_value_if_running "${ollama_state}" "/ollama/v1")")" \
