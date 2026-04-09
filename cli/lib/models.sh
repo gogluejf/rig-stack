@@ -236,11 +236,20 @@ _models_init() {
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
+        
+        #arch not supported yet
+        #_install hf unsloth/gemma-4-31B-it-GGUF gemma-4-31B-it-UD-Q4_K_XL.gguf
+        #_install hf google/gemma-4-31B-it tokenizer.json
+        #_install hf google/gemma-4-31B-it tokenizer_config.json
+        #_install hf google/gemma-4-31B-it chat_template.jinja
+        #_install hf google/gemma-4-31B-it config.json        
+        
         _install hf Jackrong/Qwopus3.5-27B-v3-GGUF Qwopus3.5-27B-v3-Q6_K.gguf
         _install hf Jackrong/Qwopus3.5-27B-v3 tokenizer.json
         _install hf Jackrong/Qwopus3.5-27B-v3 tokenizer_config.json
         _install hf Jackrong/Qwopus3.5-27B-v3 chat_template.jinja
         _install hf Jackrong/Qwopus3.5-27B-v3 config.json
+
         _install hf nomic-ai/nomic-embed-text-v1.5
     }
 
@@ -314,6 +323,8 @@ _models_init() {
 
         _install ollama deepseek-r1:7b
         _install ollama deepseek-r1:14b
+
+        _install ollama gemma4:31b
     }
 
     echo -e "${BOLD}rig-stack — model initialisation${RESET}"
