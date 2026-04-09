@@ -84,12 +84,12 @@ if [[ "${TYPE}" == "hf" ]]; then
         local_args=(huggingface-cli download "${SOURCE}" --local-dir "${local_dir}" --local-dir-use-symlinks False)
     fi
 
-    [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}")
+    [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}*")
 
     docker exec rig-hf "${local_args[@]}"
 
     # If a specific file was requested, verify it actually landed on disk.
-    if [[ -n "${FILE}" ]] && [[ ! -f "${MODELS_ROOT}/hf/${SOURCE}/${FILE}" ]]; then
+    if [[ -n "${FILE}" ]] && ! compgen -G "${MODELS_ROOT}/hf/${SOURCE}/${FILE}*" > /dev/null 2>&1; then
         echo -e "${YELLOW}⚠  ${SOURCE} (${FILE}) — file not found in repo, skipping${RESET}"
     else
         echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${local_dir}${RESET}"
