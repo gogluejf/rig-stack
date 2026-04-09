@@ -178,6 +178,8 @@ _serve_start() {
     echo -e "  Runtime  : GPU"
     echo -e "  Build    : ${build_label}"
     echo -e "  Container: rig-${profile}"
+
+    _serve_preset_show "${preset_name}"
 }
 
 _serve_stop() {
