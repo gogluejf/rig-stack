@@ -118,14 +118,6 @@ _status_field() {
     fi
 }
 
-_status_limit_lines() {
-    local max="${1:-8}"
-    awk -v max="${max}" '
-        NR <= max { print; next }
-        NR == max + 1 { print "…"; exit }
-    '
-}
-
 _status_json_model_ids() {
     command -v python3 >/dev/null 2>&1 || return 0
     python3 -c '
@@ -286,7 +278,7 @@ _status_vllm_active_model() {
 }
 
 _status_vllm_live_models() {
-    curl -sf --max-time 3 "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
+    curl -sf "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
 }
 
 _status_rag_live_models() {
@@ -613,7 +605,7 @@ _status_detail_vllm() {
     fi
     memory="$(_status_memory_for "${container}" "GPU")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_vllm_live_models | _status_limit_lines 10)"
+        models="$(_status_vllm_live_models)"
         endpoints=$'GET  /v1/models\nPOST /v1/chat/completions\nPOST /v1/completions\nPOST /v1/embeddings'
         aux=$'GET  /openai/models\nPOST /openai/chat/completions\nPOST /openai/completions\nPOST /openai/embeddings\nGET  /metrics\nGET  /health'
     else
@@ -695,7 +687,7 @@ _status_detail_ollama() {
     runtime="$(_status_ollama_runtime)"
     memory="$(_status_memory_for "rig-ollama" "${runtime}")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_ollama_models | _status_limit_lines 12)"
+        models="$(_status_ollama_models)"
         endpoints=$'GET  /ollama/v1/models\nPOST /ollama/v1/chat/completions\nPOST /ollama/v1/completions\nPOST /ollama/v1/embeddings'
         aux=$'GET  /ollama/api/tags\nPOST /ollama/api/chat\nPOST /ollama/api/generate\nPOST /ollama/api/embeddings\nGET  /ollama/api/version\nGET  /ollama/api/ps'
     else
@@ -731,7 +723,7 @@ _status_detail_comfy() {
     build="$(_status_comfy_build)"
     memory="$(_status_memory_for "${container}" "${runtime}")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_comfy_models | _status_limit_lines 12)"
+        models="$(_status_comfy_models)"
         endpoints=$'GET  /comfy/\nPOST /comfy/prompt\nGET  /comfy/queue\nGET  /comfy/history/{id}'
         aux=$'GET  /comfy/object_info\nGET  /comfy/system_stats\nGET  /comfy/view\nPOST /comfy/upload/image\nGET  /comfy/ws'
     else
@@ -765,7 +757,7 @@ _status_detail_rag() {
     state="$(_status_state "rig-rag-api")"
     memory="$(_status_memory_for "rig-rag-api" "CPU")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_rag_live_models | _status_limit_lines 10)"
+        models="$(_status_rag_live_models)"
         endpoints=$'GET  /rag/v1/models\nPOST /rag/v1/chat/completions\nPOST /rag/v1/embeddings'
         aux=$'GET  /rag/health\nGET  /rag/docs\nGET  /rag/openapi.json\nGET  /rag/redoc\nPOST /rag/chat\nPOST /rag/embed'
     else
@@ -790,3 +782,4 @@ _status_detail_rag() {
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 }
+
