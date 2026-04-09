@@ -85,6 +85,10 @@ http:
   services:
     vllm:
       loadBalancer:
+        healthCheck:
+          path: /health
+          interval: "10s"
+          timeout: "3s"
         servers:
           - url: "http://rig-vllm-stable:8000"
           - url: "http://rig-vllm-edge:8000"
@@ -101,6 +105,10 @@ http:
 
     comfyui:
       loadBalancer:
+        healthCheck:
+          path: /comfyui/health
+          interval: "10s"
+          timeout: "3s"
         servers:
           - url: "http://rig-comfyui-stable:8188"
           - url: "http://rig-comfyui-edge:8188"
