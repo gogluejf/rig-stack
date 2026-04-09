@@ -6,6 +6,7 @@
 
 VLLM_ARGS=(
   vllm serve /models/hf/Kbenkhaled/Qwen3.5-27B-NVFP4
+  --override-generation-config '{"temperature": 0.8, "top_k": -1, "min_p": 0.05, "frequency_penalty": 0.3, "top_p": 0.95}'
   --served-model-name Kbenkhaled/Qwen3.5-27B-NVFP4
   --max-model-len 65536
   --kv-cache-dtype fp8
