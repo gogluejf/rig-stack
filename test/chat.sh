@@ -9,14 +9,26 @@ API_URL="${API_URL:-http://localhost/v1/chat/completions}"
 ENABLE_THINKING=false
 PRINT_THINKING=false
 RENDER_ESCAPED_NEWLINES="${RENDER_ESCAPED_NEWLINES:-true}"
+IMAGE_PATH=""
 
 usage() {
-  echo "Usage: $(basename "$0") [--print-thinking]"
+  echo "Usage: $(basename "$0") [--thinking] [--print-thinking] [--image <path>]"
   echo ""
   echo "Options:"
   echo "  --thinking         Enable thinking mode (spinner shown, reasoning hidden)"
   echo "  --print-thinking   Enable thinking mode and display the model's reasoning"
+  echo "  --image <path>     Attach an image to the first message (multimodal)"
   exit 1
+}
+
+image_mime() {
+  case "${1,,}" in
+    *.jpg|*.jpeg) echo "image/jpeg" ;;
+    *.png)        echo "image/png"  ;;
+    *.gif)        echo "image/gif"  ;;
+    *.webp)       echo "image/webp" ;;
+    *)            echo "image/jpeg" ;;
+  esac
 }
 
 while [[ $# -gt 0 ]]; do
@@ -29,6 +41,10 @@ while [[ $# -gt 0 ]]; do
       ENABLE_THINKING=true
       PRINT_THINKING=true
       shift
+      ;;
+    --image)
+      IMAGE_PATH="$2"
+      shift 2
       ;;
     -h|--help)
       usage
@@ -48,8 +64,13 @@ else
   SYSTEM_PROMPT="You are a helpful assistant."
 fi
 
+# ── Temp files (messages history + curl request) ──────────────────────────────
+_msgs_file="$(mktemp)"
+_req_file="$(mktemp)"
+trap 'rm -f "${_msgs_file}" "${_req_file}"' EXIT
+
 # Initialize conversation history with system message
-messages="$(jq -n --arg sp "${SYSTEM_PROMPT}" '[{role: "system", content: $sp}]')"
+jq -n --arg sp "${SYSTEM_PROMPT}" '[{role:"system",content:$sp}]' > "${_msgs_file}"
 
 # ── Thinking spinner ──────────────────────────────────────────────────────────
 in_think=0
@@ -156,7 +177,7 @@ process_chunk() {
 }
 
 stream_response() {
-  local request_json="$1"
+  # Reads request from $_req_file; writes response text to $response_text
   in_think=0
   carry=""
   response_text=""
@@ -180,7 +201,7 @@ stream_response() {
   done < <(
     curl -sN "${API_URL}" \
       -H "Content-Type: application/json" \
-      -d "${request_json}"
+      -d "@${_req_file}"
   )
 
   if [[ -n "${carry}" ]]; then
@@ -204,36 +225,50 @@ stream_response() {
 # ── Main loop ─────────────────────────────────────────────────────────────────
 echo "What do you want to discuss today?"
 
+_first_turn_image="${IMAGE_PATH}"
+
 while true; do
   printf '\n> '
   IFS= read -r user_input || break
   [[ -z "${user_input}" ]] && continue
   [[ "${user_input}" == "exit" || "${user_input}" == "quit" || "${user_input}" == "/exit" ]] && break
 
-  # Append user turn to history
-  messages="$(jq -n \
-    --argjson msgs "${messages}" \
-    --arg content "${user_input}" \
-    '$msgs + [{role: "user", content: $content}]')"
+  # Append user turn — image on first turn only, plain text thereafter
+  if [[ -n "${_first_turn_image}" ]]; then
+    _mime="$(image_mime "${_first_turn_image}")"
+    _b64_file="$(mktemp)"
+    base64 -w 0 "${_first_turn_image}" > "${_b64_file}"
+    jq \
+      --arg text "${user_input}" \
+      --arg mime "${_mime}" \
+      --rawfile b64 "${_b64_file}" \
+      '. + [{role:"user",content:[
+          {type:"image_url",image_url:{url:("data:"+$mime+";base64,"+($b64|rtrimstr("\n")))}},
+          {type:"text",text:$text}
+        ]}]' \
+      "${_msgs_file}" > "${_msgs_file}.tmp" && mv "${_msgs_file}.tmp" "${_msgs_file}"
+    rm -f "${_b64_file}"
+    _first_turn_image=""
+  else
+    jq \
+      --arg text "${user_input}" \
+      '. + [{role:"user",content:$text}]' \
+      "${_msgs_file}" > "${_msgs_file}.tmp" && mv "${_msgs_file}.tmp" "${_msgs_file}"
+  fi
 
-  # Build request
-  request_json="$(jq -n \
+  # Write request JSON to file (curl reads it with -d @file)
+  jq \
     --arg model "${MODEL}" \
-    --argjson messages "${messages}" \
     --argjson enable_thinking "${ENABLE_THINKING}" \
-    '{
-      model: $model,
-      stream: true,
-      chat_template_kwargs: { enable_thinking: $enable_thinking },
-      messages: $messages
-    }')"
+    '{model:$model,stream:true,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
+    "${_msgs_file}" > "${_req_file}"
 
   printf '\n'
-  stream_response "${request_json}"
+  stream_response
 
-  # Append assistant turn to history
-  messages="$(jq -n \
-    --argjson msgs "${messages}" \
+  # Append assistant turn
+  jq \
     --arg content "${response_text}" \
-    '$msgs + [{role: "assistant", content: $content}]')"
+    '. + [{role:"assistant",content:$content}]' \
+    "${_msgs_file}" > "${_msgs_file}.tmp" && mv "${_msgs_file}.tmp" "${_msgs_file}"
 done
