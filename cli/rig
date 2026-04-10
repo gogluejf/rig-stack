@@ -28,6 +28,7 @@ source "${CLI_DIR}/lib/rag.sh"
 source "${CLI_DIR}/lib/models.sh"
 source "${CLI_DIR}/lib/status.sh"
 source "${CLI_DIR}/lib/stats.sh"
+source "${CLI_DIR}/lib/benchmark.sh"
 
 load_env
 
@@ -96,6 +97,7 @@ print_help() {
     echo ""
     _help_cmd_row "${BOLD}status${RESET}" "status" "" "" "active services, models, memory, routes, endpoints"
     _help_cmd_row "${BOLD}stats${RESET}" "stats" "" "" "GPU VRAM, watt, temp, tokens/sec"
+    _help_cmd_row "${BOLD}benchmark${RESET}" "benchmark" "${DIM}[<service>]${RESET} ${YELLOW_SOFT}[--model <name>] [--type <completion|vision>] [--log [on|off]]${RESET}" "[<service>] [--model <name>] [--type <completion|vision>] [--log [on|off]]" "run benchmark matrix across available services/models"
     echo ""
     echo -e "  ${GREEN}${BOLD}FLAGS${RESET}"
     echo -e "    ${YELLOW_SOFT}--help${RESET}, ${YELLOW_SOFT}-h${RESET}   ${DIM}show help for any command${RESET}"
@@ -120,6 +122,10 @@ print_help() {
     echo -e "    rig models show ${DIM}Kbenkhaled/Qwen3.5-27B-NVFP4${RESET}"
     echo -e "    rig status"
     echo -e "    rig stats"
+    echo -e "    rig benchmark"
+    echo -e "    rig benchmark vllm"
+    echo -e "    rig benchmark vllm --model ${DIM}Kbenkhaled/Qwen3.5-27B-NVFP4${RESET} --type completion"
+    echo -e "    rig benchmark logs"
     echo ""
 }
 
@@ -136,6 +142,7 @@ case "${COMMAND}" in
     infra)      cmd_infra "$@" ;;
     status)     cmd_status "$@" ;;
     stats)      cmd_stats "$@" ;;
+    benchmark)  cmd_benchmark "$@" ;;
     --help|-h|help|"")  print_help ;;
     *)
         echo -e "${RED}Unknown command: ${COMMAND}${RESET}"

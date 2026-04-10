@@ -1,0 +1,27 @@
+[
+  {
+    "name": "cat-story-500-words",
+    "type": "completion",
+    "max_tokens": 600,
+    "prompt": "Write a 500 word story about a cat.",
+    "enabled": true,
+    "tags": ["story", "baseline"]
+  },
+  {
+    "name": "reasoning-structured",
+    "type": "completion",
+    "max_tokens": 700,
+    "prompt": "You are given three priorities: speed, quality, and cost. Provide a short trade-off analysis with exactly three bullet points and one final recommendation sentence.",
+    "enabled": true,
+    "tags": ["reasoning", "format"]
+  },
+  {
+    "name": "vision-image-summary",
+    "type": "vision",
+    "max_tokens": 300,
+    "prompt": "Describe the image in 5 concise bullet points, then add one line with likely scene context.",
+    "image_path": "docs/architecture.png",
+    "enabled": true,
+    "tags": ["vision", "summary"]
+  }
+]

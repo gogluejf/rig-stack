@@ -49,7 +49,7 @@ _rig_completions() {
 
     # ── Level 1: top-level command ────────────────────────────────────────────
     if [[ "${cword}" -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "serve comfy ollama rag models infra status stats --help" -- "${cur}"))
+        COMPREPLY=($(compgen -W "serve comfy ollama rag models infra status stats benchmark --help" -- "${cur}"))
         return
     fi
 
@@ -214,6 +214,52 @@ _rig_completions() {
         ;;
     stats)
         [[ "${cword}" -eq 2 ]] && COMPREPLY=($(compgen -W "--help" -- "${cur}"))
+        ;;
+
+    # ── rig benchmark ─────────────────────────────────────────────────────────
+    benchmark)
+        local services="vllm ollama rag comfyui comfy"
+
+        case "${prev}" in
+            --type)
+                COMPREPLY=($(compgen -W "completion vision" -- "${cur}"))
+                return
+                ;;
+            --log)
+                COMPREPLY=($(compgen -W "on off" -- "${cur}"))
+                return
+                ;;
+            --model)
+                local model_names
+                model_names="$(rig models names 2>/dev/null)"
+                COMPREPLY=($(compgen -W "${model_names}" -- "${cur}"))
+                return
+                ;;
+        esac
+
+        if [[ "${cword}" -eq 2 ]]; then
+            COMPREPLY=($(compgen -W "logs ${services} --type --log --help" -- "${cur}"))
+            return
+        fi
+
+        [[ "${sub}" == "logs" ]] && return
+
+        local service_arg=""
+        if [[ "${sub}" != --* && "${sub}" != "logs" ]]; then
+            service_arg="${sub}"
+        fi
+
+        local flags=""
+        _rig_contains "--model" "${words[@]}" || flags+="--model "
+        _rig_contains "--type" "${words[@]}" || flags+="--type "
+        _rig_contains "--log" "${words[@]}" || flags+="--log "
+        _rig_contains "--help" "${words[@]}" || flags+="--help "
+
+        if [[ -z "${service_arg}" ]]; then
+            COMPREPLY=($(compgen -W "${services} ${flags}" -- "${cur}"))
+        else
+            COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+        fi
         ;;
 
     esac

@@ -55,8 +55,58 @@ _rig_commands() {
         'infra:Manage infrastructure services (hf, qdrant, langfuse, traefik)'
         'status:Show active services and models'
         'stats:Show GPU stats and container metrics'
+        'benchmark:Run benchmark matrix and view logs'
     )
     _describe 'command' cmds
+}
+
+_rig_benchmark() {
+    local -a services=(
+        'vllm:vLLM service'
+        'ollama:Ollama service'
+        'rag:RAG service'
+        'comfyui:ComfyUI service'
+        'comfy:ComfyUI alias'
+    )
+
+    if (( CURRENT == 2 )); then
+        _describe 'benchmark target' services
+        _values 'benchmark keyword/flags' \
+            'logs[View benchmark JSONL logs]' \
+            '--model[Explicit model name]' \
+            '--type[Filter benchmark tests by type]' \
+            '--log[Enable/disable logging]' \
+            '--help[Show help]'
+        return
+    fi
+
+    case "${words[CURRENT-1]}" in
+        --type)
+            _values 'test type' completion vision
+            return
+            ;;
+        --log)
+            _values 'logging' on off
+            return
+            ;;
+        --model)
+            local raw model_names=()
+            raw=$(rig models names 2>/dev/null)
+            while IFS= read -r name; do
+                [[ -n "${name}" ]] && model_names+=("${name}")
+            done <<< "${raw}"
+            _describe 'model' model_names
+            return
+            ;;
+    esac
+
+    [[ "${words[2]}" == "logs" ]] && return
+
+    _values 'benchmark flags' \
+        '--model[Explicit model name]' \
+        '--type[Filter benchmark tests by type]:type:(completion vision)' \
+        '--log[Enable/disable logging]:mode:(on off)' \
+        '--help[Show help]'
 }
 
 # ── Per-command completions ───────────────────────────────────────────────────
@@ -275,6 +325,7 @@ _rig() {
         rag)     _rig_rag ;;
         models)  _rig_models_cmd ;;
         infra)   _rig_infra ;;
+        benchmark) _rig_benchmark ;;
         status|stats) ;;
         esac
         ;;

@@ -141,6 +141,18 @@ _endpoints_avail() {
     done < <(_service_avail)
 }
 
+# _vllm_preset_command_flat — returns active vLLM preset command flattened to one line.
+_vllm_preset_command_flat() {
+    if declare -F _get_preset_command_flat >/dev/null 2>&1; then
+        _get_preset_command_flat 2>/dev/null || true
+        return 0
+    fi
+
+    local preset_active="${RIG_ROOT}/.preset.active.vllm"
+    [[ -f "${preset_active}" ]] || return 0
+    tr '\n' ' ' < "${preset_active}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
 # ── Model availability ────────────────────────────────────────────────────────
 
 # _avail_json_model_ids — extracts model ids/names from an OpenAI-compatible JSON payload.
