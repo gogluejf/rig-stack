@@ -13,7 +13,7 @@ VLLM_ARGS=(
   --kv-cache-dtype fp8
   --enable-prefix-caching
   --tool-call-parser qwen3_coder
-  --gpu-memory-utilization 0.82
+  --gpu-memory-utilization 0.85
   --tensor-parallel-size 1
   --dtype auto
   --trust-remote-code
