@@ -21,7 +21,7 @@ cmd_stats() {
         local name driver power mem_used mem_free mem_total gpu_temp="-" gpu_util="-"
         IFS=',' read -r name driver power mem_used mem_free mem_total < <(
             nvidia-smi --query-gpu=name,driver_version,power.draw,memory.used,memory.free,memory.total \
-                --format=csv,noheader,nounits 2>/dev/null | head -n 1
+                --format=csv,noheader,nounits 2>/dev/null | head -n 1 | sed 's/,[[:space:]]*/,/g'
         )
 
         while IFS='=' read -r key val; do
@@ -31,14 +31,14 @@ cmd_stats() {
             esac
         done < <(_host_gpu_metrics)
 
-        printf "  ${DIM}%-24s${RESET} %s\n" "GPU" "${name// /}"
-        printf "  ${DIM}%-24s${RESET} %s\n" "Driver" "${driver// /}"
+        printf "  ${DIM}%-24s${RESET} %s\n" "GPU" "${name}"
+        printf "  ${DIM}%-24s${RESET} %s\n" "Driver" "${driver}"
         printf "  ${DIM}%-24s${RESET} %b\n" "Temperature" "$(_stats_green_or_dim "${gpu_temp}")"
         printf "  ${DIM}%-24s${RESET} %b\n" "GPU utilisation" "$(_stats_green_or_dim "${gpu_util}")"
-        printf "  ${DIM}%-24s${RESET} %s W\n" "Power draw" "${power// /}"
+        printf "  ${DIM}%-24s${RESET} %s W\n" "Power draw" "${power}"
         printf "  ${DIM}%-24s${RESET} %s%b\n" "VRAM" \
-            "$(fmt_mem "${mem_used// /}")" \
-            "${DIM} / $(fmt_mem "${mem_total// /}")  ($(fmt_mem "${mem_free// /}") free)${RESET}"
+            "$(fmt_mem "${mem_used}")" \
+            "${DIM} / $(fmt_mem "${mem_total}")  ($(fmt_mem "${mem_free}") free)${RESET}"
     fi
 
     echo ""

@@ -129,6 +129,12 @@ _service_runtime() {
     esac
 }
 
+# _gpu_name — returns the GPU name string from nvidia-smi (empty if unavailable).
+_gpu_name() {
+    command -v nvidia-smi >/dev/null 2>&1 || return 0
+    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -n 1 | xargs
+}
+
 # _host_gpu_metrics — outputs host GPU metrics as key=value lines (util,temp).
 _host_gpu_metrics() {
     command -v nvidia-smi >/dev/null 2>&1 || return 0
@@ -293,9 +299,4 @@ _model_active() {
     esac
 }
 
-# _vllm_preset_command_flat — returns active vLLM preset command flattened to one line.
-_vllm_preset_command_flat() {
-    local preset_active="${RIG_ROOT}/.preset.active.vllm"
-    [[ -f "${preset_active}" ]] || return 0
-    tr '\n' ' ' < "${preset_active}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
-}
+

@@ -70,6 +70,13 @@ get_active_preset_name() {
     fi
 }
 
+# _get_preset_command_flat — returns active vLLM preset command flattened to one line.
+_get_preset_command_flat() {
+    local preset_active="${RIG_ROOT}/.preset.active.vllm"
+    [[ -f "${preset_active}" ]] || return 0
+    tr '\n' ' ' < "${preset_active}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
 # ── Print helpers ─────────────────────────────────────────────────────────────
 fmt_mem() {
     # Takes a number in MiB, returns "X.X GiB" or "X.X MiB"
@@ -93,6 +100,14 @@ fmt_mem_str() {
 fmt_freq() {
     # Takes a number in MHz, returns "X.X GHz" or "XXX MHz"
     awk -v f="$1" 'BEGIN { if (f+0 >= 1000) printf "%.1f GHz", f/1000; else printf "%.0f MHz", f }'
+}
+
+os_name() {
+    local name=""
+    if [[ -f /etc/os-release ]]; then
+        name=$(. /etc/os-release && printf '%s' "${PRETTY_NAME:-${NAME:-Linux}}")
+    fi
+    printf '%s' "${name:-Linux}"
 }
 
 print_header() {

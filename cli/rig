@@ -49,9 +49,14 @@ _help_cmd_row() {
 }
 
 print_help() {
+    local _gpu _os _subtitle
+    _gpu="$(_gpu_name 2>/dev/null || true)"
+    _os="$(os_name 2>/dev/null || true)"
+    _subtitle="${_gpu:+${_gpu} · }${_os:-Linux} · Your private AI cloud"
+
     echo ""
     echo -e "\n  ${BOLD}rig — rig-stack control plane${RESET}"
-    echo -e "  ${DIM}RTX 5090 · Ubuntu 24.04 · Your private AI cloud${RESET}"
+    echo -e "  ${DIM}${_subtitle}${RESET}"
     echo ""
     echo -e "  ${GREEN}${BOLD}USAGE${RESET}"
     echo -e "    ${BOLD}rig${RESET} ${CYAN}<command>${RESET} ${CYAN}[subcommand]${RESET} ${YELLOW_SOFT}[flags]${RESET}"
