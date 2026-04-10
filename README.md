@@ -2,18 +2,24 @@
 
 ## Turn your GPU into a managed private AI cloud.
 
-Squeeze every FLOP from your NVIDIA GPU. RigStack turns your RTX into a private AI cloud — unified endpoint, GPU-optimized inference, and a CLI to manage the entire rig. Built to run inside a network you trust.
+RigStack is an open-source CLI for running a full local AI stack with minimal friction.
 
-Run LLMs, image generation, and utility models locally on your own hardware. With a single command, serve multiple models optimized for your GPU, manage them through a clean CLI, and route everything through one endpoint.
+It unifies Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
 
-No cloud. No per-token costs. Just raw local inference power.
+Run models on CPU or GPU, manage presets, install models easily, benchmark and monitor your entire setup with simple, idempotent commands unix friendly CLI.
 
-RigStack abstracts the complexity of running multiple inference engines while keeping full control and extensibility. Deploy fast, learn the stack, and build custom applications on top of your own infrastructure.
+No cloud. No per-token costs. Just limited, secure, fast local inference that works to unleash your creative work
 
 ## Features
 
+- **Native CLI**  
+  Manage your entire AI stack with a single command. Switch presets, move models between CPU/GPU, and control all services with a fast, composable CLI.
+
 - **Single endpoint**  
-  All services routed through Traefik on port 80. One host, one entry point.
+  Multiple Inteference services routed through Traefik on port 80. One host, one entry point.
+
+- **Observability**  
+  One command to see endpoints availability, system actual configuration and memory distribution: `rig status`.
 
 - **Unified model registry**  
   Manage models across vLLM, Ollama, and ComfyUI from one interface, no more models spaghetti.
@@ -27,13 +33,10 @@ RigStack abstracts the complexity of running multiple inference engines while ke
 - **Edge GPU builds**  
   Unlock 40–60% more performance on modern GPUs (e.g. RTX 5090) with containerized nightly PyTorch builds. Use stable for compatibility, or switch to edge for maximum throughput.
 
-- **Native CLI**  
-  Manage your entire AI stack with a single command. Switch presets, move models between CPU/GPU, and control all services with a fast, composable CLI.
-
 - **Built-in RAG**  
   `/rag` endpoint powered by Qdrant, ready to plug into apps.
 
-- **Self-hosted observability**  
+- **Self-hosted prompt observability**  
   Langfuse traces every request. Nothing leaves your network.
 
 - **Trusted-network design**  
@@ -41,9 +44,6 @@ RigStack abstracts the complexity of running multiple inference engines while ke
 
 - **Containerized stack**  
   Docker-based, reproducible, easy to start, easy to evolve.
-
-- **Observability**  
-  One command to see endpoints availability, system actual configuration and memory distribution: `rig status`.
 
 ---
 
