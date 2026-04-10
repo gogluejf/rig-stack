@@ -63,17 +63,21 @@ _infra_indicator() {
 _infra_status() {
     require_docker
     echo ""
-    printf "  %s  %-12s  %s\n" \
-        "$(_infra_indicator rig-traefik)" "traefik" "rig-traefik"
-    printf "  %s  %-12s  %s\n" \
-        "$(_infra_indicator rig-hf)" "hf" "rig-hf"
-    printf "  %s  %-12s  %s\n" \
-        "$(_infra_indicator rig-qdrant)" "qdrant" "rig-qdrant"
-    printf "  %s  %-12s  %s\n" \
-        "$(_infra_indicator rig-langfuse)" "langfuse" "rig-langfuse  rig-postgres"
-    printf "  %s  %-12s  %s\n" \
-        "$(_infra_indicator rig-comfy-tools)" "comfy-tools" "rig-comfy-tools"
+    print_header "Infrastructure Services"
+    echo -e "  ${DIM}Support layer — routing, downloads, vector DB and observability${RESET}"
     echo ""
+    _infra_row "rig-traefik"     "traefik"      "Unified API gateway & reverse proxy"   "rig-traefik"
+    _infra_row "rig-hf"          "hf"           "HuggingFace model downloader"          "rig-hf"
+    _infra_row "rig-qdrant"      "qdrant"       "Vector database for RAG"               "rig-qdrant"
+    _infra_row "rig-langfuse"    "langfuse"     "LLM observability & tracing"           "rig-langfuse  rig-postgres"
+    _infra_row "rig-comfy-tools" "comfy-tools"  "ComfyUI model tools (no GPU)"          "rig-comfy-tools"
+    echo ""
+}
+
+_infra_row() {
+    local check="$1" name="$2" desc="$3" containers="$4"
+    printf "  %s %-14s ${DIM}%-38s${RESET} %s\n" \
+        "$(_infra_indicator "${check}")" "${name}" "${desc}" "${containers}"
 }
 
 _infra_start() {

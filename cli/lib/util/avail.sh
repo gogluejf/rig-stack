@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# cli/lib/util-avail.sh — shared service/container/model availability helpers
+# cli/lib/util/avail.sh — service registry, container resolution, endpoints, and model availability
 
-# _service — returns canonical AI service names handled by status/benchmark.
+# ── Service registry ──────────────────────────────────────────────────────────
+
+# _service — returns canonical AI service names.
 _service() {
     printf '%s\n' "vllm" "ollama" "rag" "comfyui"
 }
@@ -23,6 +25,17 @@ _service_avail() {
     done < <(_service)
 }
 
+# _service_runtime <service> — returns normalized runtime GPU|CPU|- for a service.
+_service_runtime() {
+    case "$(_container_runtime "$1" 2>/dev/null || true)" in
+        gpu) echo "GPU" ;;
+        cpu) echo "CPU" ;;
+        *) echo "-" ;;
+    esac
+}
+
+# ── Container resolution ──────────────────────────────────────────────────────
+
 # _container_avail <service> — returns candidate container names for a service.
 _container_avail() {
     local service
@@ -30,22 +43,14 @@ _container_avail() {
     [[ -n "${service}" ]] || return 1
 
     case "${service}" in
-        vllm)
-            printf '%s\n' "rig-vllm-stable" "rig-vllm-edge"
-            ;;
-        ollama)
-            printf '%s\n' "rig-ollama"
-            ;;
-        rag)
-            printf '%s\n' "rig-rag-api"
-            ;;
-        comfyui)
-            printf '%s\n' "rig-comfyui-stable" "rig-comfyui-edge" "rig-comfyui-cpu"
-            ;;
+        vllm)    printf '%s\n' "rig-vllm-stable" "rig-vllm-edge" ;;
+        ollama)  printf '%s\n' "rig-ollama" ;;
+        rag)     printf '%s\n' "rig-rag-api" ;;
+        comfyui) printf '%s\n' "rig-comfyui-stable" "rig-comfyui-edge" "rig-comfyui-cpu" ;;
     esac
 }
 
-# _container_running <service> — returns the active container for a service.
+# _container_running <service> — returns the active container name for a service.
 _container_running() {
     local service candidate
     service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
@@ -61,43 +66,32 @@ _container_running() {
     return 1
 }
 
-# _container_build <service> — returns stable|edge|cpu|- from running container.
+# _container_build <service> — returns stable|edge|cpu|- from the running container name.
 _container_build() {
     local service container
     service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || {
-        echo "-"
-        return 0
-    }
+    [[ -n "${service}" ]] || { echo "-"; return 0; }
 
     container="$(_container_running "${service}" 2>/dev/null || true)"
     case "${container}" in
         rig-vllm-stable|rig-comfyui-stable) echo "stable" ;;
-        rig-vllm-edge|rig-comfyui-edge) echo "edge" ;;
-        rig-comfyui-cpu) echo "cpu" ;;
-        *) echo "-" ;;
+        rig-vllm-edge|rig-comfyui-edge)     echo "edge" ;;
+        rig-comfyui-cpu)                    echo "cpu" ;;
+        *)                                  echo "-" ;;
     esac
 }
 
-# _container_runtime <service> — returns raw runtime gpu|cpu|- for running service.
+# _container_runtime <service> — returns raw runtime gpu|cpu|- for a running service.
 _container_runtime() {
     local service container
     service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || {
-        echo "-"
-        return 0
-    }
+    [[ -n "${service}" ]] || { echo "-"; return 0; }
 
     container="$(_container_running "${service}" 2>/dev/null || true)"
-    [[ -n "${container}" ]] || {
-        echo "-"
-        return 0
-    }
+    [[ -n "${container}" ]] || { echo "-"; return 0; }
 
     case "${service}" in
-        vllm)
-            echo "gpu"
-            ;;
+        vllm)    echo "gpu" ;;
         ollama)
             if [[ "$(container_runtime_name "${container}")" == "nvidia" ]]; then
                 echo "gpu"
@@ -105,113 +99,40 @@ _container_runtime() {
                 echo "cpu"
             fi
             ;;
-        rag)
-            echo "cpu"
-            ;;
+        rag)     echo "cpu" ;;
         comfyui)
             case "${container}" in
                 rig-comfyui-cpu) echo "cpu" ;;
-                *) echo "gpu" ;;
+                *)               echo "gpu" ;;
             esac
             ;;
-        *)
-            echo "-"
-            ;;
-    esac
-}
-
-# _service_runtime <service> — returns normalized runtime GPU|CPU|-.
-_service_runtime() {
-    case "$(_container_runtime "$1" 2>/dev/null || true)" in
-        gpu) echo "GPU" ;;
-        cpu) echo "CPU" ;;
         *) echo "-" ;;
     esac
 }
 
-# _gpu_name — returns the GPU name string from nvidia-smi (empty if unavailable).
-_gpu_name() {
-    command -v nvidia-smi >/dev/null 2>&1 || return 0
-    nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -n 1 | xargs
-}
+# ── Endpoints ─────────────────────────────────────────────────────────────────
 
-# _host_gpu_metrics — outputs host GPU metrics as key=value lines (util,temp).
-_host_gpu_metrics() {
-    command -v nvidia-smi >/dev/null 2>&1 || return 0
-    nvidia-smi --query-gpu=utilization.gpu,temperature.gpu --format=csv,noheader,nounits 2>/dev/null \
-        | awk -F',' 'NR==1 {
-            gsub(/ /, "", $1); gsub(/ /, "", $2)
-            if ($1 != "") printf "util=%s%%\n", $1
-            if ($2 != "") printf "temp=%s°C\n", $2
-        }'
-}
-
-# _host_cpu_metrics — outputs host CPU metrics as key=value lines (util,temp).
-_host_cpu_metrics() {
-    local util="" temp=""
-
-    if command -v top >/dev/null 2>&1; then
-        util=$(top -bn1 2>/dev/null | awk -F',' '/Cpu\(s\)|%Cpu\(s\)/ {
-            for (i=1; i<=NF; i++) {
-                if ($i ~ /id/) {
-                    gsub(/[^0-9.]/, "", $i)
-                    if ($i != "") { printf "%.1f%%", 100-$i; exit }
-                }
-            }
-        }')
-    fi
-
-    if command -v sensors >/dev/null 2>&1; then
-        temp=$(sensors 2>/dev/null | awk '
-            # Intel style
-            /^Package id 0:/ {
-                for (i=1; i<=NF; i++) {
-                    if ($i ~ /^\+/) {
-                        gsub(/[^0-9.]/, "", $i)
-                        if ($i != "") { printf "%s°C", $i; exit }
-                    }
-                }
-            }
-            # AMD style
-            /^Tctl:/ || /^Tdie:/ {
-                for (i=1; i<=NF; i++) {
-                    if ($i ~ /^\+/) {
-                        gsub(/[^0-9.]/, "", $i)
-                        if ($i != "") { printf "%s°C", $i; exit }
-                    }
-                }
-            }
-        ')
-    fi
-
-    [[ -n "${util}" ]] && printf 'util=%s\n' "${util}"
-    [[ -n "${temp}" ]] && printf 'temp=%s\n' "${temp}"
-}
-
-# _avail_proxy_base — returns shared gateway base URL.
+# _avail_proxy_base — returns the shared Traefik gateway base URL.
 _avail_proxy_base() {
     echo "http://localhost:${TRAEFIK_PORT:-80}"
 }
 
-# _endpoint <service> — returns canonical OpenAPI base path for one service.
+# _endpoint <service> — returns canonical OpenAI-compatible base path for a service.
 _endpoint() {
     local service
     service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || {
-        echo "-"
-        return 0
-    }
+    [[ -n "${service}" ]] || { echo "-"; return 0; }
 
     case "${service}" in
-        vllm) echo "/v1" ;;
-        ollama) echo "/ollama/v1" ;;
-        rag) echo "/rag/v1" ;;
+        vllm)    echo "/v1" ;;
+        ollama)  echo "/ollama/v1" ;;
+        rag)     echo "/rag/v1" ;;
         comfyui) echo "/comfy" ;;
-        *) echo "-" ;;
+        *)       echo "-" ;;
     esac
 }
 
-# _endpoints_avail — prints available services with their endpoint path.
+# _endpoints_avail — prints running services with their endpoint path (tab-separated).
 _endpoints_avail() {
     local service endpoint
     while IFS= read -r service; do
@@ -220,7 +141,9 @@ _endpoints_avail() {
     done < <(_service_avail)
 }
 
-# _avail_json_model_ids — extracts model ids/names from OpenAI-compatible payload.
+# ── Model availability ────────────────────────────────────────────────────────
+
+# _avail_json_model_ids — extracts model ids/names from an OpenAI-compatible JSON payload.
 _avail_json_model_ids() {
     command -v python3 >/dev/null 2>&1 || return 0
     python3 -c '
@@ -293,10 +216,7 @@ _model_active() {
             _model_avail "rag"
             ;;
         comfyui)
-            # ComfyUI has no single active model notion in this stack.
             return 0
             ;;
     esac
 }
-
-

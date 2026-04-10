@@ -15,8 +15,11 @@ CLI_DIR="$(dirname "${SELF}")"
 export RIG_ROOT="$(dirname "${CLI_DIR}")"
 
 # ── Load env and libs ─────────────────────────────────────────────────────────
-source "${CLI_DIR}/lib/utils.sh"
-source "${CLI_DIR}/lib/util-avail.sh"
+source "${CLI_DIR}/lib/util/display.sh"
+source "${CLI_DIR}/lib/util/core.sh"
+source "${CLI_DIR}/lib/util/preset.sh"
+source "${CLI_DIR}/lib/util/hw.sh"
+source "${CLI_DIR}/lib/util/avail.sh"
 source "${CLI_DIR}/lib/infra.sh"
 source "${CLI_DIR}/lib/vllm.sh"
 source "${CLI_DIR}/lib/comfy.sh"
