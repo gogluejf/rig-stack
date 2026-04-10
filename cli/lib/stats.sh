@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # cli/lib/stats.sh — rig stats subcommand
 
+_stats_green_or_dim() {
+    local val="$1"
+    if [[ -z "${val}" || "${val}" == "-" ]]; then
+        printf '%b' "${DIM}-${RESET}"
+    else
+        printf '%b' "${GREEN}${val}${RESET}"
+    fi
+}
+
 cmd_stats() {
     echo ""
     print_header "GPU"
@@ -9,22 +18,34 @@ cmd_stats() {
     if ! command -v nvidia-smi &>/dev/null; then
         echo -e "  ${YELLOW}nvidia-smi not found — is the NVIDIA driver installed?${RESET}"
     else
-        nvidia-smi --query-gpu=name,driver_version,temperature.gpu,power.draw,memory.used,memory.free,memory.total,utilization.gpu \
-            --format=csv,noheader,nounits 2>/dev/null | while IFS=',' read -r name driver temp power mem_used mem_free mem_total util; do
-            printf "  ${DIM}%-24s${RESET} %s\n" "GPU" "${name// /}"
-            printf "  ${DIM}%-24s${RESET} %s\n" "Driver" "${driver// /}"
-            printf "  ${DIM}%-24s${RESET} %s °C\n" "Temperature" "${temp// /}"
-            printf "  ${DIM}%-24s${RESET} %s W\n" "Power draw" "${power// /}"
-            printf "  ${DIM}%-24s${RESET} %s / %s  (%s free)\n" "VRAM" "$(fmt_mem "${mem_used// /}")" "$(fmt_mem "${mem_total// /}")" "$(fmt_mem "${mem_free// /}")"
-            printf "  ${DIM}%-24s${RESET} %s %%\n" "GPU utilisation" "${util// /}"
-        done
+        local name driver power mem_used mem_free mem_total gpu_temp="-" gpu_util="-"
+        IFS=',' read -r name driver power mem_used mem_free mem_total < <(
+            nvidia-smi --query-gpu=name,driver_version,power.draw,memory.used,memory.free,memory.total \
+                --format=csv,noheader,nounits 2>/dev/null | head -n 1
+        )
+
+        while IFS='=' read -r key val; do
+            case "${key}" in
+                temp) gpu_temp="${val}" ;;
+                util) gpu_util="${val}" ;;
+            esac
+        done < <(_host_gpu_metrics)
+
+        printf "  ${DIM}%-24s${RESET} %s\n" "GPU" "${name// /}"
+        printf "  ${DIM}%-24s${RESET} %s\n" "Driver" "${driver// /}"
+        printf "  ${DIM}%-24s${RESET} %b\n" "Temperature" "$(_stats_green_or_dim "${gpu_temp}")"
+        printf "  ${DIM}%-24s${RESET} %b\n" "GPU utilisation" "$(_stats_green_or_dim "${gpu_util}")"
+        printf "  ${DIM}%-24s${RESET} %s W\n" "Power draw" "${power// /}"
+        printf "  ${DIM}%-24s${RESET} %s%b\n" "VRAM" \
+            "$(fmt_mem "${mem_used// /}")" \
+            "${DIM} / $(fmt_mem "${mem_total// /}")  ($(fmt_mem "${mem_free// /}") free)${RESET}"
     fi
 
     echo ""
     print_header "CPU"
     hr 108
 
-    local cpu_model cpu_arch cpu_sockets cpu_cores cpu_threads cpu_mhz cpu_load cpu_temp
+    local cpu_model cpu_arch cpu_sockets cpu_cores cpu_threads cpu_mhz cpu_load cpu_temp cpu_util
     cpu_model=$(lscpu 2>/dev/null | awk -F': +' '/^Model name/ {print $2; exit}')
     cpu_arch=$(lscpu 2>/dev/null | awk -F': +' '/^Architecture/ {print $2; exit}')
     cpu_sockets=$(lscpu 2>/dev/null | awk -F': +' '/^Socket\(s\)/ {print $2; exit}')
@@ -42,16 +63,27 @@ cmd_stats() {
     [[ -n "${cpu_mhz}" ]] && printf "  ${DIM}%-24s${RESET} %s\n" "Frequency" "$(fmt_freq "${cpu_mhz}")"
     printf "  ${DIM}%-24s${RESET} %s\n" "Load (1/5/15m)" "${cpu_load:-unknown}"
 
-    if command -v sensors &>/dev/null; then
-        cpu_temp=$(sensors 2>/dev/null | awk '/^Package id 0/ {gsub(/[^0-9.]/, "", $4); printf "%s", $4; exit}')
-        [[ -n "${cpu_temp}" ]] && printf "  ${DIM}%-24s${RESET} %s °C\n" "Temperature" "${cpu_temp}"
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            util) cpu_util="${val}" ;;
+            temp) cpu_temp="${val}" ;;
+        esac
+    done < <(_host_cpu_metrics)
+
+    if [[ -n "${cpu_temp}" ]]; then
+        printf "  ${DIM}%-24s${RESET} ${GREEN}%s${RESET}\n" "Temperature" "${cpu_temp}"
+    fi
+    if [[ -n "${cpu_util}" ]]; then
+        printf "  ${DIM}%-24s${RESET} ${GREEN}%s${RESET}\n" "CPU utilisation" "${cpu_util}"
     fi
 
     local mem_total mem_free mem_used mem_type mem_speed
     mem_total=$(awk '/^MemTotal/  {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
     mem_free=$(awk  '/^MemAvailable/ {printf "%.0f", $2/1024}' /proc/meminfo 2>/dev/null)
     mem_used=$(( ${mem_total:-0} - ${mem_free:-0} ))
-    printf "  ${DIM}%-24s${RESET} %s / %s  (%s free)\n" "DRAM" "$(fmt_mem "${mem_used}")" "$(fmt_mem "${mem_total}")" "$(fmt_mem "${mem_free}")"
+    printf "  ${DIM}%-24s${RESET} %s%b\n" "DRAM" \
+        "$(fmt_mem "${mem_used}")" \
+        "${DIM} / $(fmt_mem "${mem_total}")  ($(fmt_mem "${mem_free}") free)${RESET}"
 
     if command -v dmidecode &>/dev/null; then
         local dmi_out

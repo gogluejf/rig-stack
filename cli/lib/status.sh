@@ -57,7 +57,7 @@ _status_help() {
 }
 
 _status_proxy_base() {
-    echo "http://localhost:${TRAEFIK_PORT:-80}"
+    _avail_proxy_base
 }
 
 _status_icon() {
@@ -118,41 +118,37 @@ _status_field() {
     fi
 }
 
-_status_json_model_ids() {
-    command -v python3 >/dev/null 2>&1 || return 0
-    python3 -c '
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    for item in (data.get("data") or data.get("models") or []):
-        if isinstance(item, dict):
-            v = item.get("id") or item.get("name") or item.get("model")
-            if v: print(v)
-except Exception:
-    pass
-' 2>/dev/null
+_status_metric_field() {
+    # _status_metric_field <width> <value>
+    # Formats % / °C metrics in green; dims unavailable values.
+    local width="$1" val="$2"
+    [[ ${#val} -gt ${width} ]] && val="${val:0:$((width-1))}…"
+    local padded
+    printf -v padded "%-${width}s" "${val}"
+    if [[ "${val}" == "-" ]]; then
+        printf '%b' "${DIM}${padded}${RESET}"
+    else
+        printf '%b' "${GREEN}${padded}${RESET}"
+    fi
+}
+
+_status_metric_line() {
+    # _status_metric_line <label> <value>
+    # Renders telemetry metadata line where available values are green.
+    local label="$1" val="$2"
+    if [[ "${val}" == "-" || -z "${val}" ]]; then
+        _status_metadata_line "${label}" "-"
+    else
+        _status_metadata_line "${label}" "${GREEN}${val}${RESET}"
+    fi
 }
 
 _status_vllm_container() {
-    local variant
-    for variant in vllm-stable vllm-edge; do
-        if container_running "rig-${variant}"; then
-            echo "rig-${variant}"
-            return 0
-        fi
-    done
-    return 1
+    _container_running "vllm"
 }
 
 _status_comfy_container() {
-    local variant
-    for variant in comfyui-stable comfyui-edge comfyui-cpu; do
-        if container_running "rig-${variant}"; then
-            echo "rig-${variant}"
-            return 0
-        fi
-    done
-    return 1
+    _container_running "comfyui"
 }
 
 _status_vllm_log_stats() {
@@ -218,81 +214,34 @@ print('cuDNN', str(torch.backends.cudnn.version()))
 }
 
 _status_vllm_build() {
-    local container
-    container="$(_status_vllm_container 2>/dev/null || true)"
-    case "${container}" in
-        rig-vllm-edge) echo "edge" ;;
-        rig-vllm-stable) echo "stable" ;;
-        *) echo "-" ;;
-    esac
+    _container_build "vllm"
 }
 
 _status_comfy_build() {
-    local container
-    container="$(_status_comfy_container 2>/dev/null || true)"
-    case "${container}" in
-        rig-comfyui-edge) echo "edge" ;;
-        rig-comfyui-cpu) echo "cpu" ;;
-        rig-comfyui-stable) echo "stable" ;;
-        *) echo "-" ;;
-    esac
+    _container_build "comfyui"
 }
 
 _status_comfy_runtime() {
-    local container
-    container="$(_status_comfy_container 2>/dev/null || true)"
-    case "${container}" in
-        rig-comfyui-cpu) echo "CPU" ;;
-        rig-comfyui-edge|rig-comfyui-stable) echo "GPU" ;;
-        *) echo "-" ;;
-    esac
+    _service_runtime "comfyui"
 }
 
 _status_ollama_runtime() {
-    if container_running "rig-ollama"; then
-        if [[ "$(container_runtime_name rig-ollama)" == "nvidia" ]]; then
-            echo "GPU"
-        else
-            echo "CPU"
-        fi
-    else
-        echo "-"
-    fi
+    _service_runtime "ollama"
 }
 
 _status_ollama_warm_models() {
-    container_running "rig-ollama" || return 0
-
-    docker exec rig-ollama ollama ps 2>/dev/null \
-        | awk 'NR>1 {print $1}' \
+    _model_active "ollama" \
         | sed '/^$/d' \
         | paste -sd',' - \
         | sed 's/,/, /g' || true
 }
 
-_status_vllm_active_model() {
-    local active="${RIG_ROOT}/.preset.active.vllm"
-    [[ -f "${active}" ]] || return 0
-    local cmd
-    grep -m1 -- '--served-model-name' "${active}" 2>/dev/null | awk '{print $NF}'
-}
-
-_status_vllm_live_models() {
-    curl -sf "$(_status_proxy_base)/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
-}
-
-_status_rag_live_models() {
-    curl -sf "$(_status_proxy_base)/rag/v1/models" 2>/dev/null | _status_json_model_ids | sed '/^$/d' || true
-}
-
-_status_vllm_primary_model() {
-    local live
-    live="$(_status_vllm_live_models | head -n 1)"
-    if [[ -n "${live}" ]]; then
-        printf '%s' "${live}"
-        return 0
-    fi
-    _status_vllm_active_model
+_status_primary_model_for() {
+    local service="$1"
+    local model
+    model="$(_model_active "${service}" | head -n 1)"
+    [[ -n "${model}" ]] || model="$(_model_avail "${service}" | head -n 1)"
+    printf '%s' "${model}"
 }
 
 _status_container_root_pid() {
@@ -385,12 +334,11 @@ _status_memory_for() {
     fi
 }
 
-_status_ollama_models() {
-    container_running "rig-ollama" || return 0
-
+_status_mark_active_models() {
+    local service="$1"
     local running_models all_models model
-    running_models="$(docker exec rig-ollama ollama ps 2>/dev/null | awk 'NR>1 {print $1}' | sed '/^$/d' || true)"
-    all_models="$(docker exec rig-ollama ollama list 2>/dev/null | awk 'NR>1 {print $1}' | sed '/^$/d' || true)"
+    running_models="$(_model_active "${service}" | sed '/^$/d' || true)"
+    all_models="$(_model_avail "${service}" | sed '/^$/d' || true)"
 
     if [[ -z "${all_models}" ]]; then
         echo "no models discovered"
@@ -405,18 +353,6 @@ _status_ollama_models() {
             echo "[ ] ${model}"
         fi
     done <<< "${all_models}"
-}
-
-_status_comfy_models() {
-    local container
-    container="$(_status_comfy_container 2>/dev/null || true)"
-    [[ -n "${container}" ]] || return 0
-
-    docker exec "${container}" sh -lc '
-        find /models -maxdepth 3 -type f \
-            \( -name "*.safetensors" -o -name "*.ckpt" -o -name "*.pt" -o -name "*.pth" -o -name "*.bin" \) \
-            2>/dev/null | sed "s#^/models/##" | sort | head -n 12
-    ' 2>/dev/null || true
 }
 
 _status_print_triptych() {
@@ -464,6 +400,7 @@ _status_summary() {
     local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state comfy_tools_state
     local vllm_model="" ollama_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
     local traefik_memory="" qdrant_memory="" langfuse_memory="" postgres_memory="" hf_memory="" comfy_tools_memory=""
+    local gpu_util="-" gpu_temp="-" cpu_util="-" cpu_temp="-"
 
     _status_prefetch_ram_stats
 
@@ -482,7 +419,7 @@ _status_summary() {
     comfy_tools_state="$(_status_state "rig-comfy-tools")"
 
     if [[ "${vllm_state}" == "running" ]]; then
-        vllm_model="$(_status_vllm_primary_model)"
+        vllm_model="$(_status_primary_model_for "vllm")"
     fi
     [[ -n "${vllm_model}" ]] || vllm_model="-"
 
@@ -491,10 +428,10 @@ _status_summary() {
     fi
     [[ -n "${ollama_model}" ]] || ollama_model="-"
 
-    vllm_memory="$(_status_memory_for "${vllm_container}" "GPU")"
+    vllm_memory="$(_status_memory_for "${vllm_container}" "$(_service_runtime "vllm")")"
     comfy_memory="$(_status_memory_for "${comfy_container}" "$(_status_comfy_runtime)")"
     ollama_memory="$(_status_memory_for "rig-ollama" "$(_status_ollama_runtime)")"
-    rag_memory="$(_status_memory_for "rig-rag-api" "CPU")"
+    rag_memory="$(_status_memory_for "rig-rag-api" "$(_service_runtime "rag")")"
     traefik_memory="$(_status_memory_for "rig-traefik" "CPU")"
     qdrant_memory="$(_status_memory_for "rig-qdrant" "CPU")"
     langfuse_memory="$(_status_memory_for "rig-langfuse" "CPU")"
@@ -502,7 +439,35 @@ _status_summary() {
     hf_memory="$(_status_memory_for "rig-hf" "CPU")"
     comfy_tools_memory="$(_status_memory_for "rig-comfy-tools" "CPU")"
 
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            util) gpu_util="${val}" ;;
+            temp) gpu_temp="${val}" ;;
+        esac
+    done < <(_host_gpu_metrics)
+
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            util) cpu_util="${val}" ;;
+            temp) cpu_temp="${val}" ;;
+        esac
+    done < <(_host_cpu_metrics)
+
     echo ""
+    print_header "Host telemetry"
+    echo ""
+    printf "  ${BOLD}%-12s %-12s %-12s${RESET}\n" "METRIC" "UTIL" "TEMP"
+    hr 42
+    printf "  %b %b %b\n" \
+        "$(_status_field 12 "gpu")" \
+        "$(_status_metric_field 12 "${gpu_util}")" \
+        "$(_status_metric_field 12 "${gpu_temp}")"
+    printf "  %b %b %b\n" \
+        "$(_status_field 12 "cpu")" \
+        "$(_status_metric_field 12 "${cpu_util}")" \
+        "$(_status_metric_field 12 "${cpu_temp}")"
+    echo ""
+
     print_header "Primary services"
     echo ""
     printf "  ${BOLD}%-12s %-24s %-8s %-8s %-16s %-12s %s${RESET}\n" "SERVICE" "ACTIVE MODEL" "RUNTIME" "BUILD" "ROUTE" "MEMORY" "STATUS"
@@ -510,9 +475,9 @@ _status_summary() {
     printf "  %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "vllm")" \
         "$(_status_field 24 "$(_status_value_if_running "${vllm_state}" "${vllm_model}")")" \
-        "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "GPU")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "$(_service_runtime "vllm")")")" \
         "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "$(_status_vllm_build)")")" \
-        "$(_status_field 16 "$(_status_value_if_running "${vllm_state}" "/v1")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${vllm_state}" "$(_endpoint "vllm")")")" \
         "$(_status_field 12 "$(_status_value_if_running "${vllm_state}" "${vllm_memory:--}")")" \
         "$(_status_icon "${vllm_state}")" "$(_status_label "${vllm_state}")"
     printf "  %b %b %b %b %b %b %b %b\n" \
@@ -520,7 +485,7 @@ _status_summary() {
         "$(_status_field 24 "$(_status_value_if_running "${ollama_state}" "${ollama_model}")")" \
         "$(_status_field 8  "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")")" \
         "$(_status_field 8  "-")" \
-        "$(_status_field 16 "$(_status_value_if_running "${ollama_state}" "/ollama/v1")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${ollama_state}" "$(_endpoint "ollama")")")" \
         "$(_status_field 12 "$(_status_value_if_running "${ollama_state}" "${ollama_memory:--}")")" \
         "$(_status_icon "${ollama_state}")" "$(_status_label "${ollama_state}")"
     printf "  %b %b %b %b %b %b %b %b\n" \
@@ -528,15 +493,15 @@ _status_summary() {
         "$(_status_field 24 "-")" \
         "$(_status_field 8  "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_runtime)")")" \
         "$(_status_field 8  "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_build)")")" \
-        "$(_status_field 16 "$(_status_value_if_running "${comfy_state}" "/comfy")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${comfy_state}" "$(_endpoint "comfyui")")")" \
         "$(_status_field 12 "$(_status_value_if_running "${comfy_state}" "${comfy_memory:--}")")" \
         "$(_status_icon "${comfy_state}")" "$(_status_label "${comfy_state}")"
     printf "  %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "rag")" \
         "$(_status_field 24 "-")" \
-        "$(_status_field 8  "$(_status_value_if_running "${rag_state}" "CPU")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${rag_state}" "$(_service_runtime "rag")")")" \
         "$(_status_field 8  "-")" \
-        "$(_status_field 16 "$(_status_value_if_running "${rag_state}" "/rag/v1")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${rag_state}" "$(_endpoint "rag")")")" \
         "$(_status_field 12 "$(_status_value_if_running "${rag_state}" "${rag_memory:--}")")" \
         "$(_status_icon "${rag_state}")" "$(_status_label "${rag_state}")"
     echo ""
@@ -595,17 +560,18 @@ _status_summary() {
 
 _status_detail_vllm() {
     local container="" state="" model="" memory="" build=""
+    local gpu_util="-" gpu_temp="-"
     local models endpoints aux
 
     container="$(_status_vllm_container 2>/dev/null || true)"
     state="$(_status_state "${container}")"
     build="$(_status_vllm_build)"
     if [[ "${state}" == "running" ]]; then
-        model="$(_status_vllm_primary_model)"
+        model="$(_status_primary_model_for "vllm")"
     fi
-    memory="$(_status_memory_for "${container}" "GPU")"
+    memory="$(_status_memory_for "${container}" "$(_service_runtime "vllm")")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_vllm_live_models)"
+        models="$(_model_avail "vllm")"
         endpoints=$'GET  /v1/models\nPOST /v1/chat/completions\nPOST /v1/completions\nPOST /v1/embeddings'
         aux=$'GET  /openai/models\nPOST /openai/chat/completions\nPOST /openai/completions\nPOST /openai/embeddings\nGET  /metrics\nGET  /health'
     else
@@ -616,6 +582,13 @@ _status_detail_vllm() {
     fi
     [[ -n "${model}" ]] || model="-"
     [[ -n "${models}" ]] || models="-"
+
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            temp) gpu_temp="${val}" ;;
+            util) gpu_util="${val}" ;;
+        esac
+    done < <(_host_gpu_metrics)
 
     local lib_versions=""
     [[ "${state}" == "running" ]] && lib_versions="$(_status_vllm_lib_versions "${container}")"
@@ -633,13 +606,15 @@ _status_detail_vllm() {
     hr 108
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "${container}")"
-    _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "GPU")"
+    _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "$(_service_runtime "vllm")")"
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/v1")"
     _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/openai")"
     _status_metadata_line "metrics" "$(_status_value_if_running "${state}" "http://localhost:${VLLM_PORT:-8000}/metrics")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
+    _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
+    _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
     echo ""
 
     if [[ -n "${lib_versions}" ]]; then
@@ -682,12 +657,13 @@ _status_detail_vllm() {
 
 _status_detail_ollama() {
     local state="" runtime="" memory="" models="" endpoints="" aux=""
+    local cpu_util="-" cpu_temp="-" gpu_util="-" gpu_temp="-"
 
     state="$(_status_state "rig-ollama")"
     runtime="$(_status_ollama_runtime)"
     memory="$(_status_memory_for "rig-ollama" "${runtime}")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_ollama_models)"
+        models="$(_status_mark_active_models "ollama")"
         endpoints=$'GET  /ollama/v1/models\nPOST /ollama/v1/chat/completions\nPOST /ollama/v1/completions\nPOST /ollama/v1/embeddings'
         aux=$'GET  /ollama/api/tags\nPOST /ollama/api/chat\nPOST /ollama/api/generate\nPOST /ollama/api/embeddings\nGET  /ollama/api/version\nGET  /ollama/api/ps'
     else
@@ -696,6 +672,22 @@ _status_detail_ollama() {
         aux="-"
     fi
     [[ -n "${models}" ]] || models="-"
+
+    if [[ "${runtime}" == "GPU" ]]; then
+        while IFS='=' read -r key val; do
+            case "${key}" in
+                temp) gpu_temp="${val}" ;;
+                util) gpu_util="${val}" ;;
+            esac
+        done < <(_host_gpu_metrics)
+    else
+        while IFS='=' read -r key val; do
+            case "${key}" in
+                temp) cpu_temp="${val}" ;;
+                util) cpu_util="${val}" ;;
+            esac
+        done < <(_host_cpu_metrics)
+    fi
 
     echo ""
     print_header "Ollama status"
@@ -706,6 +698,13 @@ _status_detail_ollama() {
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/ollama/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "warming" "$(_status_value_if_running "${state}" "[x] = loaded via 'ollama ps'")"
+    if [[ "${runtime}" == "GPU" ]]; then
+        _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
+        _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
+    else
+        _status_metric_line "cpu temp" "$(_status_value_if_running "${state}" "${cpu_temp}")"
+        _status_metric_line "cpu util" "$(_status_value_if_running "${state}" "${cpu_util}")"
+    fi
     echo ""
 
     print_header "Endpoints"
@@ -716,6 +715,7 @@ _status_detail_ollama() {
 
 _status_detail_comfy() {
     local container="" state="" runtime="" build="" memory="" models="" endpoints="" aux=""
+    local cpu_util="-" cpu_temp="-" gpu_util="-" gpu_temp="-"
 
     container="$(_status_comfy_container 2>/dev/null || true)"
     state="$(_status_state "${container}")"
@@ -723,7 +723,7 @@ _status_detail_comfy() {
     build="$(_status_comfy_build)"
     memory="$(_status_memory_for "${container}" "${runtime}")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_comfy_models)"
+        models="$(_model_avail "comfyui")"
         endpoints=$'GET  /comfy/\nPOST /comfy/prompt\nGET  /comfy/queue\nGET  /comfy/history/{id}'
         aux=$'GET  /comfy/object_info\nGET  /comfy/system_stats\nGET  /comfy/view\nPOST /comfy/upload/image\nGET  /comfy/ws'
     else
@@ -732,6 +732,22 @@ _status_detail_comfy() {
         aux="-"
     fi
     [[ -n "${models}" ]] || models="-"
+
+    if [[ "${runtime}" == "GPU" ]]; then
+        while IFS='=' read -r key val; do
+            case "${key}" in
+                temp) gpu_temp="${val}" ;;
+                util) gpu_util="${val}" ;;
+            esac
+        done < <(_host_gpu_metrics)
+    else
+        while IFS='=' read -r key val; do
+            case "${key}" in
+                temp) cpu_temp="${val}" ;;
+                util) cpu_util="${val}" ;;
+            esac
+        done < <(_host_cpu_metrics)
+    fi
 
     echo ""
     print_header "ComfyUI status"
@@ -743,6 +759,13 @@ _status_detail_comfy() {
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/comfy")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "models" "$(_status_value_if_running "${state}" "best-effort file inventory from container")"
+    if [[ "${runtime}" == "GPU" ]]; then
+        _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
+        _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
+    else
+        _status_metric_line "cpu temp" "$(_status_value_if_running "${state}" "${cpu_temp}")"
+        _status_metric_line "cpu util" "$(_status_value_if_running "${state}" "${cpu_util}")"
+    fi
     echo ""
     
     print_header "Endpoints"
@@ -753,11 +776,12 @@ _status_detail_comfy() {
 
 _status_detail_rag() {
     local state="" memory="" models="" endpoints="" aux=""
+    local cpu_util="-" cpu_temp="-"
 
     state="$(_status_state "rig-rag-api")"
-    memory="$(_status_memory_for "rig-rag-api" "CPU")"
+    memory="$(_status_memory_for "rig-rag-api" "$(_service_runtime "rag")")"
     if [[ "${state}" == "running" ]]; then
-        models="$(_status_rag_live_models)"
+        models="$(_model_avail "rag")"
         endpoints=$'GET  /rag/v1/models\nPOST /rag/v1/chat/completions\nPOST /rag/v1/embeddings'
         aux=$'GET  /rag/health\nGET  /rag/docs\nGET  /rag/openapi.json\nGET  /rag/redoc\nPOST /rag/chat\nPOST /rag/embed'
     else
@@ -767,14 +791,23 @@ _status_detail_rag() {
     fi
     [[ -n "${models}" ]] || models="-"
 
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            temp) cpu_temp="${val}" ;;
+            util) cpu_util="${val}" ;;
+        esac
+    done < <(_host_cpu_metrics)
+
     echo ""
     print_header "RAG API status"
     hr 108
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "rig-rag-api")"
-    _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "CPU")"
+    _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "$(_service_runtime "rag")")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/rag/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metric_line "cpu temp" "$(_status_value_if_running "${state}" "${cpu_temp}")"
+    _status_metric_line "cpu util" "$(_status_value_if_running "${state}" "${cpu_util}")"
     echo ""
     
     print_header "Endpoints"
@@ -782,4 +815,3 @@ _status_detail_rag() {
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 }
-

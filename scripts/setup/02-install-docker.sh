@@ -39,7 +39,7 @@ fi
 echo "Installing Docker CE..."
 
 sudo apt-get update -q
-sudo apt-get install -y ca-certificates curl gnupg lsb-release
+sudo apt-get install -y ca-certificates curl gnupg lsb-release lm-sensors
 
 # Add Docker's official GPG key
 sudo install -m 0755 -d /etc/apt/keyrings
