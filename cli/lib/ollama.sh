@@ -7,7 +7,7 @@ cmd_ollama() {
             echo -e "${BOLD}rig ollama${RESET} — manage Ollama"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig ollama ${BOLD}[start]${RESET} ${YELLOW_SOFT}[--gpu]${RESET}          ${DIM}start Ollama${RESET}"
+            echo -e "  rig ollama ${BOLD}[start]${RESET} ${YELLOW_SOFT}[--gpu]${RESET}         ${DIM}start Ollama${RESET}"
             echo -e "    ${YELLOW_SOFT}--gpu${RESET}                            ${DIM}use GPU mode${RESET}"
             echo ""
             echo -e "  rig ollama ${BOLD}stop${RESET}                    ${DIM}stop Ollama${RESET}"
