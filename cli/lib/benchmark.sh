@@ -155,7 +155,7 @@ _benchmark_run() {
     python3 "${RIG_ROOT}/test/benchmarker/cli.py" run \
         --services-json  "${services_json}" \
         --catalog        "${catalog}" \
-        --results        "${RIG_ROOT}/logs/benchmark/results.jsonl" \
+        --results        "${RIG_ROOT}/test/benchmark/logs/results.jsonl" \
         --type-filter    "${requested_type}" \
         --log-mode       "${log_mode}" \
         --vllm-preset    "${vllm_preset}" \
@@ -224,6 +224,6 @@ _benchmark_logs() {
     print_header "Benchmark logs"
     hr 108
     python3 "${RIG_ROOT}/test/benchmarker/cli.py" logs \
-        --results "${RIG_ROOT}/logs/benchmark/results.jsonl"
+        --results "${RIG_ROOT}/test/benchmark/logs/results.jsonl"
     echo ""
 }

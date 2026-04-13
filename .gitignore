@@ -34,3 +34,4 @@ build/
 
 # Logs (runtime, not config)
 *.log
+test/benchmark/logs/

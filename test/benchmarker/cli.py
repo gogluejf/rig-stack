@@ -15,7 +15,7 @@ How it is called from bash (benchmark.sh → _benchmark_run):
   python3 <rig_root>/test/benchmarker/cli.py run \\
       --services-json '{"vllm":{"models":["M"],"runtime":"GPU"}}' \\
       --catalog   <path>/test/benchmark/tests.json \\
-      --results   <path>/logs/benchmark/results.jsonl \\
+      --results   <path>/test/benchmark/logs/results.jsonl \\
       --type-filter   completion|vision|"" \\
       --log-mode      on|off \\
       --vllm-preset   "<flat preset command or empty>" \\
@@ -243,7 +243,7 @@ def _parse_args() -> argparse.Namespace:
     run_p.add_argument("--services-json", required=True,
         help='JSON: {"service": {"models": [...], "runtime": "GPU|CPU|-"}}')
     run_p.add_argument("--catalog",     required=True, help="path to test/benchmark/tests.json")
-    run_p.add_argument("--results",     required=True, help="path to logs/benchmark/results.jsonl")
+    run_p.add_argument("--results",     required=True, help="path to test/benchmark/logs/results.jsonl")
     run_p.add_argument("--type-filter", default="",    help="completion | vision | (empty = both)")
     run_p.add_argument("--log-mode",    default="on",  choices=["on", "off"])
     run_p.add_argument("--vllm-preset", default="",    help="flattened vLLM preset command (display only)")

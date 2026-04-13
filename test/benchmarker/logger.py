@@ -2,7 +2,7 @@
 logger.py — JSONL result logger
 ---------------------------------
 Plan §8: appends one JSON object per benchmark run to the accumulating
-results file (logs/benchmark/results.jsonl).  The file is never truncated;
+results file (test/benchmark/logs/results.jsonl).  The file is never truncated;
 every run session appends to whatever is already there.
 
 Public API
