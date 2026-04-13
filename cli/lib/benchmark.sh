@@ -79,7 +79,10 @@ cmd_benchmark() {
                 ;;
         esac
 
-        if ! _service_avail | grep -Fxq "${service}"; then
+        # Capture first to avoid grep -q SIGPIPE → pipefail false-negative
+        local _avail_list
+        _avail_list="$(_service_avail 2>/dev/null || true)"
+        if ! grep -Fxq "${service}" <<< "${_avail_list}"; then
             echo -e "${RED}Service '${service}' is not currently available.${RESET}"; return 1
         fi
     fi

@@ -21,7 +21,11 @@ _service_normalize() {
 _service_avail() {
     local service
     while IFS= read -r service; do
-        [[ -n "$(_container_running "${service}" 2>/dev/null || true)" ]] && echo "${service}"
+        # The `|| true` ensures each iteration exits 0 even when a service has no
+        # running container.  Without it, a false `[[` causes the function to exit 1,
+        # which propagates through pipelines under `set -o pipefail` and produces
+        # false-negative "not available" errors.
+        [[ -n "$(_container_running "${service}" 2>/dev/null || true)" ]] && echo "${service}" || true
     done < <(_service)
 }
 
