@@ -3,17 +3,9 @@
 
 # ── Service registry ──────────────────────────────────────────────────────────
 
-# _service — returns canonical AI service names.
+# _service — returns the four canonical service names.
 _service() {
     printf '%s\n' "vllm" "ollama" "rag" "comfyui"
-}
-
-# _service_normalize <service> — validates a canonical service name.
-_service_normalize() {
-    case "${1:-}" in
-        vllm|ollama|rag|comfyui) printf '%s' "$1" ;;
-        *) return 1 ;;
-    esac
 }
 
 # _service_avail — returns services currently running/callable.
@@ -41,41 +33,32 @@ _service_runtime() {
 
 # _container_avail <service> — returns candidate container names for a service.
 _container_avail() {
-    local service
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || return 1
-
-    case "${service}" in
+    case "${1:-}" in
         vllm)    printf '%s\n' "rig-vllm-stable" "rig-vllm-edge" ;;
         ollama)  printf '%s\n' "rig-ollama" ;;
         rag)     printf '%s\n' "rig-rag-api" ;;
         comfyui) printf '%s\n' "rig-comfyui-stable" "rig-comfyui-edge" "rig-comfyui-cpu" ;;
+        *) return 1 ;;
     esac
 }
 
 # _container_running <service> — returns the active container name for a service.
 _container_running() {
-    local service candidate
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || return 1
-
+    local candidate
     while IFS= read -r candidate; do
         container_running "${candidate}" && {
             echo "${candidate}"
             return 0
         }
-    done < <(_container_avail "${service}")
+    done < <(_container_avail "${1:-}" 2>/dev/null)
 
     return 1
 }
 
 # _container_build <service> — returns stable|edge|cpu|- from the running container name.
 _container_build() {
-    local service container
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || { echo "-"; return 0; }
-
-    container="$(_container_running "${service}" 2>/dev/null || true)"
+    local container
+    container="$(_container_running "${1:-}" 2>/dev/null || true)"
     case "${container}" in
         rig-vllm-stable|rig-comfyui-stable) echo "stable" ;;
         rig-vllm-edge|rig-comfyui-edge)     echo "edge" ;;
@@ -86,14 +69,11 @@ _container_build() {
 
 # _container_runtime <service> — returns raw runtime gpu|cpu|- for a running service.
 _container_runtime() {
-    local service container
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || { echo "-"; return 0; }
-
-    container="$(_container_running "${service}" 2>/dev/null || true)"
+    local container
+    container="$(_container_running "${1:-}" 2>/dev/null || true)"
     [[ -n "${container}" ]] || { echo "-"; return 0; }
 
-    case "${service}" in
+    case "${1:-}" in
         vllm)    echo "gpu" ;;
         ollama)
             if [[ "$(container_runtime_name "${container}")" == "nvidia" ]]; then
@@ -122,11 +102,7 @@ _avail_proxy_base() {
 
 # _endpoint <service> — returns canonical OpenAI-compatible base path for a service.
 _endpoint() {
-    local service
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || { echo "-"; return 0; }
-
-    case "${service}" in
+    case "${1:-}" in
         vllm)    echo "/v1" ;;
         ollama)  echo "/ollama/v1" ;;
         rag)     echo "/rag/v1" ;;
@@ -177,14 +153,11 @@ except Exception:
 
 # _model_avail <service> — returns available models for one running service.
 _model_avail() {
-    local service container
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || return 1
-
-    case "${service}" in
+    local container
+    case "${1:-}" in
         vllm|ollama|rag)
             # All three expose OpenAI-compatible /models; endpoint comes from _endpoint.
-            curl -sf "$(_avail_proxy_base)$(_endpoint "${service}")/models" 2>/dev/null \
+            curl -sf "$(_avail_proxy_base)$(_endpoint "${1}")/models" 2>/dev/null \
                 | _avail_json_model_ids | sed '/^$/d' || true
             ;;
         comfyui)
@@ -196,16 +169,14 @@ _model_avail() {
                     2>/dev/null | sed "s#^/models/##" | sort | head -n 12
             ' 2>/dev/null || true
             ;;
+        *) return 1 ;;
     esac
 }
 
 # _model_active <service> — returns currently loaded/active models for a service.
 _model_active() {
-    local service container active
-    service="$(_service_normalize "${1:-}" 2>/dev/null || true)"
-    [[ -n "${service}" ]] || return 1
-
-    case "${service}" in
+    local container active
+    case "${1:-}" in
         vllm)
             active="$(_model_avail "vllm")"
             if [[ -n "${active}" ]]; then
@@ -227,5 +198,6 @@ _model_active() {
         comfyui)
             return 0
             ;;
+        *) return 1 ;;
     esac
 }

@@ -87,7 +87,6 @@ cmd_benchmark() {
     # Normalize service alias and verify it is available
     if [[ -n "${service}" ]]; then
         case "${service}" in
-            comfy) service="comfyui" ;;
             vllm|ollama|rag|comfyui) ;;
             *)
                 echo -e "${RED}Unknown service: ${service}${RESET}"; return 1
