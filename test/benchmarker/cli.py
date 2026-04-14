@@ -198,6 +198,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 "max_tokens":        spec.max_tokens,
                 "service":           spec.service,
                 "runtime":           spec.runtime,
+                "build":             spec.build,
                 "endpoint":          endpoint,
                 "model":             spec.model,
                 "started_at":        started_at,

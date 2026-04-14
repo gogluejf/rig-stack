@@ -36,6 +36,7 @@ class RunSpec:
     service: str
     model:   str
     runtime: str           # "GPU", "CPU", or "-"
+    build:   str           # "stable", "edge", "cpu", or "-"
 
     # --- optional ---
     tags: list = field(default_factory=list)
@@ -59,6 +60,7 @@ def build(services_info: dict, tests: list[dict]) -> list[RunSpec]:
         for service, info in services_info.items():
             models  = info.get("models", [])
             runtime = str(info.get("runtime", "-"))
+            build   = str(info.get("build",   "-"))
             for model in models:
                 specs.append(RunSpec(
                     test_name=test["name"],
@@ -70,5 +72,6 @@ def build(services_info: dict, tests: list[dict]) -> list[RunSpec]:
                     service=service,
                     model=model,
                     runtime=runtime,
+                    build=build,
                 ))
     return specs

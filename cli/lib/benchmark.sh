@@ -191,7 +191,7 @@ _benchmark_build_services_json() {
     local -a svcs=("$@")
     local -a parts=()
 
-    local svc models models_json runtime
+    local svc models models_json runtime build
     for svc in "${svcs[@]}"; do
         # comfyui does not expose chat completions — skip silently
         [[ "${svc}" == "comfyui" ]] && continue
@@ -208,6 +208,7 @@ _benchmark_build_services_json() {
         [[ -n "${models}" ]] || continue
 
         runtime="$(_service_runtime "${svc}")"
+        build="$(_container_build "${svc}" 2>/dev/null || echo "-")"
 
         # JSON-encode the model list via Python (handles special characters safely)
         models_json="$(printf '%s\n' "${models}" | python3 -c '
@@ -215,7 +216,7 @@ import json, sys
 lines = [l for l in sys.stdin.read().splitlines() if l.strip()]
 print(json.dumps(lines))
 ')"
-        parts+=("\"${svc}\":{\"models\":${models_json},\"runtime\":\"${runtime}\"}")
+        parts+=("\"${svc}\":{\"models\":${models_json},\"runtime\":\"${runtime}\",\"build\":\"${build}\"}")
     done
 
     [[ ${#parts[@]} -gt 0 ]] || { printf '{}'; return 0; }
