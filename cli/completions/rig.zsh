@@ -61,16 +61,25 @@ _rig_commands() {
 }
 
 _rig_benchmark() {
-    local -a services=(
-        'vllm:vLLM service'
-        'ollama:Ollama service'
-        'rag:RAG service'
-        'comfyui:ComfyUI service'
-        'comfy:ComfyUI alias'
-    )
+    # Live service list — only running, benchmark-compatible services.
+    local raw_services avail_services=()
+    raw_services="$(rig benchmark _services 2>/dev/null)"
+    while IFS= read -r svc; do
+        [[ -n "${svc}" ]] && avail_services+=("${svc}")
+    done <<< "${raw_services}"
+
+    # Find the service argument: first non-flag, non-"logs" word after 'benchmark'.
+    local service_arg=""
+    local w
+    for (( w=2; w<CURRENT; w++ )); do
+        local ww="${words[w]}"
+        if [[ "${ww}" != --* && "${ww}" != "logs" && -z "${service_arg}" ]]; then
+            service_arg="${ww}"
+        fi
+    done
 
     if (( CURRENT == 2 )); then
-        _describe 'benchmark target' services
+        _describe 'running service' avail_services
         _values 'benchmark keyword/flags' \
             'logs[View benchmark JSONL logs]' \
             '--model[Explicit model name]' \
@@ -91,7 +100,12 @@ _rig_benchmark() {
             ;;
         --model)
             local raw model_names=()
-            raw=$(rig models names 2>/dev/null)
+            if [[ -n "${service_arg}" ]]; then
+                # Scope to models loaded by the selected service.
+                raw=$(rig benchmark _models "${service_arg}" 2>/dev/null)
+            else
+                raw=$(rig models names 2>/dev/null)
+            fi
             while IFS= read -r name; do
                 [[ -n "${name}" ]] && model_names+=("${name}")
             done <<< "${raw}"

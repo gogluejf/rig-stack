@@ -8,11 +8,10 @@ _service() {
     printf '%s\n' "vllm" "ollama" "rag" "comfyui"
 }
 
-# _service_normalize <service> — normalizes aliases (e.g. comfy -> comfyui).
+# _service_normalize <service> — validates a canonical service name.
 _service_normalize() {
     case "${1:-}" in
         vllm|ollama|rag|comfyui) printf '%s' "$1" ;;
-        comfy) printf '%s' "comfyui" ;;
         *) return 1 ;;
     esac
 }
@@ -183,16 +182,10 @@ _model_avail() {
     [[ -n "${service}" ]] || return 1
 
     case "${service}" in
-        vllm)
-            curl -sf "$(_avail_proxy_base)/v1/models" 2>/dev/null | _avail_json_model_ids | sed '/^$/d' || true
-            ;;
-        ollama)
-            container="$(_container_running "ollama" 2>/dev/null || true)"
-            [[ -n "${container}" ]] || return 0
-            docker exec "${container}" ollama list 2>/dev/null | awk 'NR>1 {print $1}' | sed '/^$/d' || true
-            ;;
-        rag)
-            curl -sf "$(_avail_proxy_base)/rag/v1/models" 2>/dev/null | _avail_json_model_ids | sed '/^$/d' || true
+        vllm|ollama|rag)
+            # All three expose OpenAI-compatible /models; endpoint comes from _endpoint.
+            curl -sf "$(_avail_proxy_base)$(_endpoint "${service}")/models" 2>/dev/null \
+                | _avail_json_model_ids | sed '/^$/d' || true
             ;;
         comfyui)
             container="$(_container_running "comfyui" 2>/dev/null || true)"

@@ -12,6 +12,21 @@
 # ── Public entry point ────────────────────────────────────────────────────────
 
 cmd_benchmark() {
+    # Internal helpers called by shell completions — not shown in help.
+    case "${1:-}" in
+        _services)
+            # Print benchmark-compatible running services (excludes comfyui).
+            _service_avail 2>/dev/null | grep -v '^comfyui$' || true
+            return 0
+            ;;
+        _models)
+            # Print models currently loaded for a given service.
+            local _svc="${2:-}"
+            [[ -n "${_svc}" ]] && _model_avail "${_svc}" 2>/dev/null || true
+            return 0
+            ;;
+    esac
+
     local service="" model="" type_filter="" log_mode="on"
 
     while [[ $# -gt 0 ]]; do

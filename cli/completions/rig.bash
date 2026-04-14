@@ -218,7 +218,19 @@ _rig_completions() {
 
     # ── rig benchmark ─────────────────────────────────────────────────────────
     benchmark)
-        local services="vllm ollama rag comfyui comfy"
+        # Live service list — only running, benchmark-compatible services.
+        local avail_services
+        avail_services="$(rig benchmark _services 2>/dev/null)"
+
+        # Find the service argument: first non-flag, non-"logs" word after benchmark.
+        local service_arg=""
+        local w
+        for (( w=2; w<cword; w++ )); do
+            local ww="${words[w]}"
+            if [[ "${ww}" != --* && "${ww}" != "logs" && -z "${service_arg}" ]]; then
+                service_arg="${ww}"
+            fi
+        done
 
         case "${prev}" in
             --type)
@@ -230,24 +242,24 @@ _rig_completions() {
                 return
                 ;;
             --model)
-                local model_names
-                model_names="$(rig models names 2>/dev/null)"
+                local model_names=""
+                if [[ -n "${service_arg}" ]]; then
+                    # Scope to models loaded by the selected service.
+                    model_names="$(rig benchmark _models "${service_arg}" 2>/dev/null)"
+                else
+                    model_names="$(rig models names 2>/dev/null)"
+                fi
                 COMPREPLY=($(compgen -W "${model_names}" -- "${cur}"))
                 return
                 ;;
         esac
 
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "logs ${services} --type --log --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "logs ${avail_services} --type --log --help" -- "${cur}"))
             return
         fi
 
         [[ "${sub}" == "logs" ]] && return
-
-        local service_arg=""
-        if [[ "${sub}" != --* && "${sub}" != "logs" ]]; then
-            service_arg="${sub}"
-        fi
 
         local flags=""
         _rig_contains "--model" "${words[@]}" || flags+="--model "
@@ -256,7 +268,7 @@ _rig_completions() {
         _rig_contains "--help" "${words[@]}" || flags+="--help "
 
         if [[ -z "${service_arg}" ]]; then
-            COMPREPLY=($(compgen -W "${services} ${flags}" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${avail_services} ${flags}" -- "${cur}"))
         else
             COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
         fi
