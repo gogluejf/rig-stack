@@ -14,13 +14,18 @@ Subcommands
 How it is called from bash (benchmark.sh → _benchmark_run):
   python3 <rig_root>/test/benchmarker/cli.py run \\
       --services-json '{"vllm":{"models":["M"],"runtime":"GPU"}}' \\
-      --catalog   <path>/test/benchmark/tests.json \\
-      --results   <path>/test/benchmark/logs/results.jsonl \\
+      --catalog    <path>/test/benchmark/tests.json \\
+      --results    <path>/test/benchmark/logs/results.jsonl \\
       --type-filter   completion|vision|"" \\
+      --test-filter   <test_name>|"" \\
       --log-mode      on|off \\
       --vllm-preset   "<flat preset command or empty>" \\
       --traefik-base  http://localhost:80 \\
       --rig-root      <path>
+
+  python3 <rig_root>/test/benchmarker/cli.py tests \\
+      --catalog <path>/test/benchmark/tests.json
+      (prints enabled test names — used by shell completions)
 """
 import argparse
 import json
@@ -70,7 +75,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
 
     # Load and filter the test catalog
     try:
-        tests = _catalog.load(args.catalog, args.type_filter)
+        tests = _catalog.load(args.catalog, args.type_filter, args.test_filter)
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -233,6 +238,19 @@ def _cmd_logs(args: argparse.Namespace) -> int:
     return 0
 
 
+# ── Subcommand: tests ─────────────────────────────────────────────────────────
+
+def _cmd_tests(args: argparse.Namespace) -> int:
+    """Print enabled test names from the catalog — used by shell completions."""
+    try:
+        tests = _catalog.load(args.catalog)
+    except RuntimeError:
+        return 1
+    for t in tests:
+        print(t["name"])
+    return 0
+
+
 # ── Argument parser ───────────────────────────────────────────────────────────
 
 def _parse_args() -> argparse.Namespace:
@@ -246,6 +264,7 @@ def _parse_args() -> argparse.Namespace:
     run_p.add_argument("--catalog",     required=True, help="path to test/benchmark/tests.json")
     run_p.add_argument("--results",     required=True, help="path to test/benchmark/logs/results.jsonl")
     run_p.add_argument("--type-filter", default="",    help="completion | vision | (empty = both)")
+    run_p.add_argument("--test-filter", default="",    help="exact test name to run (empty = all)")
     run_p.add_argument("--log-mode",    default="on",  choices=["on", "off"])
     run_p.add_argument("--vllm-preset", default="",    help="flattened vLLM preset command (display only)")
     run_p.add_argument("--traefik-base", default="http://localhost:80",
@@ -255,6 +274,10 @@ def _parse_args() -> argparse.Namespace:
     # rig benchmark logs
     logs_p = sub.add_parser("logs", help="display JSONL log summary")
     logs_p.add_argument("--results", required=True, help="path to results.jsonl")
+
+    # rig benchmark _tests (internal — shell completions)
+    tests_p = sub.add_parser("tests", help=argparse.SUPPRESS)
+    tests_p.add_argument("--catalog", required=True, help="path to tests.json")
 
     args = p.parse_args()
     if not args.subcommand:
@@ -270,6 +293,8 @@ def main() -> int:
     args = _parse_args()
     if args.subcommand == "logs":
         return _cmd_logs(args)
+    if args.subcommand == "tests":
+        return _cmd_tests(args)
     return _cmd_run(args)
 
 

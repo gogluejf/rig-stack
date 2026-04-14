@@ -49,7 +49,7 @@ cmd_models() {
             shift
             _models_install "$@"
             ;;
-        names)
+        _names)
             shift
             local _type_filter=""
             [[ "${1:-}" == "--type" ]] && _type_filter="${2:-}"

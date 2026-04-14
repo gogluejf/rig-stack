@@ -181,9 +181,9 @@ _rig_completions() {
                     done
                     local names
                     if [[ -n "${type_val}" ]]; then
-                        names=$(rig models names --type "${type_val}" 2>/dev/null)
+                        names=$(rig models _names --type "${type_val}" 2>/dev/null)
                     else
-                        names=$(rig models names 2>/dev/null)
+                        names=$(rig models _names 2>/dev/null)
                     fi
                     # include --type flag unless already used
                     local flags=""
@@ -247,15 +247,21 @@ _rig_completions() {
                     # Scope to models loaded by the selected service.
                     model_names="$(rig benchmark _models "${service_arg}" 2>/dev/null)"
                 else
-                    model_names="$(rig models names 2>/dev/null)"
+                    model_names="$(rig models _names 2>/dev/null)"
                 fi
                 COMPREPLY=($(compgen -W "${model_names}" -- "${cur}"))
+                return
+                ;;
+            --test)
+                local test_names
+                test_names="$(rig benchmark _tests 2>/dev/null)"
+                COMPREPLY=($(compgen -W "${test_names}" -- "${cur}"))
                 return
                 ;;
         esac
 
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "logs ${avail_services} --type --log --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "logs ${avail_services} --type --test --log --help" -- "${cur}"))
             return
         fi
 
@@ -263,9 +269,10 @@ _rig_completions() {
 
         local flags=""
         _rig_contains "--model" "${words[@]}" || flags+="--model "
-        _rig_contains "--type" "${words[@]}" || flags+="--type "
-        _rig_contains "--log" "${words[@]}" || flags+="--log "
-        _rig_contains "--help" "${words[@]}" || flags+="--help "
+        _rig_contains "--type"  "${words[@]}" || flags+="--type "
+        _rig_contains "--test"  "${words[@]}" || flags+="--test "
+        _rig_contains "--log"   "${words[@]}" || flags+="--log "
+        _rig_contains "--help"  "${words[@]}" || flags+="--help "
 
         if [[ -z "${service_arg}" ]]; then
             COMPREPLY=($(compgen -W "${avail_services} ${flags}" -- "${cur}"))

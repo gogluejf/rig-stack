@@ -6,15 +6,16 @@ enabled tests.  The catalog is the single source of test definitions; no
 prompt or test configuration is hardcoded in the runner logic.
 
 Public API
-  load(catalog_path, type_filter="") -> list[dict]
-    Returns enabled tests, optionally restricted to "completion" or "vision".
+  load(catalog_path, type_filter="", name_filter="") -> list[dict]
+    Returns enabled tests, optionally restricted to "completion" or "vision"
+    and/or to a specific test name.
     Each dict contains: name, type, max_tokens, prompt, image_path, tags.
 """
 import json
 
 
-def load(catalog_path: str, type_filter: str = "") -> list[dict]:
-    """Load enabled tests from the JSON catalog, optionally filtered by type."""
+def load(catalog_path: str, type_filter: str = "", name_filter: str = "") -> list[dict]:
+    """Load enabled tests from the JSON catalog, optionally filtered by type and/or name."""
     try:
         with open(catalog_path, encoding="utf-8") as fh:
             raw = json.load(fh)
@@ -39,8 +40,12 @@ def load(catalog_path: str, type_filter: str = "") -> list[dict]:
         if type_filter and t != type_filter:
             continue
 
+        name = str(item.get("name") or "unnamed-test")
+        if name_filter and name != name_filter:
+            continue
+
         result.append({
-            "name":       str(item.get("name") or "unnamed-test"),
+            "name":       name,
             "type":       t,
             "max_tokens": _to_int(item.get("max_tokens"), 256),
             "prompt":     str(item.get("prompt") or ""),

@@ -25,9 +25,17 @@ cmd_benchmark() {
             [[ -n "${_svc}" ]] && _model_avail "${_svc}" 2>/dev/null || true
             return 0
             ;;
+        _tests)
+            # Print enabled test names from the catalog (for shell completions).
+            local _catalog="${RIG_ROOT}/test/benchmark/tests.json"
+            [[ -f "${_catalog}" ]] || return 0
+            python3 "${RIG_ROOT}/test/benchmarker/cli.py" tests \
+                --catalog "${_catalog}" 2>/dev/null || true
+            return 0
+            ;;
     esac
 
-    local service="" model="" type_filter="" log_mode="on"
+    local service="" model="" type_filter="" test_filter="" log_mode="on"
 
     while [[ $# -gt 0 ]]; do
         case "${1}" in
@@ -51,6 +59,10 @@ cmd_benchmark() {
                     echo -e "${RED}Invalid --type: ${type_filter}. Use completion|vision.${RESET}"; return 1
                 fi
                 shift 2; continue
+                ;;
+            --test)
+                [[ $# -ge 2 ]] || { echo -e "${RED}--test requires a test name${RESET}"; return 1; }
+                test_filter="${2}"; shift 2; continue
                 ;;
             --log)
                 if [[ "${2:-}" == "on" || "${2:-}" == "off" ]]; then
@@ -101,7 +113,7 @@ cmd_benchmark() {
         fi
     fi
 
-    _benchmark_run "${service}" "${model}" "${type_filter}" "${log_mode}"
+    _benchmark_run "${service}" "${model}" "${type_filter}" "${test_filter}" "${log_mode}"
 }
 
 # ── Help ──────────────────────────────────────────────────────────────────────
@@ -113,6 +125,7 @@ _benchmark_help() {
     echo -e "  rig benchmark ${CYAN}[<service>]${RESET}          ${DIM}run all benchmark tests on all models of a service, all if omitted${RESET}"
     echo -e "    ${YELLOW_SOFT}--model${RESET} ${CYAN}<model_name>${RESET}             ${DIM}limit to one specific model (requires <service>)${RESET}"
     echo -e "    ${YELLOW_SOFT}--type${RESET} ${CYAN}<completion|vision>${RESET}       ${DIM}filter catalog by test type${RESET}"
+    echo -e "    ${YELLOW_SOFT}--test${RESET} ${CYAN}<test_name>${RESET}               ${DIM}run a single named test${RESET}"
     echo -e "    ${YELLOW_SOFT}--log${RESET} ${CYAN}[on|off]${RESET}                   ${DIM}JSONL logging (default: on)${RESET}"
     echo ""
     echo -e "  rig benchmark ${BOLD}logs${RESET}                 ${DIM}view benchmark log summary${RESET}"
@@ -132,7 +145,8 @@ _benchmark_run() {
     local requested_service="${1:-}"
     local requested_model="${2:-}"
     local requested_type="${3:-}"
-    local log_mode="${4:-on}"
+    local requested_test="${4:-}"
+    local log_mode="${5:-on}"
 
     command -v curl    >/dev/null 2>&1 || { echo -e "${RED}curl is required for benchmark.${RESET}";    return 1; }
     command -v python3 >/dev/null 2>&1 || { echo -e "${RED}python3 is required for benchmark.${RESET}"; return 1; }
@@ -171,6 +185,7 @@ _benchmark_run() {
         --catalog        "${catalog}" \
         --results        "${RIG_ROOT}/test/benchmark/logs/results.jsonl" \
         --type-filter    "${requested_type}" \
+        --test-filter    "${requested_test}" \
         --log-mode       "${log_mode}" \
         --vllm-preset    "${vllm_preset}" \
         --traefik-base   "http://localhost:${TRAEFIK_PORT:-80}" \

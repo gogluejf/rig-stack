@@ -84,6 +84,7 @@ _rig_benchmark() {
             'logs[View benchmark JSONL logs]' \
             '--model[Explicit model name]' \
             '--type[Filter benchmark tests by type]' \
+            '--test[Run a single named test]' \
             '--log[Enable/disable logging]' \
             '--help[Show help]'
         return
@@ -104,12 +105,21 @@ _rig_benchmark() {
                 # Scope to models loaded by the selected service.
                 raw=$(rig benchmark _models "${service_arg}" 2>/dev/null)
             else
-                raw=$(rig models names 2>/dev/null)
+                raw=$(rig models _names 2>/dev/null)
             fi
             while IFS= read -r name; do
                 [[ -n "${name}" ]] && model_names+=("${name}")
             done <<< "${raw}"
             _describe 'model' model_names
+            return
+            ;;
+        --test)
+            local raw test_names=()
+            raw=$(rig benchmark _tests 2>/dev/null)
+            while IFS= read -r name; do
+                [[ -n "${name}" ]] && test_names+=("${name}")
+            done <<< "${raw}"
+            _describe 'test' test_names
             return
             ;;
     esac
@@ -119,6 +129,7 @@ _rig_benchmark() {
     _values 'benchmark flags' \
         '--model[Explicit model name]' \
         '--type[Filter benchmark tests by type]:type:(completion vision)' \
+        '--test[Run a single named test]' \
         '--log[Enable/disable logging]:mode:(on off)' \
         '--help[Show help]'
 }
@@ -271,7 +282,7 @@ _rig_models_cmd() {
                 [[ "${words[i]}" == "--type" ]] && type_val="${words[i+1]:-}"
             done
             local raw model_names=()
-            raw=$(rig models names ${type_val:+--type "${type_val}"} 2>/dev/null)
+            raw=$(rig models _names ${type_val:+--type "${type_val}"} 2>/dev/null)
             while IFS= read -r name; do
                 [[ -n "${name}" ]] && model_names+=("${name}")
             done <<< "${raw}"
