@@ -55,7 +55,7 @@ def print_run_header(
     print(f"test            : {run_index} of {total}")
     print(f"start datetime  : {started_at}")
     print(f"test            : {spec.test_name} / {spec.test_type} / max_tokens={spec.max_tokens}")
-    print(f"target          : {spec.service} / {spec.runtime} / {endpoint} / {spec.model}")
+    print(f"target          : {spec.service} / {spec.build} / {spec.runtime} / {endpoint} / {spec.model}")
     if vllm_preset:
         print(f"vllm preset     : {vllm_preset}")
     print()
