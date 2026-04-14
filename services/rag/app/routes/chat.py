@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 from models.schemas import ChatRequest
 from core.embeddings import embed
 from core.retrieval import retrieve
-from core.llm_client import chat, resolve_chat_model
+from core.llm_client import chat, resolve_chat_model, resolve_embed_model
 
 router = APIRouter()
 
@@ -21,9 +21,12 @@ async def handle_chat_request(req: ChatRequest):
 
     query = user_messages[-1].content
 
+    resolved_model       = await resolve_chat_model(req.model)
+    resolved_embed_model = await resolve_embed_model("nomic-embed-text:latest")
+
     # Embed the query
     try:
-        vectors = await embed([query])
+        vectors = await embed([query], model=resolved_embed_model)
         query_vector = vectors[0]
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Embedding error: {e}")
@@ -36,7 +39,6 @@ async def handle_chat_request(req: ChatRequest):
             r.payload.get("text", "") for r in results if r.payload
         ]
     except Exception:
-        # If retrieval fails (e.g. collection doesn't exist), proceed without context
         pass
 
     # Build augmented messages
@@ -46,9 +48,7 @@ async def handle_chat_request(req: ChatRequest):
         *[{"role": m.role, "content": m.content} for m in req.messages],
     ]
 
-    # Call local vLLM
     try:
-        resolved_model = await resolve_chat_model(req.model)
         result = await chat(
             messages=augmented_messages,
             model=resolved_model,

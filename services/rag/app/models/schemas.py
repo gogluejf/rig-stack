@@ -11,6 +11,7 @@ class Message(BaseModel):
 
 class ChatRequest(BaseModel):
     model: str = "default"
+    embed_model: str = "default"
     messages: list[Message]
     max_tokens: int = 2048
     temperature: float = 0.7

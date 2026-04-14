@@ -2,8 +2,7 @@
 
 from fastapi import APIRouter
 
-from core.embeddings import EMBED_MODEL
-from core.llm_client import list_models
+from core.llm_client import list_chat_models, list_embed_models
 
 router = APIRouter()
 
@@ -13,34 +12,20 @@ async def models_endpoint():
     data = []
     seen = set()
 
-    def add_model(model_id: str, owned_by: str, **extra):
+    def add(item: dict):
+        model_id = item.get("id")
         if not model_id or model_id in seen:
             return
         seen.add(model_id)
-        entry = {
-            "id": model_id,
-            "object": "model",
-            "owned_by": owned_by,
-        }
-        entry.update(extra)
-        data.append(entry)
+        data.append({"object": "model", **item})
 
-    add_model(EMBED_MODEL, "ollama", description="Embedding model used by the RAG API")
-
-    try:
-        upstream = await list_models()
-        for item in upstream.get("data", []):
-            if not isinstance(item, dict):
-                continue
-            model_id = item.get("id")
-            if not model_id or model_id in seen:
-                continue
-            enriched = dict(item)
-            enriched.setdefault("object", "model")
-            enriched.setdefault("owned_by", "vllm")
-            data.append(enriched)
-            seen.add(model_id)
-    except Exception:
-        pass
+    for fetch in (list_chat_models, list_embed_models):
+        try:
+            upstream = await fetch()
+            for item in upstream.get("data", []):
+                if isinstance(item, dict):
+                    add(item)
+        except Exception:
+            pass
 
     return {"object": "list", "data": data}

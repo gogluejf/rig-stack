@@ -234,13 +234,14 @@ services:
     profiles: [rag]
     restart: unless-stopped
     environment:
-      - VLLM_BASE_URL=http://rig-vllm-stable:8000
-      - OLLAMA_BASE_URL=http://rig-ollama:11434
+      - CHAT_BASE_URL=http://rig-traefik/v1
+      - EMBED_BASE_URL=http://rig-traefik/ollama/v1
       - QDRANT_HOST=rig-qdrant
       - QDRANT_PORT=6333
     env_file:
       - .env
     volumes:
+      - ./services/rag/app:/app
       - ${DATA_ROOT}/logs/rag:/logs
     networks:
       - rig-net

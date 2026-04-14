@@ -1,46 +1,59 @@
-"""LLM client — calls local vLLM OpenAI-compatible endpoint."""
+"""LLM client — chat and embedding via the Traefik gateway."""
 
 import os
 import httpx
 
-VLLM_BASE_URL = os.getenv("VLLM_BASE_URL", "http://rig-vllm-stable:8000")
+CHAT_BASE_URL  = os.getenv("CHAT_BASE_URL",  "http://rig-traefik/v1")
+EMBED_BASE_URL = os.getenv("EMBED_BASE_URL", "http://rig-traefik/ollama/v1")
 
 
-async def list_models() -> dict:
-    """Return model metadata from local vLLM."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.get(f"{VLLM_BASE_URL}/v1/models")
+async def list_chat_models() -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(f"{CHAT_BASE_URL}/models")
+        resp.raise_for_status()
+        return resp.json()
+
+
+async def list_embed_models() -> dict:
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(f"{EMBED_BASE_URL}/models")
         resp.raise_for_status()
         return resp.json()
 
 
 async def resolve_chat_model(model: str = "default") -> str:
-    """Resolve the default chat model to the active upstream vLLM model."""
     if model and model != "default":
         return model
-
     try:
-        payload = await list_models()
-        for item in payload.get("data", []):
-            model_id = item.get("id")
-            if model_id:
-                return model_id
+        for item in (await list_chat_models()).get("data", []):
+            if item.get("id"):
+                return item["id"]
     except Exception:
         pass
+    return "default"
 
-    return model or "default"
+
+async def resolve_embed_model(model: str = "default") -> str:
+    if model and model != "default":
+        return model
+    try:
+        for item in (await list_embed_models()).get("data", []):
+            if item.get("id"):
+                return item["id"]
+    except Exception:
+        pass
+    return "default"
 
 
 async def chat(
     messages: list[dict],
-    model: str = "default",
+    model: str,
     max_tokens: int = 2048,
     temperature: float = 0.7,
 ) -> dict:
-    """Send a chat completion request to local vLLM."""
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post(
-            f"{VLLM_BASE_URL}/v1/chat/completions",
+            f"{CHAT_BASE_URL}/chat/completions",
             json={
                 "model": model,
                 "messages": messages,
