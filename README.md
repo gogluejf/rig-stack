@@ -229,10 +229,10 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 ## Future features
 
 - **Comfy Workflows** — manage workflows, download modeles via `rig comfy workflow` 
+- **Agent Gateway** — Transforms RAG endpoint into a server-side agent orchestrator (web search, Python sandbox, dynamic DB, RAG memory). Current RAG is a conceptual POC.
 - **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
 - **Broader edge support** — edge builds for GPUs beyond RTX 5090 / Blackwell architecture
 - **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
-- **Extended RAG system prompts** — built-in instruction architectures for custom-branded endpoints
 - **MCP server** — tooling layer over your private cloud AI endpoint
 - **Authentication** — access control for your self-hosted AI cloud
 - **SSL/TLS support** — secure your endpoint with HTTPS, even on local network
