@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Interactive chat: see the full conversation flow (system → user → assistant)
-# Run: ./test/chat.sh [--thinking] [--print-thinking]
+# Vision analysis: extract 5 dominant elements from an image
+# Run: ./test/vision.sh <image_path> [--thinking] [--print-thinking]
 
 set -euo pipefail
 
@@ -12,7 +12,7 @@ PRINT_THINKING=false
 RENDER_ESCAPED_NEWLINES="${RENDER_ESCAPED_NEWLINES:-true}"
 
 usage() {
-  echo "Usage: $(basename "$0") [--thinking] [--print-thinking]"
+  echo "Usage: $(basename "$0") <image_path> [--thinking] [--print-thinking]"
   echo ""
   echo "Options:"
   echo "  --thinking         Enable thinking mode (spinner shown, reasoning hidden)"
@@ -20,6 +20,18 @@ usage() {
   exit 1
 }
 
+image_mime() {
+  case "${1,,}" in
+    *.jpg|*.jpeg) echo "image/jpeg" ;;
+    *.png)        echo "image/png"  ;;
+    *.gif)        echo "image/gif"  ;;
+    *.webp)       echo "image/webp" ;;
+    *)            echo "image/jpeg" ;;
+  esac
+}
+
+# Parse arguments
+IMAGE_PATH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --thinking)
@@ -35,11 +47,27 @@ while [[ $# -gt 0 ]]; do
       usage
       ;;
     *)
-      echo "Unknown argument: $1" >&2
-      usage
+      if [[ -z "${IMAGE_PATH}" ]]; then
+        IMAGE_PATH="$1"
+      else
+        echo "Unknown argument: $1" >&2
+        usage
+      fi
+      shift
       ;;
   esac
 done
+
+# Validate image path
+if [[ -z "${IMAGE_PATH}" ]]; then
+  echo "Error: Image path is required" >&2
+  usage
+fi
+
+if [[ ! -f "${IMAGE_PATH}" ]]; then
+  echo "Error: Image file not found: ${IMAGE_PATH}" >&2
+  exit 1
+fi
 
 # Load system prompt from file
 SYSTEM_PROMPT_FILE="${SCRIPT_DIR}/system_prompt.txt"
@@ -49,15 +77,16 @@ else
   SYSTEM_PROMPT="You are a helpful assistant."
 fi
 
-# ── Temp files (messages history + curl request) ──────────────────────────────
+# Hardcoded vision prompt - extract 5 dominant elements
+VISION_PROMPT="Identify the 5 most dominant elements in this image. Return exactly 5 words, comma-separated, in order of importance."
+
+# ── Temp files ──────────────────────────────────────────────────────────────────
 _msgs_file="$(mktemp)"
 _req_file="$(mktemp)"
-trap 'rm -f "${_msgs_file}" "${_req_file}"' EXIT
+_b64_file="$(mktemp)"
+trap 'rm -f "${_msgs_file}" "${_req_file}" "${_b64_file}"' EXIT
 
-# Initialize conversation history with system message
-jq -n --arg sp "${SYSTEM_PROMPT}" '[{role:"system",content:$sp}]' > "${_msgs_file}"
-
-# ── Thinking spinner ──────────────────────────────────────────────────────────
+# ── Thinking spinner ────────────────────────────────────────────────────────────
 in_think=0
 carry=""
 response_text=""
@@ -99,14 +128,14 @@ process_chunk() {
   local keep before after inside
   local hidden_this_chunk=0
 
-  chunk="${chunk//<\/ think>/<\/think>}"
+  chunk="${chunk//<\/think>/<\/think>}"
   chunk="${carry}${chunk}"
   carry=""
 
   while true; do
     if (( in_think == 0 )); then
       chunk="${chunk//<\/think>/}"
-      chunk="${chunk//<\/ think>/}"
+      chunk="${chunk//<\/think>/}"
 
       if [[ "${chunk}" == *"<think>"* ]]; then
         before="${chunk%%<think>*}"
@@ -207,34 +236,32 @@ stream_response() {
   printf '\n'
 }
 
-# ── Main loop ─────────────────────────────────────────────────────────────────
-echo "What do you want to discuss today?"
+# ── Main execution ──────────────────────────────────────────────────────────────
+_mime="$(image_mime "${IMAGE_PATH}")"
+base64 -w 0 "${IMAGE_PATH}" > "${_b64_file}"
 
-while true; do
-  printf '\n> '
-  IFS= read -r user_input || break
-  [[ -z "${user_input}" ]] && continue
-  [[ "${user_input}" == "exit" || "${user_input}" == "quit" || "${user_input}" == "/exit" ]] && break
+# Build message with image and hardcoded prompt
+jq -n \
+  --arg sp "${SYSTEM_PROMPT}" \
+  --arg text "${VISION_PROMPT}" \
+  --arg mime "${_mime}" \
+  --rawfile b64 "${_b64_file}" \
+  '[
+    {role:"system",content:$sp},
+    {
+      role:"user",
+      content:[
+        {type:"image_url",image_url:{url:("data:"+$mime+";base64,"+($b64|gsub("\\n";"")))}},
+        {type:"text",text:$text}
+      ]
+    }
+  ]' > "${_msgs_file}"
 
-  # Append user turn
-  jq \
-    --arg text "${user_input}" \
-    '. + [{role:"user",content:$text}]' \
-    "${_msgs_file}" > "${_msgs_file}.tmp" && mv "${_msgs_file}.tmp" "${_msgs_file}"
+# Write request JSON
+jq \
+  --arg model "${MODEL}" \
+  --argjson enable_thinking "${ENABLE_THINKING}" \
+  '{model:$model,stream:true,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
+  "${_msgs_file}" > "${_req_file}"
 
-  # Write request JSON to file (curl reads it with -d @file)
-  jq \
-    --arg model "${MODEL}" \
-    --argjson enable_thinking "${ENABLE_THINKING}" \
-    '{model:$model,stream:true,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
-    "${_msgs_file}" > "${_req_file}"
-
-  printf '\n'
-  stream_response
-
-  # Append assistant turn
-  jq \
-    --arg content "${response_text}" \
-    '. + [{role:"assistant",content:$content}]' \
-    "${_msgs_file}" > "${_msgs_file}.tmp" && mv "${_msgs_file}.tmp" "${_msgs_file}"
-done
+stream_response
