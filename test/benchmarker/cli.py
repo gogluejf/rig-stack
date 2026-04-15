@@ -213,6 +213,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
                 "completion_tokens": completion_tok,
                 "total_tokens":      total_tok,
                 "avg_tokens_per_sec": round(avg_tps, 3),
+                "vllm_preset_name":     spec.preset_name if spec.service == "vllm" else None,
                 "vllm_preset_cmd_flat": preset_display or None,
                 "image_path":        spec.image_path or None,
                 "vision_output_text": output_txt if spec.test_type == "vision" else None,
@@ -234,7 +235,10 @@ def _cmd_run(args: argparse.Namespace) -> int:
 # ── Subcommand: logs ──────────────────────────────────────────────────────────
 
 def _cmd_logs(args: argparse.Namespace) -> int:
-    _viewer.show(args.results)
+    if args.section == "stats":
+        _viewer.show_stats(args.results, args.service)
+    else:
+        _viewer.show_runs(args.results, args.service)
     return 0
 
 
@@ -274,6 +278,8 @@ def _parse_args() -> argparse.Namespace:
     # rig benchmark logs
     logs_p = sub.add_parser("logs", help="display JSONL log summary")
     logs_p.add_argument("--results", required=True, help="path to results.jsonl")
+    logs_p.add_argument("--section", required=True, choices=["stats", "runs"])
+    logs_p.add_argument("--service", default="",    help="filter by service name")
 
     # rig benchmark _tests (internal — shell completions)
     tests_p = sub.add_parser("tests", help=argparse.SUPPRESS)

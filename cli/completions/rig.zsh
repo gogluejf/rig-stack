@@ -63,7 +63,7 @@ _rig_commands() {
 _rig_benchmark() {
     # Live service list — only running, benchmark-compatible services.
     local raw_services avail_services=()
-    raw_services="$(rig benchmark _services 2>/dev/null)"
+    raw_services="$(rig benchmark _service_avail 2>/dev/null)"
     while IFS= read -r svc; do
         [[ -n "${svc}" ]] && avail_services+=("${svc}")
     done <<< "${raw_services}"
@@ -124,7 +124,14 @@ _rig_benchmark() {
             ;;
     esac
 
-    [[ "${words[2]}" == "logs" ]] && return
+    if [[ "${words[2]}" == "logs" ]]; then
+        if [[ "${words[CURRENT-1]}" == "--service" ]]; then
+            _values 'service' vllm ollama rag
+        else
+            _values 'logs flags' '--service[Filter log by service name]'
+        fi
+        return
+    fi
 
     _values 'benchmark flags' \
         '--model[Explicit model name]' \

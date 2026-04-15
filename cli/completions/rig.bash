@@ -220,7 +220,7 @@ _rig_completions() {
     benchmark)
         # Live service list — only running, benchmark-compatible services.
         local avail_services
-        avail_services="$(rig benchmark _services 2>/dev/null)"
+        avail_services="$(rig benchmark _service_avail 2>/dev/null)"
 
         # Find the service argument: first non-flag, non-"logs" word after benchmark.
         local service_arg=""
@@ -265,7 +265,15 @@ _rig_completions() {
             return
         fi
 
-        [[ "${sub}" == "logs" ]] && return
+        if [[ "${sub}" == "logs" ]]; then
+            if [[ "${prev}" == "--service" ]]; then
+                COMPREPLY=($(compgen -W "vllm ollama rag" -- "${cur}"))
+            else
+                _rig_contains "--service" "${words[@]}" || \
+                    COMPREPLY=($(compgen -W "--service" -- "${cur}"))
+            fi
+            return
+        fi
 
         local flags=""
         _rig_contains "--model" "${words[@]}" || flags+="--model "

@@ -14,7 +14,7 @@
 cmd_benchmark() {
     # Internal helpers called by shell completions — not shown in help.
     case "${1:-}" in
-        _services)
+        _service_avail)
             # Print benchmark-compatible running services (excludes comfyui).
             _service_avail 2>/dev/null | grep -v '^comfyui$' || true
             return 0
@@ -45,7 +45,7 @@ cmd_benchmark() {
                 ;;
             logs)
                 shift
-                _benchmark_logs
+                _benchmark_logs "$@"
                 return 0
                 ;;
             --model)
@@ -129,6 +129,7 @@ _benchmark_help() {
     echo -e "    ${YELLOW_SOFT}--log${RESET} ${CYAN}[on|off]${RESET}                   ${DIM}JSONL logging (default: on)${RESET}"
     echo ""
     echo -e "  rig benchmark ${BOLD}logs${RESET}                 ${DIM}view benchmark log summary${RESET}"
+    echo -e "    ${YELLOW_SOFT}--service${RESET} ${CYAN}<name>${RESET}                 ${DIM}filter log by service name${RESET}"
     echo ""
     echo -e "${GREEN}Examples:${RESET}"
     echo -e "  rig benchmark"
@@ -206,7 +207,7 @@ _benchmark_build_services_json() {
     local -a svcs=("$@")
     local -a parts=()
 
-    local svc models models_json runtime build
+    local svc models models_json runtime build preset_name
     for svc in "${svcs[@]}"; do
         # comfyui does not expose chat completions — skip silently
         [[ "${svc}" == "comfyui" ]] && continue
@@ -224,6 +225,8 @@ _benchmark_build_services_json() {
 
         runtime="$(_service_runtime "${svc}")"
         build="$(_container_build "${svc}" 2>/dev/null || echo "-")"
+        preset_name="-"
+        [[ "${svc}" == "vllm" ]] && preset_name="$(_vllm_preset_name 2>/dev/null || echo "-")"
 
         # JSON-encode the model list via Python (handles special characters safely)
         models_json="$(printf '%s\n' "${models}" | python3 -c '
@@ -231,7 +234,7 @@ import json, sys
 lines = [l for l in sys.stdin.read().splitlines() if l.strip()]
 print(json.dumps(lines))
 ')"
-        parts+=("\"${svc}\":{\"models\":${models_json},\"runtime\":\"${runtime}\",\"build\":\"${build}\"}")
+        parts+=("\"${svc}\":{\"models\":${models_json},\"runtime\":\"${runtime}\",\"build\":\"${build}\",\"preset_name\":\"${preset_name}\"}")
     done
 
     [[ ${#parts[@]} -gt 0 ]] || { printf '{}'; return 0; }
@@ -248,12 +251,30 @@ print(json.dumps(lines))
 # ── Logs viewer ───────────────────────────────────────────────────────────────
 
 _benchmark_logs() {
+    local log_service=""
+    while [[ $# -gt 0 ]]; do
+        case "${1}" in
+            --service)
+                [[ $# -ge 2 ]] || { echo -e "${RED}--service requires a value${RESET}"; return 1; }
+                log_service="${2}"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+
     command -v python3 >/dev/null 2>&1 || { echo -e "${RED}python3 is required.${RESET}"; return 1; }
+
+    local results="${RIG_ROOT}/test/benchmark/logs/results.jsonl"
+    local py="${RIG_ROOT}/test/benchmarker/cli.py"
+    local -a svc_arg=()
+    [[ -n "${log_service}" ]] && svc_arg=(--service "${log_service}")
 
     echo ""
     print_header "Benchmark logs"
-    hr 108
-    python3 "${RIG_ROOT}/test/benchmarker/cli.py" logs \
-        --results "${RIG_ROOT}/test/benchmark/logs/results.jsonl"
+    hr 162
+    python3 "${py}" logs --results "${results}" --section stats "${svc_arg[@]}"
+    echo ""
+    print_header "Latest runs"
+    hr 162
+    python3 "${py}" logs --results "${results}" --section runs "${svc_arg[@]}"
     echo ""
 }

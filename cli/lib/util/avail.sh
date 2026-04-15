@@ -120,6 +120,14 @@ _endpoints_avail() {
     done < <(_service_avail)
 }
 
+# _vllm_preset_name — returns the active vLLM preset name (symlink basename without extension).
+_vllm_preset_name() {
+    local link="${RIG_ROOT}/.preset.active.vllm"
+    [[ -L "${link}" ]] || { echo "-"; return 0; }
+    local name; name="$(basename "$(readlink "${link}")")"
+    echo "${name%.*}"
+}
+
 # _vllm_preset_command_flat — returns active vLLM preset command flattened to one line.
 _vllm_preset_command_flat() {
     if declare -F _get_preset_command_flat >/dev/null 2>&1; then
