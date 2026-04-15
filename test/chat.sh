@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Interactive multi-turn chat with Eleveen
+# Interactive chat: see the full conversation flow (system → user → assistant)
+# Run: ./test/chat.sh [--thinking] [--print-thinking] [--image <path>]
 
 set -euo pipefail
 

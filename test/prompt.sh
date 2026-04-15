@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-
-set -euo pipefail
+# Single prompt: get a clean, complete response (no streaming)
+# Run: ./test/prompt.sh [optional custom prompt]
 
 MODEL="${MODEL:-Kbenkhaled/Qwen3.5-27B-NVFP4}"
 API_URL="${API_URL:-http://localhost/v1/chat/completions}"
@@ -13,11 +13,12 @@ if [[ $# -gt 0 ]]; then
   USER_PROMPT="$*"
 fi
 
-curl -sN "${API_URL}" \
+curl -s "${API_URL}" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "'"${MODEL}"'",
-    "stream": true,
+    "stream": false,
+    "max_tokens": 500,
     "chat_template_kwargs" : {
       "enable_thinking": false
     },
@@ -31,15 +32,4 @@ curl -sN "${API_URL}" \
         "content": "'"${USER_PROMPT//\"/\\\"}"'"
       }
     ]
-  }' | while IFS= read -r line; do
-    [[ "${line}" == data:* ]] || continue
-
-    payload="${line#data: }"
-    [[ "${payload}" == "[DONE]" ]] && break
-
-    # -rj decodes JSON escapes (including "\\n") and avoids adding extra newlines
-    printf '%s' "${payload}" | jq -rj '.choices[0].delta.content // empty'
-  done
-
-# Final newline for clean terminal prompt after stream finishes
-printf '\n'
+  }' | jq .
