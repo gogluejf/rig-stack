@@ -6,9 +6,9 @@ RigStack is an open-source CLI for running a full local AI stack with minimal fr
 
 It unifies Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
 
-Run models on CPU or GPU, manage presets, install models easily, benchmark and monitor your entire setup with simple, idempotent commands unix friendly CLI.
+Run models on CPU or GPU, manage presets, install models easily, benchmark and monitor your entire setup with a simple, idempotent, Unix-friendly CLI.
 
-No cloud. No per-token costs. Just limited, secure, fast local inference that works to unleash your creative work
+No cloud. No per-token costs. Just fast, secure local inference that unleashes your creative work.
 
 ## Features
 
@@ -16,13 +16,13 @@ No cloud. No per-token costs. Just limited, secure, fast local inference that wo
   Manage your entire AI stack with a single command. Switch presets, move models between CPU/GPU, and control all services with a fast, composable CLI.
 
 - **Single endpoint**  
-  Multiple Inteference services routed through Traefik on port 80. One host, one entry point.
+  Multiple inference services routed through Traefik on port 80. One host, one entry point.
 
 - **Observability**  
-  One command to see endpoints availability, system actual configuration and memory distribution: `rig status`.
+  One command to see endpoint availability, current system configuration, and memory distribution: `rig status`.
 
 - **Unified model registry**  
-  Manage models across vLLM, Ollama, and ComfyUI from one interface, no more models spaghetti.
+  Manage models across vLLM, Ollama, and ComfyUI from one interface — no more model sprawl.
 
 - **Inference presets**  
   Define multiple configs for the same model (quantization, context length, throughput) and switch instantly with `rig serve <preset>`.
@@ -66,7 +66,7 @@ No cloud. No per-token costs. Just limited, secure, fast local inference that wo
 - Ubuntu 24.04 (tested) (or Debian-family with `OS_FAMILY=debian` in `.env`)
 - 16GB+ RAM (32GB+ recommended for larger models)
 - 2tb+ disk (for models, data, and Docker storage)
-- NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell built (--edge) require RTX 50xx)
+- NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell builds (--edge) require RTX 50xx)
 
 ### Package requirements
 - NVIDIA driver ≥ 580
@@ -92,7 +92,9 @@ cp .env.example .env
 rig models init --minimal
 
 # 4. Start serving
-rig serve qwen3-5-27b --edge
+rig serve qwen3-5-27b
+# On Blackwell (RTX 50xx)? Squeeze every FLOP out of your card:
+# rig serve qwen3-5-27b --edge
 ```
 
 The LLM endpoint is live at `http://localhost/v1`.
@@ -101,7 +103,7 @@ The LLM endpoint is live at `http://localhost/v1`.
 
 ## CLI reference
 
-Best CLI UX for you and your agent. `rig` is your command center for managing the whole stack — services, models, presets, and more.
+`rig` is your command center for managing the whole stack — services, models, presets, and more.
 
 ```
 rig <command> [subcommand] [flags]
@@ -228,7 +230,7 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 
 ## Future features
 
-- **Comfy Workflows** — manage workflows, download modeles via `rig comfy workflow` 
+- **Comfy Workflows** — manage workflows, download models via `rig comfy workflow`
 - **Agent Gateway** — Transforms RAG endpoint into a server-side agent orchestrator (web search, Python sandbox, dynamic DB, RAG memory). Current RAG is a conceptual POC.
 - **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
 - **Broader edge support** — edge builds for GPUs beyond RTX 5090 / Blackwell architecture
