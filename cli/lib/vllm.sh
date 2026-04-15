@@ -180,6 +180,9 @@ _serve_start() {
     echo -e "  Container: rig-${profile}"
 
     _serve_preset_show "${preset_name}"
+
+    echo -e "  ${YELLOW}${BOLD}Note     : Model is loading; it may take a few seconds to become fully ready.${RESET}"
+    echo -e "  ${YELLOW}${BOLD}Logs     : Check status in the logs \"docker logs -f rig-${profile}${RESET}\""
 }
 
 _serve_stop() {
