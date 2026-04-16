@@ -13,7 +13,7 @@ _client: AsyncQdrantClient | None = None
 def get_client() -> AsyncQdrantClient:
     global _client
     if _client is None:
-        _client = AsyncQdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+        _client = AsyncQdrantClient(host=QDRANT_HOST, port=6333)
     return _client
 
 

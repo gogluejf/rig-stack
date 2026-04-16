@@ -10,7 +10,7 @@ set -euo pipefail
 args=(
   python main.py
   --listen "${COMFYUI_LISTEN:-0.0.0.0}"
-  --port "${COMFYUI_PORT:-8188}"
+  --port 8188
   --output-directory /outputs
   --input-directory /inputs
 )
