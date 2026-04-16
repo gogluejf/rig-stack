@@ -3,7 +3,7 @@
 set -euo pipefail
 
 MODEL="${MODEL:-Kbenkhaled/Qwen3.5-27B-NVFP4}"
-API_URL="${API_URL:-http://localhost/v1/chat/completions}"
+API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 
 time curl -s "${API_URL}" \
   -H "Content-Type: application/json" \

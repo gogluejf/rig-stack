@@ -189,7 +189,7 @@ _benchmark_run() {
         --test-filter    "${requested_test}" \
         --log-mode       "${log_mode}" \
         --vllm-preset    "${vllm_preset}" \
-        --traefik-base   "http://localhost:${TRAEFIK_PORT:-80}" \
+        --traefik-base   "$(_avail_proxy_base)" \
         --rig-root       "${RIG_ROOT}"
 }
 

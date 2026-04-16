@@ -97,7 +97,7 @@ rig serve qwen3-5-27b
 # rig serve qwen3-5-27b --edge
 ```
 
-The LLM endpoint is live at `http://localhost/v1`.
+The LLM endpoint is live at `https://localhost/v1`.
 
 ---
 
@@ -182,13 +182,59 @@ bash scripts/maintenance/update-images.sh
 
 | Service | URL |
 |---|---|
-| vLLM API | `http://localhost/v1/models` |
-| ComfyUI | `http://localhost/comfy` |
-| Ollama | `http://localhost/ollama` |
-| RAG API | `http://localhost/rag/health` |
-| Langfuse | `http://localhost/langfuse` |
+| vLLM API | `https://localhost/v1` |
+| ComfyUI | `https://localhost/comfy` |
+| Ollama | `https://localhost/ollama/v1` |
+| RAG API | `https://localhost/rag/v1` |
+| Langfuse | `https://localhost/langfuse` |
 | Traefik dashboard | `http://localhost:8080` |
-| Qdrant dashboard | `http://localhost:6333/dashboard` |
+
+---
+
+## Accessing from another machine
+
+**Simple — SSH tunnel over HTTP (recommended for private networks)**
+
+Traffic is encrypted by the SSH tunnel itself. No certificate setup needed.
+
+```bash
+ssh -L 8080:localhost:80 user@<server-ip>
+# then access via http://localhost:8080
+curl http://localhost:8080/v1/models
+```
+
+**Secure — SSH tunnel over HTTPS (with trusted certificate)**
+
+Full end-to-end TLS. Requires trusting the mkcert CA on the remote machine once.
+
+```bash
+# 1. Copy the CA from the server (one-time)
+scp user@<server-ip>:~/.local/share/mkcert/rootCA.pem ~/.local/share/mkcert/rootCA.pem
+scp user@<server-ip>:~/.local/share/mkcert/rootCA-key.pem ~/.local/share/mkcert/rootCA-key.pem
+
+# 2. Install it (handles browser + system store)
+sudo apt install -y mkcert libnss3-tools
+mkcert -install
+
+# 3. Open an SSH tunnel
+ssh -L 8443:localhost:443 user@<server-ip>
+
+# 4. Access via the tunnel
+curl https://localhost:8443/v1/models
+```
+
+**Alternatively — bring your own certificate**
+
+If you plan to access the stack from many machines or expose it externally, replace the mkcert cert with a properly signed one (Let's Encrypt, commercial CA, etc.):
+
+```bash
+# Replace these two files with your own cert and key
+config/traefik/certs/local.crt
+config/traefik/certs/local.key
+
+# Then restart Traefik
+docker compose restart traefik
+```
 
 ---
 
@@ -237,4 +283,3 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 - **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
 - **MCP server** — tooling layer over your private cloud AI endpoint
 - **Authentication** — access control for your self-hosted AI cloud
-- **SSL/TLS support** — secure your endpoint with HTTPS, even on local network

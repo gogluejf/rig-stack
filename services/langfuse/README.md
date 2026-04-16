@@ -17,13 +17,13 @@ POSTGRES_PASSWORD=<strong-password>
 docker compose --profile observability up -d
 
 # 3. Open UI
-# http://localhost/langfuse
+# https://localhost/langfuse
 # Create your account on first visit.
 ```
 
 ## Access
 
-- Via Traefik: `http://localhost/langfuse`
+- Via Traefik: `https://localhost/langfuse`
 
 ## Integrating with vLLM / application code
 
@@ -33,7 +33,7 @@ To trace vLLM calls via Langfuse, use the Langfuse SDK in your application:
 from langfuse.openai import openai
 
 client = openai.OpenAI(
-    base_url="http://localhost/v1",
+    base_url="https://localhost/v1",
     api_key="not-needed",
 )
 # All calls are automatically traced

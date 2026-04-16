@@ -3,7 +3,7 @@
 # Run: ./test/prompt.sh [optional custom prompt]
 
 MODEL="${MODEL:-Kbenkhaled/Qwen3.5-27B-NVFP4}"
-API_URL="${API_URL:-http://localhost/v1/chat/completions}"
+API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a story telling assistant. Tell engaging stories in response to user prompts.}"
 USER_PROMPT="${USER_PROMPT:-Tell me a story about a brave knight and a dragon.}"
 

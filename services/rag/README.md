@@ -29,10 +29,10 @@ Call local vLLM → return OpenAI-compatible response
 
 Via Traefik, the service is mounted under `/rag`, for example:
 
-- `http://localhost/rag/health`
-- `http://localhost/rag/v1/models`
-- `http://localhost/rag/v1/chat/completions`
-- `http://localhost/rag/v1/embeddings`
+- `https://localhost/rag/health`
+- `https://localhost/rag/v1/models`
+- `https://localhost/rag/v1/chat/completions`
+- `https://localhost/rag/v1/embeddings`
 
 ## Request format (chat)
 
@@ -66,7 +66,7 @@ from qdrant_client.models import PointStruct, VectorParams, Distance
 import httpx
 
 # Embed your chunks via the RAG API
-resp = httpx.post("http://localhost/rag/embed", json={"input": ["chunk text..."]})
+resp = httpx.post("https://localhost/rag/embed", json={"input": ["chunk text..."]})
 vector = resp.json()["data"][0]["embedding"]
 
 # Insert into Qdrant

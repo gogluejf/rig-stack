@@ -37,11 +37,13 @@ services:
     restart: unless-stopped
     ports:
       - "${TRAEFIK_PORT:-80}:80"
+      - "${TRAEFIK_TLS_PORT:-443}:443"
       - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./config/traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
       - ./config/traefik/dynamic.yaml:/etc/traefik/dynamic.yaml:ro
+      - ./config/traefik/certs:/etc/traefik/certs:ro
     networks:
       - rig-net
     logging: *default-logging

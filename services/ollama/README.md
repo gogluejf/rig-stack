@@ -16,7 +16,7 @@ Ollama is a multi-model server — any model can be called by name in the reques
 ## Access
 
 - Direct: `http://localhost:11434`
-- Via Traefik: `http://localhost/ollama`
+- Via Traefik: `https://localhost/ollama`
 
 ## Volumes
 

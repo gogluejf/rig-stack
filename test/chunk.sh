@@ -3,7 +3,7 @@
 # Run: ./test/chunk.sh [optional custom prompt]
 
 MODEL="${MODEL:-Kbenkhaled/Qwen3.5-27B-NVFP4}"
-API_URL="${API_URL:-http://localhost/v1/chat/completions}"
+API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a creative story telling assistant. Tell vivid, engaging stories with clear scenes and memorable details.}"
 USER_PROMPT="${USER_PROMPT:-Tell me a short story about flying snakes crossing a moonlit desert sky, with a surprising ending.}"
 

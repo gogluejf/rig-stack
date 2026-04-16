@@ -68,11 +68,10 @@ _ollama_start() {
 
     rig_compose --profile ollama up -d
 
-    # Wait for Ollama to be ready
-    local port="${OLLAMA_PORT:-11434}"
+    # Wait for Ollama to be ready (via Traefik — Ollama has no host port binding)
     local attempts=0
     echo -e "  Waiting for Ollama..."
-    until curl -sf "http://localhost:${port}" > /dev/null 2>&1; do
+    until curl -sf "$(_avail_proxy_base)/ollama" > /dev/null 2>&1; do
         (( attempts++ ))
         if [[ ${attempts} -ge 30 ]]; then
             echo -e "${YELLOW}  Ollama not responding after 30s${RESET}"
@@ -82,7 +81,7 @@ _ollama_start() {
     done
 
     echo -e "${GREEN}✓  Ollama running${RESET}"
-    echo -e "  Endpoint : http://localhost:${TRAEFIK_PORT:-80}/ollama"
+    echo -e "  Endpoint : $(_avail_proxy_base)/ollama"
 }
 
 _ollama_stop() {

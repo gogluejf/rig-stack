@@ -35,7 +35,7 @@ rig comfy start         # default: GPU stable
 # rig comfy start --edge # Blackwell / nightly
 
 # 4. Open the UI, load your workflow JSON
-# http://localhost/comfy
+# https://localhost/comfy
 ```
 
 ## Saving workflow JSON files

@@ -8,6 +8,7 @@
 # Generated at runtime — not committed
 config/models-registry.tsv
 .preset.active.*
+config/traefik/certs/
 
 # OS
 .DS_Store

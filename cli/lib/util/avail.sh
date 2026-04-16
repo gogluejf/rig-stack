@@ -97,7 +97,7 @@ _container_runtime() {
 
 # _avail_proxy_base — returns the shared Traefik gateway base URL.
 _avail_proxy_base() {
-    echo "http://localhost:${TRAEFIK_PORT:-80}"
+    echo "https://localhost:${TRAEFIK_TLS_PORT:-443}"
 }
 
 # _endpoint <service> — returns canonical OpenAI-compatible base path for a service.

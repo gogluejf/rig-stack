@@ -24,8 +24,7 @@ cmd_rag() {
             echo -e "${CYAN}Starting RAG API and Qdrant...${RESET}"
             rig_compose --profile rag up -d
             echo -e "${GREEN}✓  RAG stack running${RESET}"
-            echo -e "  API      : http://localhost:${TRAEFIK_PORT:-80}/rag/health"
-            echo -e "  Qdrant   : http://localhost:${QDRANT_PORT:-6333}/dashboard"
+            echo -e "  API      : $(_avail_proxy_base)/rag/v1"
             ;;
         stop)
             require_docker
@@ -34,7 +33,7 @@ cmd_rag() {
             echo -e "${GREEN}✓  RAG stopped.${RESET}"
             ;;
         status)
-            local url="http://localhost:${RAG_PORT:-8001}/health"
+            local url="$(_avail_proxy_base)/rag/health"
             if curl -sf "${url}" &>/dev/null; then
                 echo -e "${GREEN}RAG API healthy${RESET}: ${url}"
             else

@@ -20,7 +20,7 @@ How it is called from bash (benchmark.sh → _benchmark_run):
       --test-filter   <test_name>|"" \\
       --log-mode      on|off \\
       --vllm-preset   "<flat preset command or empty>" \\
-      --traefik-base  http://localhost:80 \\
+      --traefik-base  https://localhost:443 \\
       --rig-root      <path>
 
   python3 <rig_root>/test/benchmarker/cli.py tests \\
@@ -271,7 +271,7 @@ def _parse_args() -> argparse.Namespace:
     run_p.add_argument("--test-filter", default="",    help="exact test name to run (empty = all)")
     run_p.add_argument("--log-mode",    default="on",  choices=["on", "off"])
     run_p.add_argument("--vllm-preset", default="",    help="flattened vLLM preset command (display only)")
-    run_p.add_argument("--traefik-base", default="http://localhost:80",
+    run_p.add_argument("--traefik-base", default="https://localhost:443",
         help="Traefik gateway base URL")
     run_p.add_argument("--rig-root",    default="",    help="rig-stack repository root")
 

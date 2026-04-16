@@ -56,9 +56,7 @@ _status_help() {
     echo ""
 }
 
-_status_proxy_base() {
-    _avail_proxy_base
-}
+
 
 _status_icon() {
     if [[ "$1" == "running" ]]; then
@@ -512,7 +510,7 @@ _status_summary() {
     hr 105
     printf "  %b %b %b %b %b %b\n" \
         "$(_status_field 12 "traefik")" \
-        "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_PORT:-80}")")" \
+        "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "$(_avail_proxy_base)")")" \
         "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "/")")" \
         "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "${traefik_memory:--}")")" \
         "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
@@ -608,8 +606,8 @@ _status_detail_vllm() {
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "${container}")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "$(_service_runtime "vllm")")"
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
-    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/v1")"
-    _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/openai")"
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/v1")"
+    _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/openai")"
     _status_metadata_line "metrics" "$(_status_value_if_running "${state}" "http://localhost:${VLLM_PORT:-8000}/metrics")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
@@ -695,7 +693,7 @@ _status_detail_ollama() {
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
     _status_metadata_line "container" "rig-ollama"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "${runtime}")"
-    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/ollama/v1")"
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/ollama/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "warming" "$(_status_value_if_running "${state}" "[x] = loaded via 'ollama ps'")"
     if [[ "${runtime}" == "GPU" ]]; then
@@ -756,7 +754,7 @@ _status_detail_comfy() {
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "${container}")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "${runtime}")"
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
-    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/comfy")"
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/comfy")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metadata_line "models" "$(_status_value_if_running "${state}" "best-effort file inventory from container")"
     if [[ "${runtime}" == "GPU" ]]; then
@@ -804,7 +802,7 @@ _status_detail_rag() {
     _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "rig-rag-api")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "$(_service_runtime "rag")")"
-    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_status_proxy_base)/rag/v1")"
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/rag/v1")"
     _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
     _status_metric_line "cpu temp" "$(_status_value_if_running "${state}" "${cpu_temp}")"
     _status_metric_line "cpu util" "$(_status_value_if_running "${state}" "${cpu_util}")"

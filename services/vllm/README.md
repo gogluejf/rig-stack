@@ -32,7 +32,7 @@ vLLM inference server — OpenAI-compatible API for LLM serving.
 | `POST /v1/completions` | OpenAI-compatible completions |
 | `GET /metrics` | Prometheus metrics (tokens/sec, VRAM cache usage) |
 
-Via Traefik: `http://localhost/v1/...`
+Via Traefik: `https://localhost/v1/...`
 
 ## Presets
 

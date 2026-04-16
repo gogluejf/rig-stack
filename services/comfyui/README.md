@@ -28,7 +28,7 @@ ComfyUI — node-based image generation. Supports FLUX, ControlNet, GFPGAN, Face
 ## Access
 
 - Direct: `http://localhost:8188`
-- Via Traefik: `http://localhost/comfy`
+- Via Traefik: `https://localhost/comfy`
 
 ## Volumes
 

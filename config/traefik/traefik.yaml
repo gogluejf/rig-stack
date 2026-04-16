@@ -8,6 +8,10 @@ api:
 entryPoints:
   web:
     address: ":80"
+  websecure:
+    address: ":443"
+    http:
+      tls: {}
 
 providers:
   file:

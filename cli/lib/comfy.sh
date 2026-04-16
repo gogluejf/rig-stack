@@ -109,7 +109,7 @@ _comfy_start() {
     echo -e "${CYAN}Starting ${profile}...${RESET}"
     rig_compose --profile "${profile}" up -d
     echo -e "${GREEN}✓  ComfyUI running${RESET}"
-    echo -e "  Endpoint : http://localhost:${TRAEFIK_PORT:-80}/comfy"
+    echo -e "  Endpoint : $(_avail_proxy_base)/comfy"
     echo -e "  Runtime  : ${runtime_label}"
     echo -e "  Build    : ${build_label}"
     echo -e "  Container: rig-${profile}"

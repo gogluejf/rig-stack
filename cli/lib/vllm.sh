@@ -172,7 +172,7 @@ _serve_start() {
     rig_compose --profile "${profile}" up -d
 
     echo -e "${GREEN}✓  vLLM running${RESET}"
-    echo -e "  Endpoint : http://localhost:${TRAEFIK_PORT:-80}/v1"
+    echo -e "  Endpoint : $(_avail_proxy_base)/v1"
     echo -e "  Metrics  : http://localhost:${VLLM_PORT:-8000}/metrics"
     echo -e "  Preset   : ${preset_name}"
     echo -e "  Runtime  : GPU"

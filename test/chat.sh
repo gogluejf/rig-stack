@@ -6,7 +6,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODEL="${MODEL:-Kbenkhaled/Qwen3.5-27B-NVFP4}"
-API_URL="${API_URL:-http://localhost/v1/chat/completions}"
+API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 ENABLE_THINKING=false
 PRINT_THINKING=false
 RENDER_ESCAPED_NEWLINES="${RENDER_ESCAPED_NEWLINES:-true}"
