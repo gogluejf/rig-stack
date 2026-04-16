@@ -223,6 +223,12 @@ ssh -L 8443:localhost:443 user@<server-ip>
 curl https://localhost:8443/v1/models
 ```
 
+For VS Code extensions (Roo Code, Copilot, etc.) add to `~/.bashrc` and restart VS Code:
+
+```bash
+export NODE_EXTRA_CA_CERTS="$HOME/.local/share/mkcert/rootCA.pem"
+```
+
 **Alternatively — bring your own certificate**
 
 If you plan to access the stack from many machines or expose it externally, replace the mkcert cert with a properly signed one (Let's Encrypt, commercial CA, etc.):
