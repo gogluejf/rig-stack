@@ -208,18 +208,21 @@ curl http://localhost:8080/v1/models
 Full end-to-end TLS. Requires trusting the mkcert CA on the remote machine once.
 
 ```bash
-# 1. Copy the CA from the server (one-time)
+# 1. Create the destination directory (if it doesn't exist)
+mkdir -p ~/.local/share/mkcert
+
+# 2. Copy the CA from the server (one-time)
 scp user@<server-ip>:~/.local/share/mkcert/rootCA.pem ~/.local/share/mkcert/rootCA.pem
 scp user@<server-ip>:~/.local/share/mkcert/rootCA-key.pem ~/.local/share/mkcert/rootCA-key.pem
 
-# 2. Install it (handles browser + system store)
+# 3. Install it (handles browser + system store)
 sudo apt install -y mkcert libnss3-tools
 mkcert -install
 
-# 3. Open an SSH tunnel
+# 4. Open an SSH tunnel
 ssh -L 8443:localhost:443 user@<server-ip>
 
-# 4. Access via the tunnel
+# 5. Access via the tunnel
 curl https://localhost:8443/v1/models
 ```
 
