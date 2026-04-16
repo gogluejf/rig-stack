@@ -275,7 +275,8 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 ---
 
 ## Future features
-
+- **Add api key auth for external access** — optional API key authentication for external access, with no auth overhead for localhost requests
+- **Support llmam.cpp** — extends support for quantized format not avail on vLLM.
 - **Comfy Workflows** — manage workflows, download models via `rig comfy workflow`
 - **Agent Gateway** — Transforms RAG endpoint into a server-side agent orchestrator (web search, Python sandbox, dynamic DB, RAG memory). Current RAG is a conceptual POC.
 - **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
