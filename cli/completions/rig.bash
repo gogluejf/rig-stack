@@ -62,15 +62,7 @@ _rig_completions() {
         presets="$(_rig_presets vllm 2>/dev/null)"
 
         if [[ "${cword}" -eq 2 ]]; then
-            # Mark the active preset with a * suffix in the list
-            local active
-            active="$(_rig_active_preset vllm 2>/dev/null)"
-            local marked=""
-            local p
-            for p in ${presets}; do
-                [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
-            done
-            COMPREPLY=($(compgen -W "${marked} start stop preset --edge --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${presets} start stop preset --edge --help" -- "${cur}"))
             return
         fi
 
@@ -86,14 +78,7 @@ _rig_completions() {
             start)
                 # Explicit start — offer presets at cword=3, then --edge
                 if [[ "${cword}" -eq 3 ]]; then
-                    local active
-                    active="$(_rig_active_preset vllm 2>/dev/null)"
-                    local marked=""
-                    local p
-                    for p in ${presets}; do
-                        [[ "${p}" == "${active}" ]] && marked+="${p}* " || marked+="${p} "
-                    done
-                    COMPREPLY=($(compgen -W "${marked} --edge" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "${presets} --edge" -- "${cur}"))
                 else
                     _rig_contains "--edge" "${words[@]}" || \
                         COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
