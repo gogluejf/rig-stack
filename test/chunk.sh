@@ -33,10 +33,6 @@ curl -sN "${API_URL}" \
       }
     ]
   }' | while IFS= read -r line; do
-    [[ "${line}" == data:* ]] || continue
-
-    payload="${line#data: }"
-
-    # Print ALL raw chunks, including [DONE]
-    printf '%s\n' "${payload}"
+    # Print ALL raw SSE lines (no filtering)
+    printf '%s\n' "${line}"
   done
