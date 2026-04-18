@@ -270,6 +270,47 @@ _status_container_pids() {
     '
 }
 
+declare -gA _RAM_STATS=()
+declare -gA _CPU_STATS=()
+
+_status_prefetch_container_stats() {
+    # Single docker stats call for all running containers; results cached in _RAM_STATS and _CPU_STATS.
+    local line name cpu mem_used
+    while IFS= read -r line; do
+        # Format: "container_name 111.20% 3.3 GiB / 32 GiB"
+        name="${line%% *}"
+        local rest="${line#* }"
+        cpu="${rest%% *}"
+        rest="${rest#* }"
+        mem_used="${rest%% / *}"
+        
+        [[ -n "${name}" && -n "${mem_used}" ]] && _RAM_STATS["${name}"]="${mem_used}"
+        [[ -n "${name}" && -n "${cpu}" ]] && _CPU_STATS["${name}"]="${cpu}"
+    done < <(docker stats --no-stream --format '{{.Name}} {{.CPUPerc}} {{.MemUsage}}' 2>/dev/null)
+}
+
+
+_status_container_dram_usage() {
+    # Refresh stats if already populated; -gt 0 is intentional (subshells can't write back to parent)
+    local container="$1"
+    if [[ ${#_RAM_STATS[@]} -gt 0 ]]; then
+        _status_prefetch_container_stats
+    fi
+    local raw="${_RAM_STATS[$container]:-}"
+    [[ -n "${raw}" ]] && fmt_mem_str "${raw}" || true
+}
+
+_status_container_cpu_usage() {
+    # Refresh stats if already populated; -gt 0 is intentional (subshells can't write back to parent)
+    local container="$1"
+    if [[ ${#_CPU_STATS[@]} -gt 0 ]]; then
+        _status_prefetch_container_stats
+    fi
+    local cpu="${_CPU_STATS[$container]:-}"
+    [[ -n "${cpu}" ]] && printf '%s%%' "${cpu}" || printf '%s' "-"
+}
+
+
 _status_container_vram_usage() {
     command -v nvidia-smi >/dev/null 2>&1 || return 1
 
@@ -294,26 +335,6 @@ _status_container_vram_usage() {
 
     [[ -n "${total}" && "${total}" != "0" ]] || return 1
     fmt_mem "${total}"
-}
-
-declare -gA _RAM_STATS=()
-
-_status_prefetch_ram_stats() {
-    # Single docker stats call for all running containers; results cached in _RAM_STATS.
-    local line name raw
-    while IFS= read -r line; do
-        name="${line%% *}"
-        raw="${line#* }"
-        raw="${raw%% / *}"  # take only the "used" side before " / "
-        [[ -n "${name}" && -n "${raw}" ]] && _RAM_STATS["${name}"]="${raw}"
-    done < <(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null)
-}
-
-
-_status_container_dram_usage() {
-    # Use prefetched stats from _status_prefetch_ram_stats (single docker stats call for all containers)
-    local raw="${_RAM_STATS[$1]:-}"
-    [[ -n "${raw}" ]] && fmt_mem_str "${raw}" || true
 }
 
 _status_memory_for() {
@@ -412,8 +433,6 @@ _status_summary() {
     local postgres_vram="-" postgres_dram="-"
     local hf_vram="-" hf_dram="-"
     local comfy_tools_vram="-" comfy_tools_dram="-"
-
-    _status_prefetch_ram_stats
 
     vllm_container="$(_status_vllm_container 2>/dev/null || true)"
     comfy_container="$(_status_comfy_container 2>/dev/null || true)"
@@ -938,3 +957,4 @@ _status_detail_rag() {
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 }
+

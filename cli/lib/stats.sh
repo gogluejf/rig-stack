@@ -110,32 +110,22 @@ cmd_stats() {
         echo -e "  ${DIM}No rig-stack containers running.${RESET}"
         hr 108
     else
-        local stats
-        stats=$(docker stats --no-stream --format "{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" \
-            $(docker ps --filter "name=rig-" --format "{{.Names}}" 2>/dev/null) 2>/dev/null || echo "")
-
         printf "  ${BOLD}%-20s %-26s %-8s %-12s %-12s %s${RESET}\n" "CONTAINER" "STATUS" "CPU" "DRAM" "VRAM" "IMAGE"
         hr 108
         while IFS=$'\t' read -r name status image; do
-            local cpu="-" vram="-" dram="-"
-            if [[ -n "${stats}" ]]; then
-                local sline
-                sline=$(grep "^${name}"$'\t' <<< "${stats}" || true)
-                if [[ -n "${sline}" ]]; then
-                    cpu=$(cut -f2 <<< "${sline}")
-                fi
-            fi
-            # Use _status_memory_for to get both VRAM and DRAM
+            # Use lazy-loaded CPU usage function
+            local cpu
+            cpu="$(_status_container_cpu_usage "${name}" 2>/dev/null || echo "-")"
+            
+            # Use _status_memory_for to get both VRAM and DRAM (also uses lazy loading)
             local mem_info
             mem_info="$(_status_memory_for "${name}" "GPU" 2>/dev/null || true)"
+            local vram="-" dram="-"
             if [[ -n "${mem_info}" ]]; then
                 vram=$(grep '^vram=' <<< "${mem_info}" | cut -d= -f2)
                 dram=$(grep '^dram=' <<< "${mem_info}" | cut -d= -f2)
                 [[ -z "${vram}" ]] && vram="-"
                 [[ -z "${dram}" ]] && dram="-"
-            else
-                vram="-"
-                dram="-"
             fi
             printf "  %-20s %-26s %-8s %-12s %-12s %s\n" "${name}" "${status}" "${cpu}" "${dram}" "${vram}" "${image}"
         done <<< "${containers}"
