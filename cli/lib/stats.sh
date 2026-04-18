@@ -117,18 +117,27 @@ cmd_stats() {
         printf "  ${BOLD}%-20s %-26s %-8s %-12s %-12s %s${RESET}\n" "CONTAINER" "STATUS" "CPU" "DRAM" "VRAM" "IMAGE"
         hr 108
         while IFS=$'\t' read -r name status image; do
-            local cpu="-" ram="-" vram="-"
+            local cpu="-" vram="-" dram="-"
             if [[ -n "${stats}" ]]; then
                 local sline
                 sline=$(grep "^${name}"$'\t' <<< "${stats}" || true)
                 if [[ -n "${sline}" ]]; then
                     cpu=$(cut -f2 <<< "${sline}")
-                    ram=$(fmt_mem_str "$(cut -f3 <<< "${sline}" | awk -F' / ' '{print $1}')")
                 fi
             fi
-            vram="$(_status_container_vram_usage "${name}" 2>/dev/null || echo "-")"
-            [[ -z "${vram}" ]] && vram="-"
-            printf "  %-20s %-26s %-8s %-12s %-12s %s\n" "${name}" "${status}" "${cpu}" "${ram}" "${vram}" "${image}"
+            # Use _status_memory_for to get both VRAM and DRAM
+            local mem_info
+            mem_info="$(_status_memory_for "${name}" "GPU" 2>/dev/null || true)"
+            if [[ -n "${mem_info}" ]]; then
+                vram=$(grep '^vram=' <<< "${mem_info}" | cut -d= -f2)
+                dram=$(grep '^dram=' <<< "${mem_info}" | cut -d= -f2)
+                [[ -z "${vram}" ]] && vram="-"
+                [[ -z "${dram}" ]] && dram="-"
+            else
+                vram="-"
+                dram="-"
+            fi
+            printf "  %-20s %-26s %-8s %-12s %-12s %s\n" "${name}" "${status}" "${cpu}" "${dram}" "${vram}" "${image}"
         done <<< "${containers}"
     fi
 

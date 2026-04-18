@@ -270,20 +270,6 @@ _status_container_pids() {
     '
 }
 
-declare -gA _RAM_STATS=()
-
-_status_prefetch_ram_stats() {
-    # Single docker stats call for all running containers; results cached in _RAM_STATS.
-    local line name raw
-    while IFS= read -r line; do
-        name="${line%% *}"
-        raw="${line#* }"
-        raw="${raw%% / *}"  # take only the "used" side before " / "
-        [[ -n "${name}" && -n "${raw}" ]] && _RAM_STATS["${name}"]="${raw}"
-    done < <(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null)
-}
-
-
 _status_container_vram_usage() {
     command -v nvidia-smi >/dev/null 2>&1 || return 1
 
@@ -310,13 +296,23 @@ _status_container_vram_usage() {
     fmt_mem "${total}"
 }
 
+declare -gA _RAM_STATS=()
+
+_status_prefetch_ram_stats() {
+    # Single docker stats call for all running containers; results cached in _RAM_STATS.
+    local line name raw
+    while IFS= read -r line; do
+        name="${line%% *}"
+        raw="${line#* }"
+        raw="${raw%% / *}"  # take only the "used" side before " / "
+        [[ -n "${name}" && -n "${raw}" ]] && _RAM_STATS["${name}"]="${raw}"
+    done < <(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null)
+}
+
+
 _status_container_dram_usage() {
-    local raw
-    if [[ ${#_RAM_STATS[@]} -gt 0 ]]; then
-        raw="${_RAM_STATS[$1]:-}"
-    else
-        raw=$(docker stats --no-stream --format '{{.MemUsage}}' "$1" 2>/dev/null | awk -F' / ' 'NR==1 {print $1}')
-    fi
+    # Use prefetched stats from _status_prefetch_ram_stats (single docker stats call for all containers)
+    local raw="${_RAM_STATS[$1]:-}"
     [[ -n "${raw}" ]] && fmt_mem_str "${raw}" || true
 }
 
