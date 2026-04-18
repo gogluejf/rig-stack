@@ -270,7 +270,21 @@ _status_container_pids() {
     '
 }
 
-_status_container_gpu_mem_usage() {
+declare -gA _RAM_STATS=()
+
+_status_prefetch_ram_stats() {
+    # Single docker stats call for all running containers; results cached in _RAM_STATS.
+    local line name raw
+    while IFS= read -r line; do
+        name="${line%% *}"
+        raw="${line#* }"
+        raw="${raw%% / *}"  # take only the "used" side before " / "
+        [[ -n "${name}" && -n "${raw}" ]] && _RAM_STATS["${name}"]="${raw}"
+    done < <(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null)
+}
+
+
+_status_container_vram_usage() {
     command -v nvidia-smi >/dev/null 2>&1 || return 1
 
     local pid_csv total
@@ -296,20 +310,7 @@ _status_container_gpu_mem_usage() {
     fmt_mem "${total}"
 }
 
-declare -gA _RAM_STATS=()
-
-_status_prefetch_ram_stats() {
-    # Single docker stats call for all running containers; results cached in _RAM_STATS.
-    local line name raw
-    while IFS= read -r line; do
-        name="${line%% *}"
-        raw="${line#* }"
-        raw="${raw%% / *}"  # take only the "used" side before " / "
-        [[ -n "${name}" && -n "${raw}" ]] && _RAM_STATS["${name}"]="${raw}"
-    done < <(docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' 2>/dev/null)
-}
-
-_status_container_ram_usage() {
+_status_container_dram_usage() {
     local raw
     if [[ ${#_RAM_STATS[@]} -gt 0 ]]; then
         raw="${_RAM_STATS[$1]:-}"
@@ -325,11 +326,17 @@ _status_memory_for() {
     [[ -n "${container}" ]] || { echo "-"; return 0; }
     container_running "${container}" || { echo "-"; return 0; }
 
-    if [[ "${runtime}" == "GPU" ]]; then
-        _status_container_gpu_mem_usage "${container}" 2>/dev/null || echo "-"
-    else
-        _status_container_ram_usage "${container}" || echo "-"
-    fi
+    local vram="-" dram="-"
+    
+    # Always try to get VRAM if nvidia-smi is available
+    vram="$(_status_container_vram_usage "${container}" 2>/dev/null || echo "-")"
+    
+    # Always get DRAM (RAM) usage
+    dram="$(_status_container_dram_usage "${container}" 2>/dev/null || echo "-")"
+    
+    # Return both values as key=value pairs
+    echo "vram=${vram}"
+    echo "dram=${dram}"
 }
 
 _status_mark_active_models() {
@@ -396,9 +403,19 @@ _status_plain_state() {
 _status_summary() {
     local vllm_container comfy_container
     local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state comfy_tools_state
-    local vllm_model="" ollama_model="" vllm_memory="" comfy_memory="" ollama_memory="" rag_memory=""
-    local traefik_memory="" qdrant_memory="" langfuse_memory="" postgres_memory="" hf_memory="" comfy_tools_memory=""
+    local vllm_model="" ollama_model=""
     local gpu_util="-" gpu_temp="-" cpu_util="-" cpu_temp="-"
+    # Memory variables now hold key=value pairs
+    local vllm_vram="-" vllm_dram="-"
+    local comfy_vram="-" comfy_dram="-"
+    local ollama_vram="-" ollama_dram="-"
+    local rag_vram="-" rag_dram="-"
+    local traefik_vram="-" traefik_dram="-"
+    local qdrant_vram="-" qdrant_dram="-"
+    local langfuse_vram="-" langfuse_dram="-"
+    local postgres_vram="-" postgres_dram="-"
+    local hf_vram="-" hf_dram="-"
+    local comfy_tools_vram="-" comfy_tools_dram="-"
 
     _status_prefetch_ram_stats
 
@@ -426,16 +443,85 @@ _status_summary() {
     fi
     [[ -n "${ollama_model}" ]] || ollama_model="-"
 
-    vllm_memory="$(_status_memory_for "${vllm_container}" "$(_service_runtime "vllm")")"
-    comfy_memory="$(_status_memory_for "${comfy_container}" "$(_status_comfy_runtime)")"
-    ollama_memory="$(_status_memory_for "rig-ollama" "$(_status_ollama_runtime)")"
-    rag_memory="$(_status_memory_for "rig-rag-api" "$(_service_runtime "rag")")"
-    traefik_memory="$(_status_memory_for "rig-traefik" "CPU")"
-    qdrant_memory="$(_status_memory_for "rig-qdrant" "CPU")"
-    langfuse_memory="$(_status_memory_for "rig-langfuse" "CPU")"
-    postgres_memory="$(_status_memory_for "rig-postgres" "CPU")"
-    hf_memory="$(_status_memory_for "rig-hf" "CPU")"
-    comfy_tools_memory="$(_status_memory_for "rig-comfy-tools" "CPU")"
+    # Parse vllm memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) vllm_vram="${val}" ;;
+            dram) vllm_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "${vllm_container}" "$(_service_runtime "vllm")")
+
+    # Parse comfy memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) comfy_vram="${val}" ;;
+            dram) comfy_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "${comfy_container}" "$(_status_comfy_runtime)")
+
+    # Parse ollama memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) ollama_vram="${val}" ;;
+            dram) ollama_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-ollama" "$(_status_ollama_runtime)")
+
+    # Parse rag memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) rag_vram="${val}" ;;
+            dram) rag_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-rag-api" "$(_service_runtime "rag")")
+
+    # Parse traefik memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) traefik_vram="${val}" ;;
+            dram) traefik_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-traefik" "CPU")
+
+    # Parse qdrant memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) qdrant_vram="${val}" ;;
+            dram) qdrant_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-qdrant" "CPU")
+
+    # Parse langfuse memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) langfuse_vram="${val}" ;;
+            dram) langfuse_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-langfuse" "CPU")
+
+    # Parse postgres memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) postgres_vram="${val}" ;;
+            dram) postgres_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-postgres" "CPU")
+
+    # Parse hf memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) hf_vram="${val}" ;;
+            dram) hf_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-hf" "CPU")
+
+    # Parse comfy-tools memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) comfy_tools_vram="${val}" ;;
+            dram) comfy_tools_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-comfy-tools" "CPU")
 
     while IFS='=' read -r key val; do
         case "${key}" in
@@ -468,87 +554,98 @@ _status_summary() {
 
     print_header "Primary services"
     echo ""
-    printf "  ${BOLD}%-12s %-24s %-8s %-8s %-16s %-12s %s${RESET}\n" "SERVICE" "ACTIVE MODEL" "RUNTIME" "BUILD" "ROUTE" "MEMORY" "STATUS"
-    hr 105
-    printf "  %b %b %b %b %b %b %b %b\n" \
+    printf "  ${BOLD}%-12s %-24s %-8s %-8s %-16s %-12s %-12s %s${RESET}\n" "SERVICE" "ACTIVE MODEL" "RUNTIME" "BUILD" "ROUTE" "VRAM" "DRAM" "STATUS"
+    hr 117
+    printf "  %b %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "vllm")" \
         "$(_status_field 24 "$(_status_value_if_running "${vllm_state}" "${vllm_model}")")" \
         "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "$(_service_runtime "vllm")")")" \
         "$(_status_field 8  "$(_status_value_if_running "${vllm_state}" "$(_status_vllm_build)")")" \
         "$(_status_field 16 "$(_status_value_if_running "${vllm_state}" "$(_endpoint "vllm")")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${vllm_state}" "${vllm_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${vllm_state}" "${vllm_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${vllm_state}" "${vllm_dram}")")" \
         "$(_status_icon "${vllm_state}")" "$(_status_label "${vllm_state}")"
-    printf "  %b %b %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "ollama")" \
         "$(_status_field 24 "$(_status_value_if_running "${ollama_state}" "${ollama_model}")")" \
         "$(_status_field 8  "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")")" \
         "$(_status_field 8  "-")" \
         "$(_status_field 16 "$(_status_value_if_running "${ollama_state}" "$(_endpoint "ollama")")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${ollama_state}" "${ollama_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${ollama_state}" "${ollama_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${ollama_state}" "${ollama_dram}")")" \
         "$(_status_icon "${ollama_state}")" "$(_status_label "${ollama_state}")"
-    printf "  %b %b %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "comfyui")" \
         "$(_status_field 24 "-")" \
         "$(_status_field 8  "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_runtime)")")" \
         "$(_status_field 8  "$(_status_value_if_running "${comfy_state}" "$(_status_comfy_build)")")" \
         "$(_status_field 16 "$(_status_value_if_running "${comfy_state}" "$(_endpoint "comfyui")")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${comfy_state}" "${comfy_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${comfy_state}" "${comfy_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${comfy_state}" "${comfy_dram}")")" \
         "$(_status_icon "${comfy_state}")" "$(_status_label "${comfy_state}")"
-    printf "  %b %b %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "rag")" \
         "$(_status_field 24 "-")" \
         "$(_status_field 8  "$(_status_value_if_running "${rag_state}" "$(_service_runtime "rag")")")" \
         "$(_status_field 8  "-")" \
         "$(_status_field 16 "$(_status_value_if_running "${rag_state}" "$(_endpoint "rag")")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${rag_state}" "${rag_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${rag_state}" "${rag_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${rag_state}" "${rag_dram}")")" \
         "$(_status_icon "${rag_state}")" "$(_status_label "${rag_state}")"
     echo ""
 
     print_header "Backing services"
     echo ""
-    printf "  ${BOLD}%-12s %-30s %-12s %-12s %s${RESET}\n" "SERVICE" "ADDRESS" "ROUTE" "MEMORY" "STATUS"
-    hr 105
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  ${BOLD}%-12s %-30s %-12s %-12s %-12s %s${RESET}\n" "SERVICE" "ADDRESS" "ROUTE" "VRAM" "DRAM" "STATUS"
+    hr 117
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "traefik")" \
         "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "$(_avail_proxy_base)")")" \
         "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "/")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "${traefik_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "${traefik_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${traefik_state}" "${traefik_dram}")")" \
         "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "dashboard")" \
         "$(_status_field 30 "$(_status_value_if_running "${traefik_state}" "http://localhost:${TRAEFIK_DASHBOARD_PORT:-8080}")")" \
         "$(_status_field 12 "-")" \
         "$(_status_field 12 "-")" \
+        "$(_status_field 12 "-")" \
         "$(_status_icon "${traefik_state}")" "$(_status_label "${traefik_state}")"
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "qdrant")" \
         "$(_status_field 30 "$(_status_value_if_running "${qdrant_state}" "http://rig-qdrant:6333")")" \
         "$(_status_field 12 "-")" \
-        "$(_status_field 12 "$(_status_value_if_running "${qdrant_state}" "${qdrant_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${qdrant_state}" "${qdrant_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${qdrant_state}" "${qdrant_dram}")")" \
         "$(_status_icon "${qdrant_state}")" "$(_status_label "${qdrant_state}")"
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "langfuse")" \
         "$(_status_field 30 "$(_status_value_if_running "${langfuse_state}" "http://rig-langfuse:3000")")" \
         "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "/langfuse")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "${langfuse_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "${langfuse_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${langfuse_state}" "${langfuse_dram}")")" \
         "$(_status_icon "${langfuse_state}")" "$(_status_label "${langfuse_state}")"
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "postgres")" \
         "$(_status_field 30 "$(_status_value_if_running "${postgres_state}" "postgres://rig-postgres:5432")")" \
         "$(_status_field 12 "-")" \
-        "$(_status_field 12 "$(_status_value_if_running "${postgres_state}" "${postgres_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${postgres_state}" "${postgres_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${postgres_state}" "${postgres_dram}")")" \
         "$(_status_icon "${postgres_state}")" "$(_status_label "${postgres_state}")"
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "hf")" \
         "$(_status_field 30 "-")" \
         "$(_status_field 12 "-")" \
-        "$(_status_field 12 "$(_status_value_if_running "${hf_state}" "${hf_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${hf_state}" "${hf_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${hf_state}" "${hf_dram}")")" \
         "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
-    printf "  %b %b %b %b %b %b\n" \
+    printf "  %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "comfy-tools")" \
         "$(_status_field 30 "-")" \
         "$(_status_field 12 "-")" \
-        "$(_status_field 12 "$(_status_value_if_running "${comfy_tools_state}" "${comfy_tools_memory:--}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${comfy_tools_state}" "${comfy_tools_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${comfy_tools_state}" "${comfy_tools_dram}")")" \
         "$(_status_icon "${comfy_tools_state}")" "$(_status_label "${comfy_tools_state}")"
 
     echo ""
@@ -557,8 +654,9 @@ _status_summary() {
 }
 
 _status_detail_vllm() {
-    local container="" state="" model="" memory="" build=""
+    local container="" state="" model="" build=""
     local gpu_util="-" gpu_temp="-"
+    local vram="-" dram="-"
     local models endpoints aux
 
     container="$(_status_vllm_container 2>/dev/null || true)"
@@ -567,7 +665,13 @@ _status_detail_vllm() {
     if [[ "${state}" == "running" ]]; then
         model="$(_status_primary_model_for "vllm")"
     fi
-    memory="$(_status_memory_for "${container}" "$(_service_runtime "vllm")")"
+    # Parse memory output for VRAM and DRAM
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) vram="${val}" ;;
+            dram) dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "${container}" "$(_service_runtime "vllm")")
     if [[ "${state}" == "running" ]]; then
         models="$(_model_avail "vllm")"
         endpoints=$'GET  /v1/models\nPOST /v1/chat/completions\nPOST /v1/completions\nPOST /v1/embeddings'
@@ -609,7 +713,8 @@ _status_detail_vllm() {
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/v1")"
     _status_metadata_line "alt route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/openai")"
     _status_metadata_line "metrics" "$(_status_value_if_running "${state}" "http://localhost:${VLLM_PORT:-8000}/metrics")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
+    _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
     _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
     _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
@@ -654,12 +759,19 @@ _status_detail_vllm() {
 }
 
 _status_detail_ollama() {
-    local state="" runtime="" memory="" models="" endpoints="" aux=""
+    local state="" runtime="" models="" endpoints="" aux=""
     local cpu_util="-" cpu_temp="-" gpu_util="-" gpu_temp="-"
+    local vram="-" dram="-"
 
     state="$(_status_state "rig-ollama")"
     runtime="$(_status_ollama_runtime)"
-    memory="$(_status_memory_for "rig-ollama" "${runtime}")"
+    # Parse memory output for VRAM and DRAM
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) vram="${val}" ;;
+            dram) dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-ollama" "${runtime}")
     if [[ "${state}" == "running" ]]; then
         models="$(_status_mark_active_models "ollama")"
         endpoints=$'GET  /ollama/v1/models\nPOST /ollama/v1/chat/completions\nPOST /ollama/v1/completions\nPOST /ollama/v1/embeddings'
@@ -694,7 +806,8 @@ _status_detail_ollama() {
     _status_metadata_line "container" "rig-ollama"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "${runtime}")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/ollama/v1")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
+    _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
     _status_metadata_line "warming" "$(_status_value_if_running "${state}" "[x] = loaded via 'ollama ps'")"
     if [[ "${runtime}" == "GPU" ]]; then
         _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
@@ -712,14 +825,21 @@ _status_detail_ollama() {
 }
 
 _status_detail_comfy() {
-    local container="" state="" runtime="" build="" memory="" models="" endpoints="" aux=""
+    local container="" state="" runtime="" build="" models="" endpoints="" aux=""
     local cpu_util="-" cpu_temp="-" gpu_util="-" gpu_temp="-"
+    local vram="-" dram="-"
 
     container="$(_status_comfy_container 2>/dev/null || true)"
     state="$(_status_state "${container}")"
     runtime="$(_status_comfy_runtime)"
     build="$(_status_comfy_build)"
-    memory="$(_status_memory_for "${container}" "${runtime}")"
+    # Parse memory output for VRAM and DRAM
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) vram="${val}" ;;
+            dram) dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "${container}" "${runtime}")
     if [[ "${state}" == "running" ]]; then
         models="$(_model_avail "comfyui")"
         endpoints=$'GET  /comfy/\nPOST /comfy/prompt\nGET  /comfy/queue\nGET  /comfy/history/{id}'
@@ -755,7 +875,8 @@ _status_detail_comfy() {
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "${runtime}")"
     _status_metadata_line "build" "$(_status_value_if_running "${state}" "${build}")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/comfy")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
+    _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
     _status_metadata_line "models" "$(_status_value_if_running "${state}" "best-effort file inventory from container")"
     if [[ "${runtime}" == "GPU" ]]; then
         _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
@@ -773,11 +894,18 @@ _status_detail_comfy() {
 }
 
 _status_detail_rag() {
-    local state="" memory="" models="" endpoints="" aux=""
+    local state="" models="" endpoints="" aux=""
     local cpu_util="-" cpu_temp="-"
+    local vram="-" dram="-"
 
     state="$(_status_state "rig-rag-api")"
-    memory="$(_status_memory_for "rig-rag-api" "$(_service_runtime "rag")")"
+    # Parse memory output for VRAM and DRAM
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) vram="${val}" ;;
+            dram) dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "rig-rag-api" "$(_service_runtime "rag")")
     if [[ "${state}" == "running" ]]; then
         models="$(_model_avail "rag")"
         endpoints=$'GET  /rag/v1/models\nPOST /rag/v1/chat/completions\nPOST /rag/v1/embeddings'
@@ -803,7 +931,8 @@ _status_detail_rag() {
     _status_metadata_line "container" "$(_status_value_if_running "${state}" "rig-rag-api")"
     _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "$(_service_runtime "rag")")"
     _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/rag/v1")"
-    _status_metadata_line "memory" "$(_status_value_if_running "${state}" "${memory:--}")"
+    _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
+    _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
     _status_metric_line "cpu temp" "$(_status_value_if_running "${state}" "${cpu_temp}")"
     _status_metric_line "cpu util" "$(_status_value_if_running "${state}" "${cpu_util}")"
     echo ""

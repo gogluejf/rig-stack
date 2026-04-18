@@ -126,7 +126,7 @@ cmd_stats() {
                     ram=$(fmt_mem_str "$(cut -f3 <<< "${sline}" | awk -F' / ' '{print $1}')")
                 fi
             fi
-            vram="$(_status_container_gpu_mem_usage "${name}" 2>/dev/null || echo "-")"
+            vram="$(_status_container_vram_usage "${name}" 2>/dev/null || echo "-")"
             [[ -z "${vram}" ]] && vram="-"
             printf "  %-20s %-26s %-8s %-12s %-12s %s\n" "${name}" "${status}" "${cpu}" "${ram}" "${vram}" "${image}"
         done <<< "${containers}"
