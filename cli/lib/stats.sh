@@ -39,6 +39,9 @@ cmd_stats() {
         printf "  ${DIM}%-24s${RESET} %s%b\n" "VRAM" \
             "$(fmt_mem "${mem_used}")" \
             "${DIM} / $(fmt_mem "${mem_total}")  ($(fmt_mem "${mem_free}") free)${RESET}"
+        
+        # VRAM histogram bar - aligned with values column (column 26)
+        printf "  ${DIM}%-24s${RESET} %b\n" "" "$(_histogram_bar "${mem_used}" "${mem_total}" 40)"
     fi
 
     echo ""
@@ -84,7 +87,8 @@ cmd_stats() {
     printf "  ${DIM}%-24s${RESET} %s%b\n" "DRAM" \
         "$(fmt_mem "${mem_used}")" \
         "${DIM} / $(fmt_mem "${mem_total}")  ($(fmt_mem "${mem_free}") free)${RESET}"
-
+    
+    # DRAM type
     if command -v dmidecode &>/dev/null; then
         local dmi_out
         dmi_out=$(dmidecode -t memory 2>/dev/null || true)
@@ -98,11 +102,13 @@ cmd_stats() {
     else
         printf "  ${DIM}%-24s${RESET} ${DIM}(require sudo)${RESET}\n" "DRAM type"
     fi
+    
+    # DRAM histogram bar - aligned with values column (column 26)
+    printf "  ${DIM}%-24s${RESET} %b\n" "" "$(_histogram_bar "${mem_used}" "${mem_total}" 40)"
+
 
     echo ""
     print_header "Running containers"
-    echo ""
-
     local containers
     containers=$(docker ps --filter "name=rig-" --format "{{.Names}}\t{{.Status}}\t{{.Image}}" 2>/dev/null || echo "")
 
