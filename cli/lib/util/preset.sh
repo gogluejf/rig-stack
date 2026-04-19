@@ -16,6 +16,19 @@ get_active_preset_name() {
     fi
 }
 
+# set_loaded_preset <service> <preset_file> — records the preset actually loaded into the running container.
+set_loaded_preset() {
+    local service="$1"
+    local preset_file="$2"
+    ln -sf "${preset_file}" "${RIG_ROOT}/.preset.loaded.${service}"
+}
+
+# get_loaded_preset_name <service> — returns the name of the preset loaded at last container start.
+get_loaded_preset_name() {
+    local link="${RIG_ROOT}/.preset.loaded.${1}"
+    [[ -L "${link}" ]] && basename "$(readlink "${link}")" .sh
+}
+
 # _get_preset_command_flat — returns active vLLM preset command flattened to one line.
 _get_preset_command_flat() {
     local preset_active="${RIG_ROOT}/.preset.active.vllm"

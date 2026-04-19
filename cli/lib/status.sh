@@ -672,6 +672,7 @@ _status_detail_vllm() {
     local container="" state="" model="" build=""
     local gpu_util="-" gpu_temp="-"
     local vram="-" dram="-"
+    local preset_loaded="-"
     local models endpoints aux
 
     container="$(_status_vllm_container 2>/dev/null || true)"
@@ -699,6 +700,10 @@ _status_detail_vllm() {
     fi
     [[ -n "${model}" ]] || model="-"
     [[ -n "${models}" ]] || models="-"
+    if [[ "${state}" == "running" ]]; then
+        preset_loaded="$(get_loaded_preset_name vllm)"
+        [[ -z "${preset_loaded}" ]] && preset_loaded="-"
+    fi
 
     while IFS='=' read -r key val; do
         case "${key}" in
@@ -731,6 +736,7 @@ _status_detail_vllm() {
     _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
     _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
+    _status_metadata_line "preset" "$(_status_value_if_running "${state}" "${preset_loaded}")"
     _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
     _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
     echo ""

@@ -170,16 +170,14 @@ _serve_start() {
     $edge && profile="vllm-edge"
     $edge && build_label="edge"
 
-    local other_service="vllm-edge"
-    $edge && other_service="vllm-stable"
-
-    if container_running "rig-${other_service}"; then
-        echo -e "${DIM}Stopping other vLLM variant: ${other_service}${RESET}"
-        rig_compose --profile vllm-stable --profile vllm-edge stop "${other_service}" 2>/dev/null || true
+    if container_running "rig-vllm-stable" || container_running "rig-vllm-edge"; then
+        echo -e "${DIM}Stopping vLLM...${RESET}"
+        rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
     fi
 
     echo -e "${CYAN}Starting ${profile} with preset '${preset_name}'...${RESET}"
     rig_compose --profile "${profile}" up -d
+    set_loaded_preset "vllm" "${preset_file}"
 
     echo -e "${GREEN}✓  vLLM running${RESET}"
     echo -e "  Endpoint : $(_avail_proxy_base)/v1"
