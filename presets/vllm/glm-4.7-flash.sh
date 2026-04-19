@@ -8,10 +8,9 @@ VLLM_ARGS=(
   vllm serve /models/hf/GadflyII/GLM-4.7-Flash-NVFP4
   --served-model-name GadflyII/GLM-4.7-Flash-NVFP4
   --enable-auto-tool-choice
-  --enable-auto-tool-choice
   --tool-call-parser glm47
   --kv-cache-dtype fp8
-  --tensor-parallel-size 2
+  --tensor-parallel-size 1
   --max-model-len 44000
   --max-num-seqs 4
   --trust-remote-code
