@@ -5,11 +5,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL="${MODEL:-Kbenkhaled/Qwen3.5-27B-NVFP4}"
 API_URL="${API_URL:-https://localhost/v1/chat/completions}"
+MODEL="${MODEL:-$(curl -s --max-time 3 "${API_URL%/chat/completions}/models" 2>/dev/null | jq -r '.data[0].id // empty' 2>/dev/null)}"
 ENABLE_THINKING=false
 PRINT_THINKING=false
 RENDER_ESCAPED_NEWLINES="${RENDER_ESCAPED_NEWLINES:-true}"
+DIM=$'\033[2m'
+YELLOW=$'\033[33m'
+RED=$'\033[31m'
+RESET=$'\033[0m'
 
 usage() {
   echo "Usage: $(basename "$0") [--thinking] [--print-thinking]"
@@ -49,10 +53,9 @@ else
   SYSTEM_PROMPT="You are a helpful assistant."
 fi
 
-# ── Temp files (messages history + curl request) ──────────────────────────────
+# ── Temp files (messages history) ────────────────────────────────────────────
 _msgs_file="$(mktemp)"
-_req_file="$(mktemp)"
-trap 'rm -f "${_msgs_file}" "${_req_file}"' EXIT
+trap 'rm -f "${_msgs_file}"' EXIT
 
 # Initialize conversation history with system message
 jq -n --arg sp "${SYSTEM_PROMPT}" '[{role:"system",content:$sp}]' > "${_msgs_file}"
@@ -162,7 +165,6 @@ process_chunk() {
 }
 
 stream_response() {
-  # Reads request from $_req_file; writes response text to $response_text
   in_think=0
   carry=""
   response_text=""
@@ -173,7 +175,25 @@ stream_response() {
     in_think=1
   fi
 
+  # Save full curl to /tmp/curl.sh + body to /tmp/curl_body.json
+  printf '%s' "${_req_json}" > /tmp/curl_body.json
+  {
+    printf '#!/usr/bin/env bash\n'
+    printf 'curl -sN "%s" \\\n' "${API_URL}"
+    printf '  -H "Content-Type: application/json" \\\n'
+    printf '  -d @/tmp/curl_body.json\n'
+  } > /tmp/curl.sh
+  chmod +x /tmp/curl.sh
+
+  printf >&2 '%bcurl → %b%s%b  full curl → /tmp/curl.sh%b\n\n' "${DIM}" "${RESET}${YELLOW}" "${API_URL}" "${DIM}" "${RESET}"
+
+  local _streaming=false _error_buf=""
   while IFS= read -r line || [[ -n "${line}" ]]; do
+    if [[ "${_streaming}" == false ]]; then
+      [[ -z "${line}" ]] && continue
+      if [[ "${line}" != data:* ]]; then _error_buf+="${line}"$'\n'; continue; fi
+      _streaming=true
+    fi
     [[ "${line}" == data:* ]] || continue
     local payload="${line#data: }"
     [[ "${payload}" == "[DONE]" ]] && break
@@ -184,10 +204,16 @@ stream_response() {
     [[ -n "${chunk}" ]] || continue
     process_chunk "${chunk}"
   done < <(
-    curl -sN "${API_URL}" \
+    printf '%s' "${_req_json}" | curl -sN "${API_URL}" \
       -H "Content-Type: application/json" \
-      -d "@${_req_file}"
+      -d @-
   )
+
+  if [[ -n "${_error_buf}" ]]; then
+    printf >&2 '%b' "${RED}"
+    printf '%s' "${_error_buf}" | jq -C '.' >&2 2>/dev/null || printf >&2 '%s' "${_error_buf}"
+    printf >&2 '%b\n' "${RESET}"
+  fi
 
   if [[ -n "${carry}" ]]; then
     if (( in_think == 1 )); then
@@ -222,12 +248,11 @@ while true; do
     '. + [{role:"user",content:$text}]' \
     "${_msgs_file}" > "${_msgs_file}.tmp" && mv "${_msgs_file}.tmp" "${_msgs_file}"
 
-  # Write request JSON to file (curl reads it with -d @file)
-  jq \
+  _req_json="$(jq \
     --arg model "${MODEL}" \
     --argjson enable_thinking "${ENABLE_THINKING}" \
-    '{model:$model,stream:true,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
-    "${_msgs_file}" > "${_req_file}"
+    '{model:$model,stream:true,max_tokens:300,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
+    "${_msgs_file}")"
 
   printf '\n'
   stream_response
