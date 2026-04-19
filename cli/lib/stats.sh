@@ -110,6 +110,9 @@ cmd_stats() {
         echo -e "  ${DIM}No rig-stack containers running.${RESET}"
         hr 108
     else
+        # Prefetch container stats in parent shell so subshells can use cached values
+        _status_prefetch_container_stats
+        
         printf "  ${BOLD}%-20s %-26s %-8s %-12s %-12s %s${RESET}\n" "CONTAINER" "STATUS" "CPU" "DRAM" "VRAM" "IMAGE"
         hr 108
         while IFS=$'\t' read -r name status image; do

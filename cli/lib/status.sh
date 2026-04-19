@@ -291,9 +291,9 @@ _status_prefetch_container_stats() {
 
 
 _status_container_dram_usage() {
-    # Refresh stats if already populated; -gt 0 is intentional (subshells can't write back to parent)
+    # Use cached stats if available; prefetch only if cache is empty
     local container="$1"
-    if [[ ${#_RAM_STATS[@]} -gt 0 ]]; then
+    if [[ ${#_RAM_STATS[@]} -eq 0 ]]; then
         _status_prefetch_container_stats
     fi
     local raw="${_RAM_STATS[$container]:-}"
@@ -301,9 +301,9 @@ _status_container_dram_usage() {
 }
 
 _status_container_cpu_usage() {
-    # Refresh stats if already populated; -gt 0 is intentional (subshells can't write back to parent)
+    # Use cached stats if available; prefetch only if cache is empty
     local container="$1"
-    if [[ ${#_CPU_STATS[@]} -gt 0 ]]; then
+    if [[ ${#_CPU_STATS[@]} -eq 0 ]]; then
         _status_prefetch_container_stats
     fi
     local cpu="${_CPU_STATS[$container]:-}"
@@ -457,6 +457,9 @@ _status_summary() {
         ollama_model="$(_status_ollama_warm_models)"
     fi
     [[ -n "${ollama_model}" ]] || ollama_model="-"
+
+    # Prefetch container stats in parent shell so subshells can use cached values
+    _status_prefetch_container_stats
 
     # Parse vllm memory
     while IFS='=' read -r key val; do
@@ -681,6 +684,8 @@ _status_detail_vllm() {
     if [[ "${state}" == "running" ]]; then
         model="$(_status_primary_model_for "vllm")"
     fi
+    # Prefetch container stats in parent shell so subshells can use cached values
+    _status_prefetch_container_stats
     # Parse memory output for VRAM and DRAM
     while IFS='=' read -r key val; do
         case "${key}" in
@@ -786,6 +791,8 @@ _status_detail_ollama() {
 
     state="$(_status_state "rig-ollama")"
     runtime="$(_status_ollama_runtime)"
+    # Prefetch container stats in parent shell so subshells can use cached values
+    _status_prefetch_container_stats
     # Parse memory output for VRAM and DRAM
     while IFS='=' read -r key val; do
         case "${key}" in
@@ -854,6 +861,8 @@ _status_detail_comfy() {
     state="$(_status_state "${container}")"
     runtime="$(_status_comfy_runtime)"
     build="$(_status_comfy_build)"
+    # Prefetch container stats in parent shell so subshells can use cached values
+    _status_prefetch_container_stats
     # Parse memory output for VRAM and DRAM
     while IFS='=' read -r key val; do
         case "${key}" in
@@ -920,6 +929,8 @@ _status_detail_rag() {
     local vram="-" dram="-"
 
     state="$(_status_state "rig-rag-api")"
+    # Prefetch container stats in parent shell so subshells can use cached values
+    _status_prefetch_container_stats
     # Parse memory output for VRAM and DRAM
     while IFS='=' read -r key val; do
         case "${key}" in
