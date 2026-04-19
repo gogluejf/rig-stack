@@ -244,11 +244,11 @@ _models_init() {
         #_install hf google/gemma-4-31B-it chat_template.jinja
         #_install hf google/gemma-4-31B-it config.json        
         
-        _install hf Jackrong/Qwopus3.5-27B-v3-GGUF Qwopus3.5-27B-v3-Q6_K.gguf
-        _install hf Jackrong/Qwopus3.5-27B-v3 tokenizer.json
-        _install hf Jackrong/Qwopus3.5-27B-v3 tokenizer_config.json
-        _install hf Jackrong/Qwopus3.5-27B-v3 chat_template.jinja
-        _install hf Jackrong/Qwopus3.5-27B-v3 config.json
+        #_install hf Jackrong/Qwopus3.5-27B-v3-GGUF Qwopus3.5-27B-v3-Q6_K.gguf
+        #_install hf Jackrong/Qwopus3.5-27B-v3 tokenizer.json
+        #_install hf Jackrong/Qwopus3.5-27B-v3 tokenizer_config.json
+        #_install hf Jackrong/Qwopus3.5-27B-v3 chat_template.jinja
+        #_install hf Jackrong/Qwopus3.5-27B-v3 config.json
 
         _install hf nomic-ai/nomic-embed-text-v1.5
     }
@@ -274,6 +274,7 @@ _models_init() {
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
         _install hf starvector/starvector-8b-im2svg
+        _install hf GadflyII/GLM-4.7-Flash-NVFP4
     }
 
     extra_comfy() {

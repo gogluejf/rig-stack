@@ -8,10 +8,11 @@ VLLM_ARGS=(
   vllm serve /models/hf/Jackrong/Qwopus3.5-27B-v3-GGUF/Qwopus3.5-27B-v3-Q6_K.gguf
   --served-model-name Jackrong/Qwopus3.5-27B-v3-GGUF
   --tokenizer /models/hf/Jackrong/Qwopus3.5-27B-v3
+  --enable-auto-tool-choice
+  --tool-call-parser qwen3_coder
   --max-model-len 65536
   --kv-cache-dtype fp8
   --enable-prefix-caching
-  --tool-call-parser qwen3_coder
   --gpu-memory-utilization 0.82
   --tensor-parallel-size 1
   --dtype auto

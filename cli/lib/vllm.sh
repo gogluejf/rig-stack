@@ -59,45 +59,55 @@ _serve_list() {
         [[ -f "${f}" ]] || continue
         local name model ctx kv gpu desc marker
         name=$(basename "${f}" .sh)
-        model=$(grep -m1 -- '--served-model-name' "${f}" | awk '{print $NF}')
-        ctx=$(grep -m1 -- '--max-model-len' "${f}" | awk '{print $NF}')
-        kv=$(grep -m1 -- '--kv-cache-dtype' "${f}" | awk '{print $NF}')
-        gpu=$(grep -m1 -- '--gpu-memory-utilization' "${f}" | awk '{print $NF}')
+        model=$(grep -m1 -- '--served-model-name' "${f}" 2>/dev/null | awk '{print $NF}' || true)
+        ctx=$(grep -m1 -- '--max-model-len' "${f}" 2>/dev/null | awk '{print $NF}' || true)
+        kv=$(grep -m1 -- '--kv-cache-dtype' "${f}" 2>/dev/null | awk '{print $NF}' || true)
+        gpu=$(grep -m1 -- '--gpu-memory-utilization' "${f}" 2>/dev/null | awk '{print $NF}' || true)
+        [[ -z "${model}" ]] && model="—"
         [[ -z "${ctx}" ]] && ctx="—"
         [[ -z "${kv}" ]] && kv="—"
         [[ -z "${gpu}" ]] && gpu="—"
-        desc=$(grep '^# Use:' "${f}" | head -1 | sed 's/^# Use: *//')
+        desc=$(grep '^# Use:' "${f}" 2>/dev/null | head -1 | sed 's/^# Use: *//' || true)
+        [[ -z "${desc}" ]] && desc="—"
         if [[ "${name}" == "${active_preset}" ]]; then
             marker="${GREEN}✓${RESET}"
         else
             marker=" "
         fi
         # pre-pad fields so colors don't break alignment
-        local name_f ctx_f kv_f gpu_f
-        printf -v name_f "%-28s" "${name}"
-        printf -v ctx_f  "%-10s" "${ctx}"
-        printf -v kv_f   "%-6s"  "${kv}"
-        printf -v gpu_f  "%-6s"  "${gpu}"
+        local name_f ctx_f kv_f gpu_f model_f
+        name_f=$(printf "%-28s" "${name}")
+        ctx_f=$(printf "%-10s" "${ctx}")
+        kv_f=$(printf "%-6s" "${kv}")
+        gpu_f=$(printf "%-6s" "${gpu}")
         # model: dim org/ + white repo, padded to 20
-        local model_short="${model:0:18}"
-        local org="${model_short%%/*}"
-        local repo="${model_short#*/}"
-        local pad=$(( 20 - ${#model_short} ))
-        local model_pad=""
-        printf -v model_pad "%${pad}s" ""
-        local model_f="${DIM}${org}/${RESET}${repo}${model_pad}"
+        if [[ -z "${model}" || "${model}" == "—" ]]; then
+            model_f="${DIM}—${RESET}"
+        else
+            local model_short="${model:0:18}"
+            local org="${model_short%%/*}"
+            local repo="${model_short#*/}"
+            local pad=$(( 20 - ${#model_short} ))
+            local model_pad
+            model_pad=$(printf "%${pad}s" "")
+            model_f="${DIM}${org}/${RESET}${repo}${model_pad}"
+        fi
+
         # truncate description at word boundary to fit hr width
         local desc_t="${desc:0:38}"
         [[ "${#desc}" -gt 38 ]] && desc_t="${desc_t% *}…"
-        if [[ ! -d "${models_root}/hf/${model}" && ! -e "${models_root}/hf/${model}" ]]; then
+        if [[ -z "${model}" || "${model}" == "—" ]]; then
+            marker="${RED}●${RESET}"
+            echo -e "  ${marker} ${RED}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+        elif [[ ! -d "${models_root}/hf/${model}" && ! -e "${models_root}/hf/${model}" ]]; then
             marker="${RED}●${RESET}"
             echo -e "  ${marker} ${RED}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
         else
             if [[ "${name}" == "${active_preset}" ]]; then
-            echo -e "  ${marker} ${GREEN}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
-        else
-            echo -e "  ${marker} ${name_f} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
-        fi
+                echo -e "  ${marker} ${GREEN}${name_f}${RESET} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+            else
+                echo -e "  ${marker} ${name_f} ${model_f} ${ctx_f} ${kv_f} ${gpu_f} ${DIM}${desc_t}${RESET}"
+            fi
         fi
     done
     hr 118
