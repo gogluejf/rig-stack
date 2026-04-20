@@ -275,6 +275,7 @@ _models_init() {
 
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
+        _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
         _install hf starvector/starvector-8b-im2svg
         
     }
