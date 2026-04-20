@@ -2,6 +2,16 @@
 
 ComfyUI — node-based image generation. Supports FLUX, ControlNet, GFPGAN, FaceFusion, and custom workflow pipelines.
 
+## Notice: work in progress
+
+This ComfyUI integration is currently **WIP**.
+
+- ✅ Container build paths have been tested (stable/cpu/edge images build successfully)
+- ⚠️ End-to-end workflow validation is still in progress
+- ⚠️ Functional guarantees for full production image pipelines are not yet claimed
+
+At this stage, treat ComfyUI support as an evolving foundation while we complete broader runtime and workflow validation.
+
 ## Three containers
 
 ### comfyui-stable
