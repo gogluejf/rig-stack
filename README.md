@@ -60,6 +60,29 @@ No cloud. No per-token costs. Just fast, secure local inference that unleashes y
 
 ---
 
+## Field-tested configurations
+
+> Results on RTX 5090 (32 GB VRAM). This project is actively evolving — configurations are validated as new models and builds are tested.
+
+**vLLM**
+
+| Model | Container | Throughput |
+|---|---|---|
+| Qwen3.5-27B-NVFP4 | edge | ~65 tok/s |
+| GLM-4.7-Flash-NVFP4 | edge | ~170 tok/s |
+| Gemma 4 31B NVFP4-turbo | stable | ~55 tok/s |
+
+**Ollama** — Gemma, Llama (CPU and GPU offload)
+
+**Not yet validated**
+
+| Component | Notes |
+|---|---|
+| ComfyUI | Not tested |
+| RAG API | Functional POC — planned rewrite as agentic proxy with web search and LLM-wiki persistent memory |
+
+---
+
 ## Prerequisites
 
 ### System requirements
