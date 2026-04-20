@@ -56,8 +56,71 @@ _rig_commands() {
         'status:Show active services and models'
         'stats:Show GPU stats and container metrics'
         'benchmark:Run benchmark matrix and view logs'
+        'test:Run quick test calls against OpenAI-compatible services'
     )
     _describe 'command' cmds
+}
+
+_rig_test() {
+    # Live service list — only running OpenAI-compatible services.
+    local raw_services
+    local -a avail_services=()
+    raw_services="$(rig test _service_avail 2>/dev/null)"
+    while IFS= read -r svc; do
+        [[ -n "${svc}" ]] && avail_services+=("${svc}")
+    done <<< "${raw_services}"
+
+    # First non-flag word after 'test' is treated as <service>.
+    local service_arg=""
+    local w
+    for (( w=2; w<CURRENT; w++ )); do
+        local ww="${words[w]}"
+        if [[ "${ww}" != --* && -z "${service_arg}" ]]; then
+            service_arg="${ww}"
+        fi
+    done
+
+    # If previous token is --vision, complete local file paths.
+    if [[ "${words[CURRENT-1]}" == "--vision" ]]; then
+        _files
+        return
+    fi
+
+    # Mode flags are mutually exclusive; once one is present, hide the others.
+    local has_chat=false has_prompt=false has_chunk=false has_vision=false
+    local token
+    for token in "${words[@]}"; do
+        [[ "${token}" == "--chat" ]] && has_chat=true
+        [[ "${token}" == "--prompt" ]] && has_prompt=true
+        [[ "${token}" == "--chunk" ]] && has_chunk=true
+        [[ "${token}" == "--vision" ]] && has_vision=true
+    done
+
+    local -a mode_flags=()
+    if [[ "${has_chat}" == false && "${has_prompt}" == false && "${has_chunk}" == false && "${has_vision}" == false ]]; then
+        mode_flags=(
+            '--chat[Interactive chat loop (default)]'
+            '--prompt[Single non-streaming prompt response]'
+            '--chunk[Stream raw JSONL chunks]'
+            '--vision[Run vision test with an image path]:image path:_files'
+        )
+    fi
+
+    if (( CURRENT == 2 )); then
+        _describe 'running service' avail_services
+        _arguments -s \
+            '--help[Show help]' \
+            ${mode_flags:+${mode_flags[@]}}
+        return
+    fi
+
+    if [[ -z "${service_arg}" ]]; then
+        _describe 'running service' avail_services
+    fi
+
+    _arguments -s \
+        '--help[Show help]' \
+        ${mode_flags:+${mode_flags[@]}}
 }
 
 _rig_benchmark() {
@@ -358,6 +421,7 @@ _rig() {
         models)  _rig_models_cmd ;;
         infra)   _rig_infra ;;
         benchmark) _rig_benchmark ;;
+        test)    _rig_test ;;
         status|stats) ;;
         esac
         ;;

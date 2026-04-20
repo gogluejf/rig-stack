@@ -49,7 +49,7 @@ _rig_completions() {
 
     # ── Level 1: top-level command ────────────────────────────────────────────
     if [[ "${cword}" -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "serve comfy ollama rag models infra status stats benchmark --help" -- "${cur}"))
+        COMPREPLY=($(compgen -W "serve comfy ollama rag models infra status stats benchmark test --help" -- "${cur}"))
         return
     fi
 
@@ -271,6 +271,51 @@ _rig_completions() {
             COMPREPLY=($(compgen -W "${avail_services} ${flags}" -- "${cur}"))
         else
             COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+        fi
+        ;;
+
+    # ── rig test ──────────────────────────────────────────────────────────────
+    test)
+        # Live service list — only running OpenAI-compatible services.
+        local avail_services
+        avail_services="$(rig test _service_avail 2>/dev/null)"
+
+        # Detect explicit service: first non-flag word after 'test'.
+        local service_arg=""
+        local ww
+        for (( w=2; w<cword; w++ )); do
+            ww="${words[w]}"
+            if [[ "${ww}" != --* && -z "${service_arg}" ]]; then
+                service_arg="${ww}"
+            fi
+        done
+
+        # Mode flags are mutually exclusive.
+        local has_chat=false has_prompt=false has_chunk=false has_vision=false
+        _rig_contains "--chat"   "${words[@]}" && has_chat=true
+        _rig_contains "--prompt" "${words[@]}" && has_prompt=true
+        _rig_contains "--chunk"  "${words[@]}" && has_chunk=true
+        _rig_contains "--vision" "${words[@]}" && has_vision=true
+
+        if [[ "${prev}" == "--vision" ]]; then
+            COMPREPLY=($(compgen -f -- "${cur}"))
+            return
+        fi
+
+        local mode_flags=""
+        if [[ "${has_chat}" == false && "${has_prompt}" == false && "${has_chunk}" == false && "${has_vision}" == false ]]; then
+            mode_flags="--chat --prompt --chunk --vision"
+        fi
+
+        if [[ "${cword}" -eq 2 ]]; then
+            COMPREPLY=($(compgen -W "${avail_services} ${mode_flags} --help" -- "${cur}"))
+            return
+        fi
+
+        if [[ -z "${service_arg}" ]]; then
+            COMPREPLY=($(compgen -W "${avail_services} ${mode_flags} --help" -- "${cur}"))
+        else
+            COMPREPLY=($(compgen -W "${mode_flags} --help" -- "${cur}"))
         fi
         ;;
 
