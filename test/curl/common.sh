@@ -2,13 +2,14 @@
 # Shared utilities for rig test scripts
 
 DIM=$'\033[2m'
+BOLD=$'\033[1m'
 YELLOW=$'\033[33m'
 RED=$'\033[31m'
 RESET=$'\033[0m'
 
 detect_model() {
   curl -s --max-time 3 "${API_URL%/chat/completions}/models" 2>/dev/null \
-    | jq -r '.data[0].id // empty' 2>/dev/null
+    | jq -r '.data[0].id // empty' 2>/dev/null || true
 }
 
 require_model() {
@@ -22,7 +23,7 @@ require_model() {
       "${RED}" "${base}" "${RESET}"
   else
     printf >&2 '%bvLLM is warming up — no model ready yet, try again in a moment.%b\n' \
-      "${YELLOW}" "${RESET}"
+      "${BOLD}${YELLOW}" "${RESET}"
   fi
   exit 1
 }
