@@ -65,3 +65,88 @@ hr() {
     local width="${1:-72}"
     printf '%s\n' "$(printf '─%.0s' $(seq 1 "${width}"))"
 }
+
+# ── Histogram bar helpers ───────────────────────────────────────────────────────
+
+# _histogram_bar <used> <total> <width>
+# Renders a horizontal histogram bar showing usage percentage.
+# Green bar for used portion, gray dim for remaining.
+# Returns the bar as a string (no label, just the bar and percentage).
+_histogram_bar() {
+    local used="$1"
+    local total="$2"
+    local width="${3:-40}"
+    
+    # Convert memory strings to MiB for calculation
+    local used_mib total_mib percentage
+    if [[ -z "${used}" || "${used}" == "-" || -z "${total}" || "${total}" == "-" ]]; then
+        # No data available - show empty bar
+        printf "${DIM}"
+        printf '%s' "$(printf '░%.0s' $(seq 1 "${width}"))"
+        printf "${RESET}  -"
+        return
+    fi
+    
+    # Parse memory values directly (handles GiB, MiB, KiB)
+    used_mib=$(awk -v mem="${used}" 'BEGIN {
+        # Check unit in original string
+        if (index(mem, "GiB") || index(mem, "GB")) {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", (mem + 0) * 1024
+        } else if (index(mem, "MiB") || index(mem, "MB")) {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", mem + 0
+        } else if (index(mem, "KiB") || index(mem, "KB")) {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", (mem + 0) / 1024
+        } else {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", mem + 0
+        }
+    }')
+    
+    total_mib=$(awk -v mem="${total}" 'BEGIN {
+        # Check unit in original string
+        if (index(mem, "GiB") || index(mem, "GB")) {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", (mem + 0) * 1024
+        } else if (index(mem, "MiB") || index(mem, "MB")) {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", mem + 0
+        } else if (index(mem, "KiB") || index(mem, "KB")) {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", (mem + 0) / 1024
+        } else {
+            gsub(/[^0-9.]/, "", mem)
+            printf "%.0f", mem + 0
+        }
+    }')
+    
+    # Calculate percentage
+    percentage=$(awk -v u="${used_mib}" -v t="${total_mib}" 'BEGIN {
+        if (t > 0) printf "%.0f", (u/t)*100; else print 0
+    }')
+    
+    # Calculate filled and empty portions
+    local filled empty
+    filled=$(awk -v p="${percentage}" -v w="${width}" 'BEGIN { printf "%.0f", (p/100)*w }')
+    empty=$((width - filled))
+    
+    # Ensure we don't exceed width
+    [[ ${filled} -gt ${width} ]] && filled=${width} && empty=0
+    [[ ${filled} -lt 0 ]] && filled=0 && empty=${width}
+    
+    # Green filled portion
+    printf "${GREEN}"
+    if [[ ${filled} -gt 0 ]]; then
+        printf '%s' "$(printf '█%.0s' $(seq 1 "${filled}"))"
+    fi
+    
+    # Gray dim empty portion
+    printf "${DIM}"
+    if [[ ${empty} -gt 0 ]]; then
+        printf '%s' "$(printf '░%.0s' $(seq 1 "${empty}"))"
+    fi
+    
+    printf "${RESET}  ${GREEN}${percentage}%%${RESET}"
+}
