@@ -49,6 +49,8 @@ No cloud. No per-token costs. Just fast, secure local inference that unleashes y
 
 ## What's included
 
+All services are exposed under a single Traefik gateway on port 80, or with TLS termination on port 443 (https://localhost):
+
 | Component | Stack | Route |
 |---|---|---|
 | LLM inference | vLLM (stable + Blackwell-edge) | `/v1` |
@@ -56,37 +58,14 @@ No cloud. No per-token costs. Just fast, secure local inference that unleashes y
 | Utility models | Ollama (CPU/GPU) | `/ollama/v1/` |
 | RAG API | FastAPI + Qdrant | `/rag/v1` |
 | Observability | Langfuse (self-hosted) | `/langfuse` |
-| Gateway | Traefik | port 80 |
-
----
-
-## Field-tested configurations
-
-> Results on RTX 5090 (32 GB VRAM). This project is actively evolving — configurations are validated as new models and builds are tested.
-
-**vLLM**
-
-| Model | Container | Throughput |
-|---|---|---|
-| Qwen3.5-27B-NVFP4 | edge | ~65 tok/s |
-| GLM-4.7-Flash-NVFP4 | edge | ~170 tok/s |
-| Gemma 4 31B NVFP4-turbo | stable | ~55 tok/s |
-
-**Ollama** — Gemma, Llama (CPU and GPU offload)
-
-**Not yet validated**
-
-| Component | Notes |
-|---|---|
-| ComfyUI | Not tested |
-| RAG API | Functional POC — planned rewrite as agentic proxy with web search and LLM-wiki persistent memory |
+| Gateway | Traefik | `http://localhost:80`, `https://localhost:443` |
 
 ---
 
 ## Prerequisites
 
 ### System requirements
-- Ubuntu 24.04 (tested) (or Debian-family with `OS_FAMILY=debian` in `.env`)
+- Ubuntu or Debian-family with `OS_FAMILY=debian` in `.env` (Tested on Ubuntu 24.04)
 - 16GB+ RAM (32GB+ recommended for larger models)
 - 2tb+ disk (for models, data, and Docker storage)
 - NVIDIA RTX 5090 (or any NVIDIA GPU ≥ RTX 30xx; Blackwell builds (--edge) require RTX 50xx)
@@ -144,6 +123,30 @@ A single endpoint, multiple services. Traefik routes requests to vLLM for LLM in
 
 ---
 
+## Field-tested configurations
+
+> Results on RTX 5090 (32 GB VRAM). This project is actively evolving — configurations are validated as new models and builds are tested.
+
+**vLLM**
+
+| Model | Container | Throughput |
+|---|---|---|
+| Qwen3.5-27B-NVFP4 | edge | ~65 tok/s |
+| GLM-4.7-Flash-NVFP4 | edge | ~170 tok/s |
+| Gemma 4 31B NVFP4-turbo | stable | ~55 tok/s |
+
+**Ollama** — Gemma, Llama (CPU and GPU offload)
+
+**Not yet validated**
+
+| Component | Notes |
+|---|---|
+| ComfyUI | Not tested |
+| RAG API | Functional POC — planned rewrite as agentic proxy with web search and LLM-wiki persistent memory |
+
+---
+
+
 ## How to add a model
 
 Models management made easy. `rig models install` handles Hugging Face, Ollama, and ComfyUI models — just provide the source and type.
@@ -198,19 +201,6 @@ Or to update all images:
 ```bash
 bash scripts/maintenance/update-images.sh
 ```
-
----
-
-## Observability URLs
-
-| Service | URL |
-|---|---|
-| vLLM API | `https://localhost/v1` |
-| ComfyUI | `https://localhost/comfy` |
-| Ollama | `https://localhost/ollama/v1` |
-| RAG API | `https://localhost/rag/v1` |
-| Langfuse | `https://localhost/langfuse` |
-| Traefik dashboard | `http://localhost:8080` |
 
 ---
 
