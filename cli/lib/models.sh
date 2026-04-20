@@ -236,21 +236,23 @@ _models_init() {
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
-        
-        #arch not supported yet
+        _install hf LilaRest/gemma-4-31B-it-NVFP4-turbo
+        _install hf GadflyII/GLM-4.7-Flash-NVFP4
+        #_install hf nomic-ai/nomic-embed-text-v1.5
+
         #_install hf unsloth/gemma-4-31B-it-GGUF gemma-4-31B-it-UD-Q4_K_XL.gguf
         #_install hf google/gemma-4-31B-it tokenizer.json
         #_install hf google/gemma-4-31B-it tokenizer_config.json
         #_install hf google/gemma-4-31B-it chat_template.jinja
         #_install hf google/gemma-4-31B-it config.json        
         
-        #_install hf Jackrong/Qwopus3.5-27B-v3-GGUF Qwopus3.5-27B-v3-Q6_K.gguf
-        #_install hf Jackrong/Qwopus3.5-27B-v3 tokenizer.json
-        #_install hf Jackrong/Qwopus3.5-27B-v3 tokenizer_config.json
-        #_install hf Jackrong/Qwopus3.5-27B-v3 chat_template.jinja
-        #_install hf Jackrong/Qwopus3.5-27B-v3 config.json
+        #_install hf Jackrong/Qwopus3.5-27B-v3.5-GGUF Qwopus3.5-27B-v3.5-Q4_M.gguf
+        #_install hf Jackrong/Qwopus3.5-27B-v3.5 tokenizer.json
+        #_install hf Jackrong/Qwopus3.5-27B-v3.5 tokenizer_config.json
+        #_install hf Jackrong/Qwopus3.5-27B-v3.5 chat_template.jinja
+        #_install hf Jackrong/Qwopus3.5-27B-v3.5 config.json
 
-        _install hf nomic-ai/nomic-embed-text-v1.5
+
     }
 
     minimal_comfy() {
@@ -274,7 +276,7 @@ _models_init() {
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
         _install hf starvector/starvector-8b-im2svg
-        _install hf GadflyII/GLM-4.7-Flash-NVFP4
+        
     }
 
     extra_comfy() {
