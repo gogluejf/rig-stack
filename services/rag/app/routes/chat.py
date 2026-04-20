@@ -1,10 +1,15 @@
 """RAG chat route — embed query → retrieve from Qdrant → call vLLM."""
 
+import logging
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from models.schemas import ChatRequest
 from core.embeddings import embed
 from core.retrieval import retrieve
-from core.llm_client import chat, resolve_chat_model, resolve_embed_model
+from core.llm_client import chat, chat_stream, resolve_chat_model, resolve_embed_model
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -43,22 +48,47 @@ async def handle_chat_request(req: ChatRequest):
 
     # Build augmented messages
     context_text = "\n\n".join(context_chunks) if context_chunks else "No context available."
+    
+    # Merge all system messages into one at the beginning
+    system_messages = [m for m in req.messages if m.role == "system"]
+    user_messages = [m for m in req.messages if m.role != "system"]
+    
+    # Combine all system prompts into a single system message
+    system_contents = [SYSTEM_PROMPT + f"\n\nContext:\n{context_text}"]
+    system_contents.extend([m.content for m in system_messages])
+    merged_system_content = "\n\n".join(system_contents)
+    
     augmented_messages = [
-        {"role": "system", "content": f"{SYSTEM_PROMPT}\n\nContext:\n{context_text}"},
-        *[{"role": m.role, "content": m.content} for m in req.messages],
+        {"role": "system", "content": merged_system_content},
+        *[{"role": m.role, "content": m.content} for m in user_messages],
     ]
-
+    
     try:
-        result = await chat(
-            messages=augmented_messages,
-            model=resolved_model,
-            max_tokens=req.max_tokens,
-            temperature=req.temperature,
-        )
+        if req.stream:
+            # Return streaming response
+            async def generate():
+                async for chunk in chat_stream(
+                    messages=augmented_messages,
+                    model=resolved_model,
+                    max_tokens=req.max_tokens,
+                    temperature=req.temperature,
+                    chat_template_kwargs=req.chat_template_kwargs,
+                ):
+                    yield chunk
+            
+            return StreamingResponse(generate(), media_type="text/event-stream")
+        else:
+            result = await chat(
+                messages=augmented_messages,
+                model=resolved_model,
+                max_tokens=req.max_tokens,
+                temperature=req.temperature,
+                chat_template_kwargs=req.chat_template_kwargs,
+            )
+            return result
     except Exception as e:
+        logger.error(f"LLM error: {e}")
         raise HTTPException(status_code=502, detail=f"LLM error: {e}")
-
-    return result
 
 
 @router.post("/chat")

@@ -1,7 +1,7 @@
 """Pydantic schemas — OpenAI-compatible request/response models."""
 
 from typing import Any, Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
@@ -16,6 +16,7 @@ class ChatRequest(BaseModel):
     max_tokens: int = 2048
     temperature: float = 0.7
     stream: bool = False
+    chat_template_kwargs: dict[str, Any] = Field(default_factory=dict)
     # RAG-specific
     collection: str = "default"
     top_k: int = 5

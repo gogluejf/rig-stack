@@ -50,16 +50,68 @@ async def chat(
     model: str,
     max_tokens: int = 2048,
     temperature: float = 0.7,
+    chat_template_kwargs: dict = None,
 ) -> dict:
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+    }
+    if chat_template_kwargs:
+        payload["chat_template_kwargs"] = chat_template_kwargs
+    
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post(
             f"{CHAT_BASE_URL}/chat/completions",
-            json={
-                "model": model,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            },
+            json=payload,
         )
         resp.raise_for_status()
-        return resp.json()
+        result = resp.json()
+        
+        # Normalize stop_reason to string (vLLM sometimes returns numeric)
+        if "choices" in result and result["choices"]:
+            for choice in result["choices"]:
+                if "finish_reason" in choice:
+                    # Convert numeric finish_reason to string "stop"
+                    if isinstance(choice["finish_reason"], (int, float)):
+                        choice["finish_reason"] = "stop"
+                if "stop_reason" in choice:
+                    # Convert numeric stop_reason to string "stop"
+                    if isinstance(choice["stop_reason"], (int, float)):
+                        choice["stop_reason"] = "stop"
+        
+        return result
+
+
+async def chat_stream(
+    messages: list[dict],
+    model: str,
+    max_tokens: int = 2048,
+    temperature: float = 0.7,
+    chat_template_kwargs: dict = None,
+):
+    """Stream chat responses from vLLM."""
+    payload = {
+        "model": model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "stream": True,
+    }
+    if chat_template_kwargs:
+        payload["chat_template_kwargs"] = chat_template_kwargs
+    
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        async with client.stream(
+            "POST",
+            f"{CHAT_BASE_URL}/chat/completions",
+            json=payload,
+        ) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                # Preserve Server-Sent Events framing for downstream clients.
+                # httpx.aiter_lines() strips newlines, so we must re-add "\n\n"
+                # per SSE event; otherwise events get concatenated and break JSON parsing.
+                if line.startswith("data:"):
+                    yield f"{line}\n\n"
