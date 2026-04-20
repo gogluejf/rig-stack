@@ -1,19 +1,31 @@
 #!/usr/bin/env bash
 # Stream mode: see every raw JSONL chunk as the model generates
-# Run: ./test/chunk.sh [optional custom prompt]
+# Run: ./test/chunk.sh [--service vllm|ollama|rag] [optional custom prompt]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/curl/common.sh"
 
-API_URL="${API_URL:-https://localhost/v1/chat/completions}"
-MODEL="${MODEL:-$(detect_model)}"
-require_model "${MODEL}"
+SERVICE="${SERVICE:-vllm}"
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a creative story telling assistant. Tell vivid, engaging stories with clear scenes and memorable details.}"
 USER_PROMPT="${USER_PROMPT:-Tell me a short story ( 30 words) about flying snakes crossing a moonlit desert sky, with a surprising ending.}"
 
-if [[ $# -gt 0 ]]; then
-  USER_PROMPT="$*"
+CUSTOM_PROMPT_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --service)
+        [[ $# -lt 2 ]] && { echo "Error: --service requires an argument" >&2; exit 1; }
+        SERVICE="$2"; shift 2 ;;
+    *) CUSTOM_PROMPT_ARGS+=("$1"); shift ;;
+  esac
+done
+[[ ${#CUSTOM_PROMPT_ARGS[@]} -gt 0 ]] && USER_PROMPT="${CUSTOM_PROMPT_ARGS[*]}"
+
+if [[ -z "${API_URL:-}" ]]; then
+  require_service "${SERVICE}"
+  API_URL="$(resolve_api_url "${SERVICE}")"
 fi
+MODEL="${MODEL:-$(detect_model)}"
+require_model "${MODEL}"
 
 _DATA="$(jq -nc \
   --arg model "${MODEL}" \
@@ -41,7 +53,7 @@ if [[ "${_streaming}" == false ]]; then
   if [[ -n "${_error_buf}" ]]; then
     show_curl_error "${_error_buf}"
   else
-    printf >&2 '%bError: no response from %s — is vLLM ready?%b\n' "${RED}" "${API_URL}" "${RESET}"
+    printf >&2 '%bError: no response from %s — is the service ready?%b\n' "${RED}" "${API_URL}" "${RESET}"
   fi
   exit 1
 fi
