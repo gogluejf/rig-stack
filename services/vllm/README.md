@@ -6,7 +6,8 @@ vLLM inference server — OpenAI-compatible API for LLM serving.
 
 ### vllm-stable
 - Base: official `vllm/vllm-openai` image
-- PyTorch: stable release, CUDA 12.x
+- vLLM: stable release, latest
+- Transformers: pinned to `5.5.0` for compatibility with Qwen 3.5 27B
 - Suitable for: all NVIDIA GPUs up to Ada (RTX 30xx, 40xx)
 - Start: `rig serve <preset>`
 
@@ -14,6 +15,7 @@ vLLM inference server — OpenAI-compatible API for LLM serving.
 - Base: `nvidia/cuda:12.8.0-devel-ubuntu24.04` + PyTorch cu130
 - PyTorch: `torch 2.10.0+cu130` (confirmed working on Blackwell), cuDNN 9.1.5.01
 - vLLM: `0.17.1` from `wheels.vllm.ai/nightly`
+- Transformers: pinned to `5.5.0` for compatibility with Qwen 3.5 27B
 - CUDA arch list: `8.0 8.6 8.9 9.0 12.0` — sm_120 (Blackwell) included
 - Suitable for: **RTX 5090 (Blackwell/sm_120)** — native kernel support
 - Host driver: 580.126.09 confirmed working
