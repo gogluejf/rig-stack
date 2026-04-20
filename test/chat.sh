@@ -10,6 +10,7 @@ source "${SCRIPT_DIR}/curl/streaming.sh"
 
 API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 MODEL="${MODEL:-$(detect_model)}"
+require_model "${MODEL}"
 ENABLE_THINKING=false
 PRINT_THINKING=false
 

@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/curl/common.sh"
 
 API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 MODEL="${MODEL:-$(detect_model)}"
+require_model "${MODEL}"
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a story telling assistant. Tell engaging stories in response to user prompts.}"
 USER_PROMPT="${USER_PROMPT:-Tell me a story about a mouse knight and a cat dragon.}"
 

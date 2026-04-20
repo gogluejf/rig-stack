@@ -11,6 +11,22 @@ detect_model() {
     | jq -r '.data[0].id // empty' 2>/dev/null
 }
 
+require_model() {
+  local model="$1"
+  [[ -n "${model}" ]] && return 0
+  local base="${API_URL%/chat/completions}"
+  local http_code
+  http_code=$(curl -sk --max-time 3 -o /dev/null -w "%{http_code}" "${base}/models" 2>/dev/null || echo "000")
+  if [[ "${http_code}" == "000" ]]; then
+    printf >&2 '%bvLLM is not responding at %s — is the service running?\n  rig status --vllm%b\n' \
+      "${RED}" "${base}" "${RESET}"
+  else
+    printf >&2 '%bvLLM is warming up — no model ready yet, try again in a moment.%b\n' \
+      "${YELLOW}" "${RESET}"
+  fi
+  exit 1
+}
+
 save_curl() {
   local body="$1" flags="${2:--sN}"
   mkdir -p /tmp/curl

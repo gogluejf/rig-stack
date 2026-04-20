@@ -7,6 +7,7 @@ source "${SCRIPT_DIR}/curl/common.sh"
 
 API_URL="${API_URL:-https://localhost/v1/chat/completions}"
 MODEL="${MODEL:-$(detect_model)}"
+require_model "${MODEL}"
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a creative story telling assistant. Tell vivid, engaging stories with clear scenes and memorable details.}"
 USER_PROMPT="${USER_PROMPT:-Tell me a short story ( 30 words) about flying snakes crossing a moonlit desert sky, with a surprising ending.}"
 
@@ -36,5 +37,13 @@ done < <(curl -sN "${API_URL}" \
   -H "Content-Type: application/json" \
   -d @/tmp/curl/body.json)
 
+if [[ "${_streaming}" == false ]]; then
+  if [[ -n "${_error_buf}" ]]; then
+    show_curl_error "${_error_buf}"
+  else
+    printf >&2 '%bError: no response from %s — is vLLM ready?%b\n' "${RED}" "${API_URL}" "${RESET}"
+  fi
+  exit 1
+fi
 show_curl_error "${_error_buf}"
 show_curl_line

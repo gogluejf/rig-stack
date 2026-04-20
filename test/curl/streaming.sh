@@ -137,6 +137,14 @@ stream_response() {
       -d @-
   )
 
+  if [[ "${_streaming}" == false ]]; then
+    if [[ -n "${_error_buf}" ]]; then
+      show_curl_error "${_error_buf}"
+    else
+      printf >&2 '%bError: no response from %s — is vLLM ready?%b\n' "${RED}" "${API_URL}" "${RESET}"
+    fi
+    return 1
+  fi
   show_curl_error "${_error_buf}"
 
   if [[ -n "${carry}" ]]; then
