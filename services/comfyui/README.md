@@ -37,7 +37,6 @@ At this stage, treat ComfyUI support as an evolving foundation while we complete
 
 ## Access
 
-- Direct: `http://localhost:8188`
 - Via Traefik: `https://localhost/comfy`
 
 ## Volumes
