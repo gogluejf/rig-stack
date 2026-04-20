@@ -743,7 +743,6 @@ _status_detail_vllm() {
     _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
     _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
     _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
-    _status_metadata_line "preset" "$(_status_value_if_running "${state}" "${preset_loaded}")"
     _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
     _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
     echo ""
@@ -767,6 +766,7 @@ _status_detail_vllm() {
 
         print_header "Model Load"
         hr 108
+        _status_metadata_line "preset"       "${preset_loaded}"
         _status_metadata_line "gpu alloc"    "${vstats[cfg_gpu_util]:--}"
         _status_metadata_line "model mem"    "${vstats[model_mem]:--}"
         _status_metadata_line "kv mem avail" "${vstats[kv_mem]:--}"
@@ -976,4 +976,3 @@ _status_detail_rag() {
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 }
-
