@@ -1,78 +1,66 @@
 # services/rag
 
-RAG API — OpenAI-compatible retrieval-augmented generation endpoint.
+RAG service for RigStack, exposed with OpenAI-compatible routes under `/rag`.
 
-## Architecture
+## Positioning
 
+This service is the foundation for RigStack’s intelligence layer:
+
+- Service-tool orchestration (planned), including web search and headless browser tooling
+- LLM-wiki style long-term memory/persistence (planned)
+- Document intelligence over your private knowledge base (RAG) (planned)
+
+## Notice: current implementation status
+
+Today, this service is primarily configured as a proxy/orchestration layer:
+
+- ✅ Chat completions proxy (regular + streaming)
+- ✅ Qdrant infrastructure wiring is enabled
+- ⚠️ Embeddings and full ingestion workflows are not yet fully validated end-to-end
+
+Use it as an evolving foundation, not as a fully completed production RAG pipeline yet.
+
+## Runtime flow (current)
+
+```text
+Client request (/rag/v1/chat/completions)
+  ↓
+RAG API service (FastAPI proxy/orchestration)
+  ↓
+Local LLM backend (vLLM/OpenAI-compatible)
+  ↓
+Streaming or non-stream OpenAI-style response
 ```
-POST /rag/chat
-  ↓
-Embed query via Ollama (nomic-embed-text)
-  ↓
-Retrieve top-k chunks from Qdrant
-  ↓
-Augment messages with context
-  ↓
-Call local vLLM → return OpenAI-compatible response
-```
 
-## Endpoints
+Qdrant is available as the vector infrastructure layer for ongoing RAG feature rollout.
+
+## API endpoints
 
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/health` | Health check |
 | `GET` | `/v1/models` | OpenAI-style model list exposed by the RAG API |
-| `POST` | `/v1/chat/completions` | OpenAI-compatible RAG chat completions |
-| `POST` | `/v1/embeddings` | OpenAI-compatible embeddings endpoint |
-| `POST` | `/chat` | Legacy alias for RAG chat completions |
+| `POST` | `/v1/chat/completions` | OpenAI-compatible chat completions (stream + non-stream) |
+| `POST` | `/v1/embeddings` | OpenAI-compatible embeddings endpoint (work in progress) |
+| `POST` | `/chat` | Legacy alias for chat completions |
 | `POST` | `/embed` | Legacy alias for embeddings |
 
-Via Traefik, the service is mounted under `/rag`, for example:
+Via Traefik, this service is mounted under `/rag`:
 
 - `https://localhost/rag/health`
 - `https://localhost/rag/v1/models`
 - `https://localhost/rag/v1/chat/completions`
 - `https://localhost/rag/v1/embeddings`
 
-## Request format (chat)
-
-```json
-POST /rag/chat
-{
-  "model": "rig-rag",
-  "messages": [{"role": "user", "content": "What is X?"}],
-  "collection": "default",
-  "top_k": 5,
-  "max_tokens": 2048,
-  "temperature": 0.7
-}
-```
-
-Response is OpenAI-compatible (`choices[0].message.content`).
-
 ## Dependencies
 
-- **Qdrant** must be running (`rig rag start` starts both)
-- **Ollama** must be running with `nomic-embed-text` pulled
-- **vLLM** must be running for generation (`rig serve <preset>`)
+- **Qdrant** must be running ([`rig rag start`](cli/lib/rag.sh))
+- **vLLM** must be running for completion generation ([`rig serve <preset>`](README.md:118))
+- **Ollama + embedding model** required for embedding workflows (currently under validation)
 
-## Ingesting documents
+## Scope note
 
-Document ingestion is not included in the RAG API service — use the Qdrant client directly or a separate ingestion script:
-
-```python
-from qdrant_client import QdrantClient
-from qdrant_client.models import PointStruct, VectorParams, Distance
-import httpx
-
-# Embed your chunks via the RAG API
-resp = httpx.post("https://localhost/rag/embed", json={"input": ["chunk text..."]})
-vector = resp.json()["data"][0]["embedding"]
-
-# Insert into Qdrant
-client = QdrantClient("localhost", port=6333)
-client.upsert("default", [PointStruct(id=1, vector=vector, payload={"text": "chunk text..."})])
-```
+Document ingestion/chunking pipelines and persistent knowledge memory are intentionally being developed in stages. This README reflects the current implementation baseline and short-term roadmap.
 
 ## Updating
 
