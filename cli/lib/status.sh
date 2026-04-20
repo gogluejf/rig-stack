@@ -153,7 +153,9 @@ _status_vllm_log_stats() {
     local container="$1"
     [[ -n "${container}" ]] || return 0
     container_running "${container}" || return 0
-    docker logs "${container}" 2>&1 | head -n 500 | python3 -c "
+    local started_at
+    started_at=$(docker inspect --format='{{.State.StartedAt}}' "${container}" 2>/dev/null || true)
+    docker logs ${started_at:+--since "${started_at}"} "${container}" 2>&1 | head -n 500 | python3 -c "
 import sys, re
 
 want = {
@@ -721,7 +723,7 @@ _status_detail_vllm() {
     [[ "${state}" == "running" ]] && lib_versions="$(_status_vllm_lib_versions "${container}")"
 
     # Parse log stats into associative array
-    declare -A vstats
+    declare -A vstats=()
     if [[ "${state}" == "running" ]]; then
         while IFS='=' read -r key val; do
             [[ -n "${key}" ]] && vstats["${key}"]="${val}"
