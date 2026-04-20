@@ -20,6 +20,11 @@ _service_avail() {
     done < <(_service)
 }
 
+# _service_openai_avail — running services that expose an OpenAI-compatible API (excludes comfyui).
+_service_openai_avail() {
+    _service_avail | grep -v '^comfyui$' || true
+}
+
 # _service_runtime <service> — returns normalized runtime GPU|CPU|- for a service.
 _service_runtime() {
     case "$(_container_runtime "$1" 2>/dev/null || true)" in

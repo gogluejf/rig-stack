@@ -16,7 +16,7 @@ cmd_benchmark() {
     case "${1:-}" in
         _service_avail)
             # Print benchmark-compatible running services (excludes comfyui).
-            _service_avail 2>/dev/null | grep -v '^comfyui$' || true
+            _service_openai_avail 2>/dev/null || true
             return 0
             ;;
         _models)
