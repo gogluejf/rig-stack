@@ -316,3 +316,9 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 - **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
 - **MCP server** — tooling layer over your private cloud AI endpoint
 - **Authentication** — access control for your self-hosted AI cloud
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
