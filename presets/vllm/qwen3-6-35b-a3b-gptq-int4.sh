@@ -14,6 +14,7 @@ VLLM_ARGS=(
   --tensor-parallel-size 1
   --max-model-len 131072
   --max-num-seqs 1
+  --max-num-batched-tokens 4096
   --kv-cache-dtype fp8
   --enable-prefix-caching
   --gpu-memory-utilization 0.85

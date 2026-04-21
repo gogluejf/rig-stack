@@ -5,9 +5,9 @@
 # Requires: RTX 5090 (32 GB VRAM), vLLM edge
 
 VLLM_ARGS=(
-  vllm serve /models/hf/Jackrong/Qwopus3.5-27B-v3-GGUF/Qwopus3.5-27B-v3-Q6_K.gguf
-  --served-model-name Jackrong/Qwopus3.5-27B-v3-GGUF
-  --tokenizer /models/hf/Jackrong/Qwopus3.5-27B-v3
+  vllm serve /models/hf/Jackrong/Qwopus3.5-27B-v3.5-GGUF/Qwopus3.5-27B-v3.5-Q4_K_M.gguf
+  --served-model-name Jackrong/Qwopus3.5-27B-v3.5-GGUF
+  --tokenizer /models/hf/Jackrong/Qwopus3.5-27B-v3.5
   --enable-auto-tool-choice
   --tool-call-parser qwen3_coder
   --max-model-len 65536
