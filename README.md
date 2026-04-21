@@ -2,9 +2,9 @@
 
 ## Turn your GPU into a managed private AI cloud.
 
-RigStack is an open-source CLI for running a full local AI stack with minimal friction.
+Built for developers and researchers who want production-grade local inference on NVIDIA hardware — without cloud overhead, per-token costs, or vendor lock-in.
 
-It unifies Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
+RigStack is an open-source CLI that unifies Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
 
 Run models on CPU or GPU, manage presets, install models easily, benchmark and monitor your entire setup with a simple, idempotent, Unix-friendly CLI.
 
@@ -53,7 +53,7 @@ No cloud. No per-token costs. Just fast, secure local inference that unleashes y
 
 ## What's included
 
-All services are exposed under a single Traefik gateway on port 80, or with TLS termination on port 443 (https://localhost):
+All services are exposed under a single Traefik gateway on port 80, or with TLS termination on port 443:
 
 | Component | Stack | Route |
 |---|---|---|
@@ -87,7 +87,7 @@ Or just run `./install.sh` — it handles all of the above.
 
 ```bash
 # 1. Clone and configure
-git clone <repo> rig-stack && cd rig-stack
+git clone https://github.com/gogluejf/rig-stack.git && cd rig-stack
 cp .env.example .env
 # Edit .env — set MODELS_ROOT, DATA_ROOT, DOCKER_ROOT to match your server
 
@@ -105,9 +105,9 @@ rig serve qwen3-5-27b
 
 The LLM endpoint is live at `https://localhost/v1`.
 
-![rig serve](docs/rig-start.gif)
+![rig presets](docs/rig-presets.png)
 
-*Load your favourite model and preset in one command. Switch builds, move between presets, toggle from stable to nightly edge in a click.*
+*Switch models and presets in one command — tune quantization, context length, and throughput on the fly.*
 
 ---
 
@@ -119,7 +119,11 @@ The LLM endpoint is live at `https://localhost/v1`.
 rig <command> [subcommand] [flags]
 ```
 
-![rig stats](docs/rig-stats.gif)
+![rig status](docs/cli-status.png)
+
+*Every endpoint in your stack at a glance — gateway, services, and live availability in one command.*
+
+![rig stats](docs/cli-stats.png)
 
 *Full visibility on your setup — gateway status, active services, GPU and CPU memory utilisation for your running model.*
 
@@ -127,7 +131,7 @@ rig <command> [subcommand] [flags]
 
 ## Architecture
 
-A single endpoint, multiple services. Traefik routes requests to vLLM for LLM inference, ComfyUI for image generation, Ollama for utility models, and the RAG API for retrieval — all on port 80. Langfuse captures traces across the stack.
+A single endpoint, multiple services. Traefik routes incoming requests to the right backend — vLLM for LLM inference, ComfyUI for image generation, Ollama for utility models, and the RAG API for retrieval. All traffic flows through port 80 (or 443 with TLS). Langfuse made available to captures traces across every service you consume without any data leaving your network.
 
 ![architecture](docs/architecture.png)
 
@@ -135,11 +139,7 @@ A single endpoint, multiple services. Traefik routes requests to vLLM for LLM in
 
 ## Field-tested configurations
 
-> Results on RTX 5090 (32 GB VRAM). This project is actively evolving — configurations are validated as new models and builds are tested.
-
-![rig test](docs/rig-test-vision.gif)
-
-`rig test` lets you validate every service and model in your stack — chat, vision, and more — and compile the results into clean benchmark logs.
+> Results on RTX 5090 (32 GB VRAM), single-stream throughput with greedy decoding. This project is actively evolving — configurations are validated as new models and builds are tested.
 
 **vLLM**
 
@@ -152,12 +152,24 @@ A single endpoint, multiple services. Traefik routes requests to vLLM for LLM in
 
 **Ollama** — Gemma, Llama (CPU and GPU offload)
 
-**Not yet validated**
+**Coming soon**
 
-| Component | Notes |
+| Component | Status |
 |---|---|
-| ComfyUI | Not tested |
-| RAG API | Functional POC — planned rewrite as agentic proxy with web search and LLM-wiki persistent memory |
+| ComfyUI | Benchmarks pending |
+| RAG API | Functional POC — planned rewrite as agentic proxy with web search and persistent LLM memory |
+
+![rig test](docs/rig-test.gif)
+
+*`rig test` validates every service and model in your stack — chat, vision, and more — and compiles results into clean benchmark logs.*
+
+---
+
+## Benchmark
+
+![cli benchmark](docs/cli-benchmark.png)
+
+*Use `rig benchmark logs` to get the full details of your test run.*
 
 ---
 
@@ -311,16 +323,17 @@ For non-Blackwell GPUs, use `rig serve <preset>` (stable container) — the edge
 
 ---
 
-## Future features
-- **Add api key auth for external access** — optional API key authentication for external access, with no auth overhead for localhost requests
-- **Support llmam.cpp** — extends support for quantized format not avail on vLLM.
-- **Comfy Workflows** — manage workflows, download models via `rig comfy workflow`
-- **Agent Gateway** — Transforms RAG endpoint into a server-side agent orchestrator (web search, Python sandbox, dynamic DB, RAG memory). Current RAG is a conceptual POC.
-- **Multi-distro support** — extend installer and scripts beyond Debian/Ubuntu
-- **Broader edge support** — edge builds for GPUs beyond RTX 5090 / Blackwell architecture
-- **Model metadata endpoint** — dynamic gateway route to surface model descriptions and capabilities
-- **MCP server** — tooling layer over your private cloud AI endpoint
-- **Authentication** — access control for your self-hosted AI cloud
+## Roadmap
+
+- **Agent Gateway** — evolve the RAG endpoint into a full server-side agent: web search, Python sandbox, dynamic knowledge base, and persistent LLM memory
+- **MCP server** — expose your private AI cloud as an MCP tool layer, pluggable into any MCP-compatible client
+- **SGLang support** — add SGLang as an alternative inference backend alongside vLLM
+- **llama.cpp support** — cover quantized formats not yet supported by vLLM
+- **ComfyUI workflows** — manage and trigger workflows via `rig comfy workflow`
+- **API key authentication** — optional key-based auth for external access with zero overhead on localhost
+- **Broader edge support** — extend nightly PyTorch builds beyond Blackwell / RTX 50xx
+- **Multi-distro support** — expand the installer beyond Debian/Ubuntu
+- **Model metadata endpoint** — a gateway route that surfaces model capabilities and descriptions dynamically
 
 ---
 
