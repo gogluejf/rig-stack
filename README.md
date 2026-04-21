@@ -16,7 +16,7 @@ No cloud. No per-token costs. Just fast, secure local inference that unleashes y
   Manage your entire AI stack with a single command. Switch presets, move models between CPU/GPU, and control all services with a fast, composable CLI.
 
 - **Single endpoint**  
-  Multiple inference services routed through Traefik on port 80. One host, one entry point.
+  Multiple inference services routed through Traefik on port 80 and 443. One host, one entry point.
 
 - **Observability**  
   One command to see endpoint availability, current system configuration, and memory distribution: `rig status`.
