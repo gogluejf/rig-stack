@@ -119,9 +119,13 @@ The LLM endpoint is live at `https://localhost/v1`.
 rig <command> [subcommand] [flags]
 ```
 
+**Services availability**
+
 ![rig status](docs/cli-status.png)
 
 *Every endpoint in your stack at a glance — gateway, services, and live availability in one command.*
+
+**Hardware usage**
 
 ![rig stats](docs/cli-stats.png)
 
@@ -159,9 +163,11 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 | ComfyUI | Benchmarks pending |
 | RAG API | Functional POC — planned rewrite as agentic proxy with web search and persistent LLM memory |
 
+**Test your inference**
+
 ![rig test](docs/rig-test.gif)
 
-*`rig test` validates every service and model in your stack — chat, vision, and more — and compiles results into clean benchmark logs.*
+*`rig test` and `rig benchmark` validate every service in your stack — chat, vision, and more — and compile results into clean benchmark logs.*
 
 ---
 
