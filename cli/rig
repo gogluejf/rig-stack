@@ -59,7 +59,6 @@ print_help() {
     _os="$(os_name 2>/dev/null || true)"
     _subtitle="${_gpu:+${_gpu} · }${_os:-Linux} · Your private AI cloud"
 
-    echo ""
     echo -e "\n  ${BOLD}rig — rig-stack control plane${RESET}"
     echo -e "  ${DIM}${_subtitle}${RESET}"
     echo ""
@@ -126,7 +125,6 @@ print_help() {
     echo -e "    rig models show ${DIM}Kbenkhaled/Qwen3.5-27B-NVFP4${RESET}"
     echo -e "    rig status"
     echo -e "    rig stats"
-    echo -e "    rig benchmark"
     echo -e "    rig benchmark"
     echo -e "    rig benchmark ${DIM}ollama${RESET} ${YELLOW_SOFT}--model${RESET} ${DIM}gemma4:31b${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}completion${RESET}"
     echo -e "    rig benchmark logs"

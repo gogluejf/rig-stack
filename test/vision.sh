@@ -12,7 +12,7 @@ SERVICE="${SERVICE:-vllm}"
 ENABLE_THINKING=false
 PRINT_THINKING=false
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a helpful assistant.}"
-VISION_PROMPT="Identify the 5 most dominant elements in this image. Return exactly 5 words, comma-separated, in order of importance."
+VISION_PROMPT="Identify the most dominant elements in this image. Return exactly 5 words, comma-separated, in order of importance."
 
 usage() {
   echo "Usage: $(basename "$0") <image_path> [--service vllm|ollama|rag] [--thinking] [--print-thinking]"

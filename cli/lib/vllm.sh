@@ -20,11 +20,11 @@ cmd_serve() {
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
             echo -e "  rig serve ${DIM}qwen3-5-27b${RESET}"
-            echo -e "  rig serve ${DIM}qwen3-5-27b-fast${RESET} ${YELLOW_SOFT}--edge${RESET}"
+            echo -e "  rig serve ${DIM}gemma-4-31B-it-NVFP4-turbo${RESET} ${YELLOW_SOFT}--edge${RESET}"
             echo -e "  rig serve"
-            echo "  rig serve preset list"
-            echo -e "  rig serve preset set ${DIM}qwen3-5-27b-fast${RESET}"
-            echo -e "  rig serve preset show ${DIM}qwen3-5-27b${RESET}"
+            echo -e "  rig serve preset list"
+            echo -e "  rig serve preset set ${DIM}qwen3-5-27b${RESET}"
+            echo -e "  rig serve preset show ${DIM}glm-4.7-flash${RESET}"
             echo ""
             ;;
         start)
