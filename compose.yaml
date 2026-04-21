@@ -272,7 +272,7 @@ services:
 
   # ── Langfuse — observability ──────────────────────────────────────────────
   langfuse:
-    image: langfuse/langfuse:latest
+    image: langfuse/langfuse:2
     container_name: rig-langfuse
     profiles: [observability]
     restart: unless-stopped
