@@ -10,6 +10,10 @@ Run models on CPU or GPU, manage presets, install models easily, benchmark and m
 
 No cloud. No per-token costs. Just fast, secure local inference that unleashes your creative work.
 
+![rig CLI](docs/rig-help.gif)
+
+*Powerful, friendly CLI with bash and zsh completion — manage your entire private AI server in one command.*
+
 ## Features
 
 - **Native CLI**  
@@ -101,6 +105,10 @@ rig serve qwen3-5-27b
 
 The LLM endpoint is live at `https://localhost/v1`.
 
+![rig serve](docs/rig-start.gif)
+
+*Load your favourite model and preset in one command. Switch builds, move between presets, toggle from stable to nightly edge in a click.*
+
 ---
 
 ## CLI reference
@@ -111,7 +119,9 @@ The LLM endpoint is live at `https://localhost/v1`.
 rig <command> [subcommand] [flags]
 ```
 
-![architecture](docs/cli.png)
+![rig stats](docs/rig-stats.gif)
+
+*Full visibility on your setup — gateway status, active services, GPU and CPU memory utilisation for your running model.*
 
 ---
 
@@ -126,6 +136,10 @@ A single endpoint, multiple services. Traefik routes requests to vLLM for LLM in
 ## Field-tested configurations
 
 > Results on RTX 5090 (32 GB VRAM). This project is actively evolving — configurations are validated as new models and builds are tested.
+
+![rig test](docs/rig-test-vision.gif)
+
+`rig test` lets you validate every service and model in your stack — chat, vision, and more — and compile the results into clean benchmark logs.
 
 **vLLM**
 
