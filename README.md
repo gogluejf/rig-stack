@@ -10,7 +10,7 @@ Run models on CPU or GPU, manage presets, install models easily, benchmark and m
 
 No cloud. No per-token costs. Just fast, secure local inference that unleashes your creative work.
 
-![rig CLI](docs/rig-help.gif)
+![rig CLI](docs/cli.png)
 
 *Powerful, friendly CLI with bash and zsh completion — manage your entire private AI server in one command.*
 
