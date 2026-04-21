@@ -146,6 +146,7 @@ A single endpoint, multiple services. Traefik routes requests to vLLM for LLM in
 | Model | Container | Throughput |
 |---|---|---|
 | Qwen3.5-27B-NVFP4 | edge | ~65 tok/s |
+| Qwen3-6-35B-A3B GPTQ-Int4 | edge | ~200 tok/s |
 | GLM-4.7-Flash-NVFP4 | edge | ~170 tok/s |
 | Gemma 4 31B NVFP4-turbo | stable | ~55 tok/s |
 
