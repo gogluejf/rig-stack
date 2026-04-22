@@ -101,6 +101,7 @@ if [[ "${TYPE}" == "hf" ]]; then
     else
         echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${local_dir}${RESET}"
         if command -v modelscan &>/dev/null; then
+            echo ""
             echo -e "${CYAN}Scanning ${local_dir}...${RESET}"
             scan_out=$(modelscan -p "${local_dir}" 2>&1) || true
             if echo "${scan_out}" | grep -q "No issues found"; then
@@ -111,6 +112,7 @@ if [[ "${TYPE}" == "hf" ]]; then
             fi
         fi
     fi
+    echo ""
 fi
 
 # ── ollama ────────────────────────────────────────────────────────────────────
