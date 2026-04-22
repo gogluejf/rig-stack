@@ -12,9 +12,10 @@ VLLM_ARGS=(
   --tool-call-parser qwen3_coder
   --max-model-len 131072
   --max-num-seqs 1
+  --max-num-batched-tokens 4096
   --kv-cache-dtype fp8
   --enable-prefix-caching
-  --gpu-memory-utilization 0.90
+  --gpu-memory-utilization 0.87
   --tensor-parallel-size 1
   --dtype auto
   --trust-remote-code

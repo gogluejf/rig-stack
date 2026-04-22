@@ -151,7 +151,8 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 |---|---|---|---|
 | sakamakismile/Qwen3.6-27B-NVFP4 | edge | ~60 tok/s | ~53k |
 | Kbenkhaled/Qwen3.5-27B-NVFP4 | edge | ~65 tok/s | ~48k |
-| palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~205 tok/s | ~130k |
+| palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~205 tok/s | ~125k |
+| sakamakismile/Qwen3.6-35B-A3B-NVFP4 | edge | ~170 tok/s | ~123k |
 | GadflyII/GLM-4.7-Flash-NVFP4 | edge | ~165 tok/s | ~144k |
 | LilaRest/gemma-4-31B-it-NVFP4-turbo | stable | ~55 tok/s | ~18k |
 
