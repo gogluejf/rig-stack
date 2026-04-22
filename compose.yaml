@@ -71,6 +71,8 @@ services:
       - ./.preset.active.vllm:/preset/vllm.sh:ro
       - ${MODELS_ROOT}:/models:ro
       - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
+      - ${DATA_ROOT}/.cache/torch:/root/.cache/torch
+      - ${DATA_ROOT}/.cache/vllm:/root/.cache/vllm
       - ${DATA_ROOT}/outputs/vllm:/outputs
       - ${DATA_ROOT}/logs/vllm:/logs
     networks:
@@ -110,6 +112,8 @@ services:
       - ./.preset.active.vllm:/preset/vllm.sh:ro
       - ${MODELS_ROOT}:/models:ro
       - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
+      - ${DATA_ROOT}/.cache/torch:/root/.cache/torch
+      - ${DATA_ROOT}/.cache/vllm:/root/.cache/vllm
       - ${DATA_ROOT}/outputs/vllm:/outputs
       - ${DATA_ROOT}/logs/vllm:/logs
     networks:
