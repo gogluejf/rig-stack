@@ -61,6 +61,9 @@ services:
     shm_size: '16gb'
     ports:
       - "${VLLM_PORT:-8000}:8000"
+    environment:
+      - VLLM_NO_USAGE_STATS=1
+      - VLLM_DO_NOT_TRACK=1
     env_file:
       - .env
     volumes:
@@ -96,6 +99,9 @@ services:
     shm_size: '16gb'
     ports:
       - "${VLLM_PORT:-8000}:8000"
+    environment:
+      - VLLM_NO_USAGE_STATS=1
+      - VLLM_DO_NOT_TRACK=1
     env_file:
       - .env
     volumes:
