@@ -11,7 +11,7 @@ VLLM_ARGS=(
   vllm serve /models/hf/LilaRest/gemma-4-31B-it-NVFP4-turbo
   --served-model-name LilaRest/gemma-4-31B-it-NVFP4-turbo
   --quantization modelopt
-  --max-model-len 128000
+  --max-model-len 24000
   --max-num-seqs 1
   --gpu-memory-utilization 0.95
   --kv-cache-dtype fp8
