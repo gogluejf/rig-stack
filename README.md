@@ -98,9 +98,9 @@ cp .env.example .env
 rig models init --minimal
 
 # 4. Start serving
-rig serve qwen3-5-27b
+rig serve qwen3-6-27b-nvfp4
 # On Blackwell (RTX 50xx)? Squeeze every FLOP out of your card:
-# rig serve qwen3-5-27b --edge
+# rig serve qwen3-6-27b-nvfp4 --edge
 ```
 
 The LLM endpoint is live at `https://localhost/v1`.
@@ -212,8 +212,8 @@ Presets let you manage different vLLM configurations and switch from one setup t
 Create one by copying an existing preset and adjusting the values:
 
 ```bash
-cp presets/vllm/qwen3-5-27b.env presets/vllm/my-preset.env
-# Edit my-preset.env
+cp presets/vllm/qwen3-6-27b-nvfp4.sh presets/vllm/my-preset.sh
+# Edit my-preset.sh
 rig serve my-preset
 ```
 

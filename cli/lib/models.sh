@@ -28,7 +28,7 @@ cmd_models() {
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
             echo -e "  rig models init ${YELLOW_SOFT}--minimal${RESET}"
-            echo -e "  rig models install ${DIM}Kbenkhaled/Qwen3.5-27B-NVFP4${RESET}"
+            echo -e "  rig models install ${DIM}sakamakismile/Qwen3.6-27B-NVFP4${RESET}"
             echo -e "  rig models install ${DIM}TencentARC/GFPGAN${RESET} ${YELLOW_SOFT}--file${RESET} ${DIM}GFPGANv1.4.pth${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET}"
             echo -e "  rig models install ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
             echo -e "  rig models show ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
@@ -85,7 +85,7 @@ _models_install() {
                 exit 1
                 ;;
             *)
-                source="${1}"
+                source="${1}test"
                 shift
                 ;;
         esac
@@ -235,7 +235,8 @@ _models_init() {
 
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
-        _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
+        _install hf sakamakismile/Qwen3.6-27B-NVFP4
+        _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
         _install hf LilaRest/gemma-4-31B-it-NVFP4-turbo
         _install hf GadflyII/GLM-4.7-Flash-NVFP4
         #_install hf nomic-ai/nomic-embed-text-v1.5
@@ -275,7 +276,7 @@ _models_init() {
 
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
-        _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
+        _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
         _install hf starvector/starvector-8b-im2svg
         
     }
@@ -361,7 +362,7 @@ _models_init() {
     echo ""
     echo "Next steps:"
     echo "  rig models"
-    echo "  rig serve preset set qwen3-5-27b"
-    echo "  rig serve qwen3-5-27b"
+    echo "  rig serve preset set qwen3-6-27b-nvfp4"
+    echo "  rig serve qwen3-6-27b-nvfp4"
     echo "  rig comfy start"
 }

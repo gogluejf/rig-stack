@@ -57,7 +57,6 @@ RUN pip3 install --no-cache-dir \
 RUN python3 -c "import torch; archs = torch.cuda.get_arch_list(); print('Torch CUDA:', torch.version.cuda, 'CUDA archs:', archs); (archs and ('sm_120' in archs or any('12' in a for a in archs))) or (not archs and print('WARN: empty arch list during build context; runtime GPU check required'))"
 
 # Step 3: Install vLLM from nightly index (sm_120 support merged post-0.6)
-# Pin: vLLM 0.17.1 — confirmed working on RTX 5090 with Qwen3.5-27B-NVFP4
 # To update: change the version pin below and rebuild with:
 #   docker compose build vllm-edge
 # or: scripts/setup/04-build-edge-images.sh

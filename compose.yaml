@@ -7,7 +7,7 @@
 # Traefik always runs as the unified gateway.
 #
 # Usage via CLI (recommended):
-#   rig serve qwen3-5-27b
+#   rig serve start [preset]  
 #   rig comfy start
 #
 # Direct compose (advanced):
