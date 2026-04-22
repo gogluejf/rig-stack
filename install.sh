@@ -178,6 +178,7 @@ fi
 run_step "${SETUP_DIR}/03-install-nvidia-toolkit.sh"  "03 — NVIDIA Container Toolkit"
 run_step "${SETUP_DIR}/04-build-edge-images.sh"       "04 — Build edge images"
 run_step "${SETUP_DIR}/05-install-cli.sh"             "05 — Install rig CLI"
+run_step "${SETUP_DIR}/06-install-security-tools.sh" "06 — Security tools"
 
 echo -e "\n${GREEN}${BOLD}✓  rig-stack install complete.${RESET}"
 echo -e "\nNext steps:"

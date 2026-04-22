@@ -127,8 +127,8 @@ _models_names() {
                 local org; org="$(basename "${org_dir}")"
                 while IFS= read -r -d '' repo_dir; do
                     echo "${org}/$(basename "${repo_dir}")"
-                done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
-            done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+                done < <(find "${org_dir}" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -print0 2>/dev/null)
+            done < <(find "${models_root}/hf" -mindepth 1 -maxdepth 1 -type d -not -name '.*' -print0 2>/dev/null)
         fi
     fi
 

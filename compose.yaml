@@ -64,12 +64,13 @@ services:
     environment:
       - VLLM_NO_USAGE_STATS=1
       - VLLM_DO_NOT_TRACK=1
+      - HF_HOME=/models/hf/.cache
     env_file:
       - .env
     volumes:
       - ./.preset.active.vllm:/preset/vllm.sh:ro
       - ${MODELS_ROOT}:/models:ro
-      - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
+      - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
       - ${DATA_ROOT}/outputs/vllm:/outputs
       - ${DATA_ROOT}/logs/vllm:/logs
     networks:
@@ -102,12 +103,13 @@ services:
     environment:
       - VLLM_NO_USAGE_STATS=1
       - VLLM_DO_NOT_TRACK=1
+      - HF_HOME=/models/hf/.cache
     env_file:
       - .env
     volumes:
       - ./.preset.active.vllm:/preset/vllm.sh:ro
       - ${MODELS_ROOT}:/models:ro
-      - ${DATA_ROOT}/cache/huggingface:/root/.cache/huggingface
+      - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
       - ${DATA_ROOT}/outputs/vllm:/outputs
       - ${DATA_ROOT}/logs/vllm:/logs
     networks:
