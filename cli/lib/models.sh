@@ -276,8 +276,10 @@ _models_init() {
 
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
+        _install hf sakamakismile/Qwen3.6-35B-A3B-NVFP4
+        _install hf Lna-Lab/Huihui-gemma-4-31B-it-abliterated-v2-NVFP4
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
-        _install hf starvector/starvector-8b-im2svg
+        #_install hf starvector/starvector-8b-im2svg
         
     }
 

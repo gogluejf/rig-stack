@@ -149,10 +149,11 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 
 | Model | Container | Throughput |
 |---|---|---|
-| Qwen3.5-27B-NVFP4 | edge | ~65 tok/s |
-| Qwen3-6-35B-A3B GPTQ-Int4 | edge | ~200 tok/s |
-| GLM-4.7-Flash-NVFP4 | edge | ~170 tok/s |
-| Gemma 4 31B NVFP4-turbo | stable | ~55 tok/s |
+| sakamakismile/Qwen3.6-27B-NVFP4 | edge | ~60 tok/s |
+| Kbenkhaled/Qwen3.5-27B-NVFP4 | edge | ~65 tok/s |
+| palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~200 tok/s |
+| GadflyII/GLM-4.7-Flash-NVFP4 | edge | ~170 tok/s |
+| LilaRest/gemma-4-31B-it-NVFP4-turbo | stable | ~55 tok/s |
 
 **Ollama** — Gemma, Llama (CPU and GPU offload)
 
