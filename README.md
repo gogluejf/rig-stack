@@ -296,6 +296,9 @@ docker compose restart traefik
 ## Storage layout
 
 Keep models, data, and Docker storage separate from the inference services themselves.
+I would recommend at least 2 TB of free space for a smooth experience, especially if you plan to work with larger models or multiple models simultaneously.
+Docker by itself with cache and images can easily consume 130 GB+. on my setup.
+I keep 800 GB free for models, the rest for my data and Docker storage, though this will be use when playing with comfy workflows and RAG.
 
 If your server uses different paths than `/models`, `/data`, `/docker`, edit `.env`:
 
