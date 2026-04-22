@@ -2,7 +2,7 @@
 # Preset: qwen3-6-35b-a3b-gptq-int4 — Qwen 3.6 35B A3B GPTQ Int4 (single-GPU), get up to 200tok/s and very good coding reasoning
 # Model:  palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
 # Use:    Long-context coding and tool use with GPTQ Marlin on one GPU.
-# Requires: RTX class GPU (single-GPU), vLLM stable or edge
+# Tested on: RTX class GPU (single-GPU), vLLM stable or edge
 
 VLLM_ARGS=(
   vllm serve /models/hf/palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4

@@ -2,8 +2,7 @@
 # Preset: gemma4-31b-nvfp4-turbo — Gemma 4 31B (NVFP4 turbo), text-only
 # Model:  LilaRest/gemma-4-31B-it-NVFP4-turbo
 # Use:    High-performance Gemma 4 preset with tool calling and reasoning support
-# Requires: Run on stable, RTX 5090 (32 GB VRAM), vLLM 0.19+ (0.17 fails: layer_scalar weights unsupported in TransformersMultiModalForCausalLM)
-# Requires --trust-remote-code: model bundles its own modeling code that handles layer_scalar weights in NVFP4 turbo format
+# Tested on:Run on stable, RTX 5090 (32 GB VRAM), vLLM 0.19+ (0.17 fails: layer_scalar weights unsupported in TransformersMultiModalForCausalLM)
 # Notes: this model was stripped of its vision capabilities and fine-tuned for instruction following, reasoning, and tool use. 
 # For the full Gemma 4 experience with vision, use the gemma4-31b-nvfp4-vision preset instead. 
 

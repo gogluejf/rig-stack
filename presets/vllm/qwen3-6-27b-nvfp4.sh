@@ -2,7 +2,7 @@
 # Preset: qwen3-6-27b-nvfp4 — Qwen 3.6 27B NVFP4 (single-GPU), ideal coding agent
 # Model:  sakamakismile/Qwen3.6-27B-NVFP4
 # Use:    Full-context code generation and tool use. Efficient daily driver.
-# Requires: RTX 5090 (32 GB VRAM), vLLM stable or edge
+# Tested on: RTX 5090 (32 GB VRAM), vLLM stable or edge
 
 VLLM_ARGS=(
   vllm serve /models/hf/sakamakismile/Qwen3.6-27B-NVFP4

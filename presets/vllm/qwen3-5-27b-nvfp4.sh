@@ -2,7 +2,7 @@
 # Preset: qwen3-5-27b-nvfp4— Qwen 3.4 27B NVFP4 (single-GPU), ideal coding agent
 # Model:  Kbenkhaled/Qwen3.5-27B-NVFP4 (fp4 quantized)
 # Use:    Full-context code generation and tool use. Default daily driver.
-# Requires: RTX 5090 (32 GB VRAM), vLLM stable or edge
+# Tested on: RTX 5090 (32 GB VRAM), vLLM stable or edge
 
 VLLM_ARGS=(
   vllm serve /models/hf/Kbenkhaled/Qwen3.5-27B-NVFP4
