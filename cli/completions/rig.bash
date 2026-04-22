@@ -138,7 +138,7 @@ _rig_completions() {
     # ── rig models ────────────────────────────────────────────────────────────
     models)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "init install show remove list --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "init install show remove scan list --help" -- "${cur}"))
             return
         fi
 

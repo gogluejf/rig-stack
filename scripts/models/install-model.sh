@@ -20,7 +20,13 @@ TYPE=""
 SOURCE=""
 FILE=""
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; RESET='\033[0m'
+RED='\033[0;31m'; 
+GREEN='\033[0;32m'; 
+CYAN='\033[0;36m'; 
+YELLOW='\033[1;33m'; 
+BOLD='\033[1m'; 
+RESET='\033[0m'
+GREEN_BOLD='\033[1;92m'; RED_BG='\033[1;97;41m'
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -61,6 +67,7 @@ if [[ "${TYPE}" == "hf" ]]; then
     fi
 
     local_dir="/models/hf/${SOURCE}"
+    echo ""
     echo -e "${CYAN}Downloading HF: ${SOURCE}${RESET}"
     [[ -n "${FILE}" ]] && echo -e "  File: ${FILE}"
     echo -e "  Destination: ${local_dir}"
@@ -93,6 +100,16 @@ if [[ "${TYPE}" == "hf" ]]; then
         echo -e "${YELLOW}⚠  ${SOURCE} (${FILE}) — file not found in repo, skipping${RESET}"
     else
         echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${local_dir}${RESET}"
+        if command -v modelscan &>/dev/null; then
+            echo -e "${CYAN}Scanning ${local_dir}...${RESET}"
+            scan_out=$(modelscan -p "${local_dir}" 2>&1) || true
+            if echo "${scan_out}" | grep -q "No issues found"; then
+                echo -e "${GREEN_BOLD}✓  modelscan clean${RESET}"
+            else
+                echo "${scan_out}"
+                echo -e "${RED_BG} ✗  modelscan found issues — review before loading this model ${RESET}"
+            fi
+        fi
     fi
 fi
 

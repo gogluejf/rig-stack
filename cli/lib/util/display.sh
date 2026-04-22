@@ -11,6 +11,8 @@ export BLUE='\033[0;34m'
 export MAGENTA='\033[0;35m'
 export BOLD='\033[1m'
 export DIM='\033[2m'
+export GREEN_BOLD='\033[1;92m'
+export RED_BG='\033[1;97;41m'
 export RESET='\033[0m'
 
 # ── Value formatters ──────────────────────────────────────────────────────────

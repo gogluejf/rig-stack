@@ -322,6 +322,7 @@ _rig_models_cmd() {
         'install:Install a single model from HuggingFace, Ollama, or ComfyUI'
         'show:Show files and size for a model'
         'remove:Delete a model from disk or Ollama'
+        'scan:Scan all HF models for malicious code'
     )
     _arguments -C \
         '--help[Show help]' \

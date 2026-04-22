@@ -26,6 +26,8 @@ cmd_models() {
             echo -e "    ${YELLOW_SOFT}--file${RESET} ${CYAN}<path>${RESET}                    ${DIM}remove one file under the selected model${RESET}"
             echo -e "    ${YELLOW_SOFT}--type${RESET} ${CYAN}<type>${RESET}                    ${DIM}backend type: hf, ollama, comfy${RESET}"
             echo ""
+            echo -e "  rig models ${BOLD}scan${RESET}                    ${DIM}scan all HF models for malicious code (modelscan)${RESET}"
+            echo ""
             echo -e "${GREEN}Examples:${RESET}"
             echo -e "  rig models init ${YELLOW_SOFT}--minimal${RESET}"
             echo -e "  rig models install ${DIM}sakamakismile/Qwen3.6-27B-NVFP4${RESET}"
@@ -36,6 +38,7 @@ cmd_models() {
             echo -e "  rig models install ${DIM}black-forest-labs/FLUX.1-dev${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET}"
             echo -e "  rig models remove ${DIM}Qwen/Qwen-Image-2512${RESET}"
             echo -e "  rig models remove ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
+            echo -e "  rig models scan"
             echo ""
             ;;
         ""|list)
@@ -60,8 +63,11 @@ cmd_models() {
             bash "${RIG_ROOT}/scripts/models/show-model.sh" "$@"
             ;;
         remove)
-            shift
+            shift 
             bash "${RIG_ROOT}/scripts/models/remove-model.sh" "$@"
+            ;;
+        scan)
+            _models_scan
             ;;
         *)
             echo -e "${RED}Unknown models subcommand: ${1}${RESET}"
@@ -85,7 +91,7 @@ _models_install() {
                 exit 1
                 ;;
             *)
-                source="${1}test"
+                source="${1}"
                 shift
                 ;;
         esac
@@ -152,6 +158,55 @@ _models_names() {
             done < <(find "${models_root}/comfy" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
         fi
     fi
+}
+
+_models_scan() {
+    load_env
+    local models_root="${MODELS_ROOT:-/models}"
+    local hf_root="${models_root}/hf"
+
+    if ! command -v modelscan &>/dev/null; then
+        echo -e "${RED}modelscan not found. Install it: pip3 install --break-system-packages modelscan${RESET}"
+        exit 1
+    fi
+
+    if [[ ! -d "${hf_root}" ]]; then
+        echo -e "${YELLOW}No HF models directory found at ${hf_root}${RESET}"
+        exit 0
+    fi
+
+    local issues=0
+    local scanned=0
+
+    echo ""
+    print_header "modelscan — HF models"
+    hr
+
+    while IFS= read -r name; do
+        local model_dir="${hf_root}/${name}"
+        local scan_out
+        scan_out=$(modelscan -p "${model_dir}" 2>&1) || true
+        echo -e "  ${CYAN}${name}${RESET}"
+        if echo "${scan_out}" | grep -q "No issues found"; then
+            echo -e "  ${GREEN_BOLD}✓  clean${RESET}"
+        else
+            echo "${scan_out}" | sed 's/^/    /'
+            echo -e "  ${RED_BG} ✗  issues found ${RESET}"
+            (( issues++ )) || true
+        fi
+        (( scanned++ )) || true
+        echo ""
+    done < <(_models_names hf)
+
+    hr
+    if [[ "${scanned}" -eq 0 ]]; then
+        echo -e "  ${DIM}No HF models to scan.${RESET}"
+    elif [[ "${issues}" -eq 0 ]]; then
+        echo -e "  ${GREEN_BOLD}✓  All ${scanned} model(s) clean${RESET}"
+    else
+        echo -e "  ${RED_BG} ✗  ${issues} of ${scanned} model(s) had issues — review before loading ${RESET}"
+    fi
+    echo ""
 }
 
 _models_list() {
