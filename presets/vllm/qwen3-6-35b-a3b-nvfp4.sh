@@ -9,7 +9,7 @@ VLLM_ARGS=(
   --served-model-name sakamakismile/Qwen3.6-35B-A3B-NVFP4
   --enable-auto-tool-choice
   --tool-call-parser qwen3_coder
-  --max-model-len 200000
+  --max-model-len 180000
   --max-num-seqs 1
   --max-num-batched-tokens 4096
   --kv-cache-dtype fp8
