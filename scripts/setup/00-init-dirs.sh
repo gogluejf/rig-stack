@@ -62,10 +62,7 @@ create_dirs "${DATA_ROOT}" \
     logs/rag \
     logs/langfuse \
     logs/postgres \
-    .cache/torch \
-    .cache/vllm \
-    .cache/flashinfer \
-    .cache/triton \
+    .cache \
     qdrant \
     postgres \
     backups
