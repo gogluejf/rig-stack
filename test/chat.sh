@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Interactive chat: see the full conversation flow (system → user → assistant)
-# Run: ./test/chat.sh [--service vllm|ollama|rag] [--thinking] [--print-thinking]
+# Run: ./test/chat.sh [--service vllm|ollama|rag] [--thinking]
 
 set -euo pipefail
 
@@ -10,27 +10,14 @@ source "${SCRIPT_DIR}/curl/streaming.sh"
 
 SERVICE="${SERVICE:-vllm}"
 ENABLE_THINKING=false
-PRINT_THINKING=false
-
-usage() {
-  echo "Usage: $(basename "$0") [--service vllm|ollama|rag] [--thinking] [--print-thinking]"
-  echo ""
-  echo "Options:"
-  echo "  --service SERVICE  Target service: vllm (default), ollama, rag"
-  echo "  --thinking         Enable thinking mode (spinner shown, reasoning hidden)"
-  echo "  --print-thinking   Enable thinking mode and display the model's reasoning"
-  exit 1
-}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --service)
-        [[ $# -lt 2 ]] && { echo "Error: --service requires an argument" >&2; usage; }
+        [[ $# -lt 2 ]] && { echo "Error: --service requires an argument" >&2; exit 1; }
         SERVICE="$2"; shift 2 ;;
-    --thinking)       ENABLE_THINKING=true; shift ;;
-    --print-thinking) ENABLE_THINKING=true; PRINT_THINKING=true; shift ;;
-    -h|--help)        usage ;;
-    *)                echo "Unknown argument: $1" >&2; usage ;;
+    --thinking) ENABLE_THINKING=true; shift ;;
+    *) echo "Unknown argument: $1" >&2; exit 1 ;;
   esac
 done
 
@@ -62,7 +49,7 @@ while true; do
   _req_json="$(jq \
     --arg model "${MODEL}" \
     --argjson enable_thinking "${ENABLE_THINKING}" \
-    '{model:$model,stream:true,max_tokens:300,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
+    '{model:$model,stream:true,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
     "${_msgs_file}")"
 
   printf '\n'

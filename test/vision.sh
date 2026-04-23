@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vision analysis: extract 5 dominant elements from an image
-# Run: ./test/vision.sh <image_path> [--service vllm|ollama|rag] [--thinking] [--print-thinking]
+# Run: ./test/vision.sh <image_path> [--service vllm|ollama|rag] [--thinking]
 
 set -euo pipefail
 
@@ -10,19 +10,8 @@ source "${SCRIPT_DIR}/curl/streaming.sh"
 
 SERVICE="${SERVICE:-vllm}"
 ENABLE_THINKING=false
-PRINT_THINKING=false
 SYSTEM_PROMPT="${SYSTEM_PROMPT:-You are a helpful assistant.}"
 VISION_PROMPT="Identify the most dominant elements in this image. Return exactly 5 words, comma-separated, in order of importance."
-
-usage() {
-  echo "Usage: $(basename "$0") <image_path> [--service vllm|ollama|rag] [--thinking] [--print-thinking]"
-  echo ""
-  echo "Options:"
-  echo "  --service SERVICE  Target service: vllm (default), ollama, rag"
-  echo "  --thinking         Enable thinking mode (spinner shown, reasoning hidden)"
-  echo "  --print-thinking   Enable thinking mode and display the model's reasoning"
-  exit 1
-}
 
 image_mime() {
   case "${1,,}" in
@@ -38,20 +27,18 @@ IMAGE_PATH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --service)
-        [[ $# -lt 2 ]] && { echo "Error: --service requires an argument" >&2; usage; }
+        [[ $# -lt 2 ]] && { echo "Error: --service requires an argument" >&2; exit 1; }
         SERVICE="$2"; shift 2 ;;
-    --thinking)       ENABLE_THINKING=true; shift ;;
-    --print-thinking) ENABLE_THINKING=true; PRINT_THINKING=true; shift ;;
-    -h|--help)        usage ;;
+    --thinking) ENABLE_THINKING=true; shift ;;
     *)
       if [[ -z "${IMAGE_PATH}" ]]; then IMAGE_PATH="$1"
-      else echo "Unknown argument: $1" >&2; usage
+      else echo "Unknown argument: $1" >&2; exit 1
       fi
       shift ;;
   esac
 done
 
-[[ -z "${IMAGE_PATH}" ]]   && { echo "Error: Image path is required" >&2; usage; }
+[[ -z "${IMAGE_PATH}" ]]   && { echo "Error: Image path is required" >&2; exit 1; }
 [[ ! -f "${IMAGE_PATH}" ]] && { echo "Error: Image file not found: ${IMAGE_PATH}" >&2; exit 1; }
 
 if [[ -z "${API_URL:-}" ]]; then

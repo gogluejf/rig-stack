@@ -276,47 +276,37 @@ _rig_completions() {
 
     # ── rig test ──────────────────────────────────────────────────────────────
     test)
-        # Live service list — only running OpenAI-compatible services.
-        local avail_services
-        avail_services="$(rig test _service_avail 2>/dev/null)"
-
-        # Detect explicit service: first non-flag word after 'test'.
-        local service_arg=""
-        local ww
-        for (( w=2; w<cword; w++ )); do
-            ww="${words[w]}"
-            if [[ "${ww}" != --* && -z "${service_arg}" ]]; then
-                service_arg="${ww}"
-            fi
-        done
-
-        # Mode flags are mutually exclusive.
-        local has_chat=false has_prompt=false has_chunk=false has_vision=false
-        _rig_contains "--chat"   "${words[@]}" && has_chat=true
-        _rig_contains "--prompt" "${words[@]}" && has_prompt=true
-        _rig_contains "--chunk"  "${words[@]}" && has_chunk=true
-        _rig_contains "--vision" "${words[@]}" && has_vision=true
-
-        if [[ "${prev}" == "--vision" ]]; then
-            COMPREPLY=($(compgen -f -- "${cur}"))
-            return
-        fi
-
-        local mode_flags=""
-        if [[ "${has_chat}" == false && "${has_prompt}" == false && "${has_chunk}" == false && "${has_vision}" == false ]]; then
-            mode_flags="--chat --prompt --chunk --vision"
-        fi
-
+        # Level 2: subcommand
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "${avail_services} ${mode_flags} --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "chat prompt chunk vision --help" -- "${cur}"))
             return
         fi
 
-        if [[ -z "${service_arg}" ]]; then
-            COMPREPLY=($(compgen -W "${avail_services} ${mode_flags} --help" -- "${cur}"))
-        else
-            COMPREPLY=($(compgen -W "${mode_flags} --help" -- "${cur}"))
-        fi
+        local tsub="${words[2]}"
+
+        # Level 3: flags per subcommand
+        case "${tsub}" in
+            chat|prompt|chunk)
+                local flags="--vllm --ollama --rag --help"
+                _rig_contains "--thinking" "${words[@]}" || flags+=" --thinking"
+                COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+                ;;
+            vision)
+                # First non-flag word after 'vision' is the image path
+                local has_img=false
+                local w
+                for (( w=3; w<cword; w++ )); do
+                    [[ "${words[w]}" != --* ]] && has_img=true && break
+                done
+                if [[ "${has_img}" == false && "${cur}" != --* ]]; then
+                    COMPREPLY=($(compgen -f -- "${cur}"))
+                else
+                    local flags="--vllm --ollama --rag --help"
+                    _rig_contains "--thinking" "${words[@]}" || flags+=" --thinking"
+                    COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+                fi
+                ;;
+        esac
         ;;
 
     esac

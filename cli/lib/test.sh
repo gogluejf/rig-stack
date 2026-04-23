@@ -10,10 +10,27 @@ cmd_test() {
             ;;
     esac
 
+    local subcmd="${1:-}"
+    case "${subcmd}" in
+        chat|prompt|chunk|vision) shift ;;
+        --help|-h)
+            _test_help
+            return 0
+            ;;
+        "")
+            _test_help
+            return 0
+            ;;
+        *)
+            echo -e "${RED}Unknown subcommand for test: ${subcmd}${RESET}"
+            _test_help
+            return 1
+            ;;
+    esac
+
     local service="vllm"
-    local explicit_service=false
-    local mode="chat"
-    local mode_count=0
+    local service_count=0
+    local enable_thinking=false
     local image_path=""
 
     while [[ $# -gt 0 ]]; do
@@ -22,66 +39,35 @@ cmd_test() {
                 _test_help
                 return 0
                 ;;
-            --chat)
-                mode="chat"
-                mode_count=$((mode_count + 1))
-                shift
-                continue
-                ;;
-            --prompt)
-                mode="prompt"
-                mode_count=$((mode_count + 1))
-                shift
-                continue
-                ;;
-            --chunk)
-                mode="chunk"
-                mode_count=$((mode_count + 1))
-                shift
-                continue
-                ;;
-            --vision)
-                [[ $# -ge 2 ]] || {
-                    echo -e "${RED}--vision requires ${CYAN}<img_path>${RESET}"
+            --vllm|--ollama|--rag)
+                if [[ ${service_count} -gt 0 ]]; then
+                    echo -e "${RED}Choose one service flag only: --vllm | --ollama | --rag${RESET}"
                     return 1
-                }
-                mode="vision"
-                mode_count=$((mode_count + 1))
-                image_path="${2}"
-                shift 2
-                continue
+                fi
+                service="${1#--}"
+                service_count=$((service_count + 1))
+                shift
+                ;;
+            --thinking)
+                enable_thinking=true
+                shift
                 ;;
             --*)
-                echo -e "${RED}Unknown flag for test: ${1}${RESET}"
+                echo -e "${RED}Unknown flag: ${1}${RESET}"
                 _test_help
                 return 1
                 ;;
             *)
-                if [[ "${explicit_service}" == false ]]; then
-                    service="${1}"
-                    explicit_service=true
+                if [[ "${subcmd}" == "vision" && -z "${image_path}" ]]; then
+                    image_path="${1}"
+                    shift
                 else
-                    echo -e "${RED}Unexpected extra argument: ${1}${RESET}"
-                    _test_help
+                    echo -e "${RED}Unexpected argument: ${1}${RESET}"
                     return 1
                 fi
                 ;;
         esac
-        shift
     done
-
-    if [[ ${mode_count} -gt 1 ]]; then
-        echo -e "${RED}Select exactly one mode flag: --chat | --prompt | --chunk | --vision <img_path>${RESET}"
-        return 1
-    fi
-
-    case "${service}" in
-        vllm|ollama|rag) ;;
-        *)
-            echo -e "${RED}Unknown service: ${service}${RESET}"
-            return 1
-            ;;
-    esac
 
     local _avail_list
     _avail_list="$(_service_openai_avail 2>/dev/null || true)"
@@ -90,9 +76,9 @@ cmd_test() {
         return 1
     fi
 
-    if [[ "${mode}" == "vision" ]]; then
+    if [[ "${subcmd}" == "vision" ]]; then
         [[ -n "${image_path}" ]] || {
-            echo -e "${RED}--vision requires ${CYAN}<img_path>${RESET}"
+            echo -e "${RED}vision requires ${CYAN}<img_path>${RESET}"
             return 1
         }
         [[ -f "${image_path}" ]] || {
@@ -101,41 +87,44 @@ cmd_test() {
         }
     fi
 
-    case "${mode}" in
+    local thinking_args=()
+    [[ "${enable_thinking}" == true ]] && thinking_args+=(--thinking)
+
+    case "${subcmd}" in
         chat)
-            bash "${RIG_ROOT}/test/chat.sh" --service "${service}"
+            bash "${RIG_ROOT}/test/chat.sh" --service "${service}" "${thinking_args[@]}"
             ;;
         prompt)
-            bash "${RIG_ROOT}/test/prompt.sh" --service "${service}"
+            bash "${RIG_ROOT}/test/prompt.sh" --service "${service}" "${thinking_args[@]}"
             ;;
         chunk)
-            bash "${RIG_ROOT}/test/chunk.sh" --service "${service}"
+            bash "${RIG_ROOT}/test/chunk.sh" --service "${service}" "${thinking_args[@]}"
             ;;
         vision)
-            bash "${RIG_ROOT}/test/vision.sh" "${image_path}" --service "${service}"
+            bash "${RIG_ROOT}/test/vision.sh" "${image_path}" --service "${service}" "${thinking_args[@]}"
             ;;
     esac
 }
 
 _test_help() {
-    echo -e "${BOLD}rig test${RESET} — run quick inference tests"
+    echo -e "${BOLD}rig test${RESET} ${DIM}— run quick inference tests${RESET}"
     echo ""
     echo -e "${GREEN}Usage:${RESET}"
-    echo -e "  rig test ${CYAN}[<service>]${RESET} ${YELLOW_SOFT}[--chat|--prompt|--chunk|--vision ${CYAN}<img_path>${YELLOW_SOFT}]${RESET}"
+    echo -e "  rig ${BOLD}test${RESET} ${CYAN}<subcommand>${RESET} ${YELLOW_SOFT}[flags]${RESET}"
+    echo -e "    ${CYAN}chat${RESET}                              ${DIM}interactive chat loop${RESET}"
+    echo -e "    ${CYAN}prompt${RESET}                            ${DIM}single non-streaming prompt${RESET}"
+    echo -e "    ${CYAN}chunk${RESET}                             ${DIM}stream raw JSONL chunks${RESET}"
+    echo -e "    ${CYAN}vision${RESET} ${CYAN}<img_path>${RESET}                 ${DIM}vision inference test${RESET}"
     echo ""
-    echo -e "${GREEN}Modes:${RESET}"
-    echo -e "    ${YELLOW_SOFT}--chat${RESET}                            ${DIM}interactive chat loop (default mode if omitted)${RESET}"
-    echo -e "    ${YELLOW_SOFT}--prompt${RESET}                          ${DIM}single non-streaming prompt response${RESET}"
-    echo -e "    ${YELLOW_SOFT}--chunk${RESET}                           ${DIM}stream raw JSONL chunks${RESET}"
-    echo -e "    ${YELLOW_SOFT}--vision${RESET} ${CYAN}<img_path>${RESET}               ${DIM}vision test on one local image${RESET}"
-    echo ""
-    echo -e "${GREEN}Service:${RESET}"
-    echo -e "    ${CYAN}<service>${RESET}                         ${DIM}vllm (default), ollama, rag${RESET}"
+    echo -e "    ${YELLOW_SOFT}--vllm${RESET} | ${YELLOW_SOFT}--ollama${RESET} | ${YELLOW_SOFT}--rag${RESET}         ${DIM}service target (default: --vllm)${RESET}"
+    echo -e "    ${YELLOW_SOFT}--thinking${RESET}                        ${DIM}pass enable_thinking to the model${RESET}"
+    echo -e "    ${YELLOW_SOFT}--help${RESET}                            ${DIM}show this help${RESET}"
     echo ""
     echo -e "${GREEN}Examples:${RESET}"
-    echo -e "  rig test"
-    echo -e "  rig test ${DIM}ollama${RESET} ${YELLOW_SOFT}--prompt${RESET}"
-    echo -e "  rig test ${DIM}rag${RESET} ${YELLOW_SOFT}--chunk${RESET}"
-    echo -e "  rig test ${DIM}vllm${RESET} ${YELLOW_SOFT}--vision${RESET} ${DIM}./docs/cli.png${RESET}"
+    echo -e "  rig test chat"
+    echo -e "  rig test chat ${YELLOW_SOFT}--ollama --thinking${RESET}"
+    echo -e "  rig test vision ${CYAN}./img.png${RESET} ${YELLOW_SOFT}--thinking${RESET}"
+    echo -e "  rig test prompt ${YELLOW_SOFT}--rag --thinking${RESET}"
+    echo -e "  rig test chunk ${YELLOW_SOFT}--ollama${RESET}"
     echo ""
 }

@@ -97,7 +97,7 @@ print_help() {
     echo ""    
     _help_cmd_row "${BOLD}benchmark${RESET}" "benchmark" "${CYAN}[<service>]${RESET} ${YELLOW_SOFT}[flags]${RESET}" "[<service>] [flags]" "run benchmark matrix across available services/models"
     echo ""    
-    _help_cmd_row "${BOLD}test${RESET}" "test" "${CYAN}[<service>]${RESET} ${YELLOW_SOFT}[flags]${RESET}" "[<service>] [flags]" "run quick test calls (default: --chat on vllm)"
+    _help_cmd_row "${BOLD}test${RESET}" "test" "${CYAN}<subcommand>${RESET} ${YELLOW_SOFT}[flags]${RESET}" "<subcommand> [flags]" "run quick inference tests  (chat · prompt · chunk · vision)"
     echo ""
     _help_cmd_row "${BOLD}status${RESET}" "status" "${YELLOW_SOFT}[flags]${RESET}" "[flags]" "active services, models, memory, routes, endpoints"
     _help_cmd_row "${BOLD}stats${RESET}" "stats" "" "" "GPU VRAM, watt, temp, tokens/sec"
