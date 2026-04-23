@@ -7,18 +7,20 @@
 VLLM_ARGS=(
   vllm serve /models/hf/sakamakismile/Qwen3.6-35B-A3B-NVFP4
   --served-model-name sakamakismile/Qwen3.6-35B-A3B-NVFP4
-  --reasoning-parser qwen3
   --enable-auto-tool-choice
   --tool-call-parser qwen3_coder
-  --max-model-len 131072
+  --max-model-len 200000
   --max-num-seqs 1
   --max-num-batched-tokens 4096
   --kv-cache-dtype fp8
   --enable-prefix-caching
-  --gpu-memory-utilization 0.87
-  --tensor-parallel-size 1
-  --dtype auto
+  --enable-chunked-prefill 
+  --gpu-memory-utilization 0.88 
   --trust-remote-code
+  --reasoning-parser qwen3 
   --host 0.0.0.0
   --port 8000
 )
+
+#  --tensor-parallel-size 1
+#  --dtype auto

@@ -17,9 +17,10 @@ VLLM_ARGS=(
   --max-num-batched-tokens 4096
   --kv-cache-dtype fp8
   --enable-prefix-caching
-  --gpu-memory-utilization 0.88
+  --gpu-memory-utilization 0.90
   --dtype auto
   --trust-remote-code
   --host 0.0.0.0
   --port 8000
 )
+

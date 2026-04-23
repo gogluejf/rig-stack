@@ -73,6 +73,8 @@ services:
       - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
       - ${DATA_ROOT}/.cache/torch:/root/.cache/torch
       - ${DATA_ROOT}/.cache/vllm:/root/.cache/vllm
+      - ${DATA_ROOT}/.cache/flashinfer:/root/.cache/flashinfer
+      - ${DATA_ROOT}/.cache/triton:/root/.triton
       - ${DATA_ROOT}/outputs/vllm:/outputs
       - ${DATA_ROOT}/logs/vllm:/logs
     networks:
@@ -114,6 +116,8 @@ services:
       - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
       - ${DATA_ROOT}/.cache/torch:/root/.cache/torch
       - ${DATA_ROOT}/.cache/vllm:/root/.cache/vllm
+      - ${DATA_ROOT}/.cache/flashinfer:/root/.cache/flashinfer
+      - ${DATA_ROOT}/.cache/triton:/root/.triton
       - ${DATA_ROOT}/outputs/vllm:/outputs
       - ${DATA_ROOT}/logs/vllm:/logs
     networks:

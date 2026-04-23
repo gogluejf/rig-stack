@@ -16,7 +16,7 @@ VLLM_ARGS=(
   --max-num-seqs 1
   --kv-cache-dtype fp8
   --enable-prefix-caching
-  --gpu-memory-utilization 0.90
+  --gpu-memory-utilization 0.95
   --tensor-parallel-size 1
   --dtype auto
   --trust-remote-code
