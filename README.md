@@ -6,6 +6,8 @@ Built for developers and researchers who want production-grade local inference o
 
 RigStack is an open-source CLI that unifies Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
 
+It is designed to have your private AI stack running in minutes — secure by default, fully observable, so you can focus on building rather than configuring.
+
 Run models on CPU or GPU, manage presets, install models easily, benchmark and monitor your entire setup with a simple, idempotent, Unix-friendly CLI.
 
 No cloud. No per-token costs. Just fast, secure local inference that unleashes your creative work.
@@ -152,7 +154,7 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 | sakamakismile/Qwen3.6-27B-NVFP4 | edge | ~60 tok/s | ~53k |
 | Kbenkhaled/Qwen3.5-27B-NVFP4 | edge | ~65 tok/s | ~48k |
 | palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~205 tok/s | ~125k |
-| sakamakismile/Qwen3.6-35B-A3B-NVFP4 | edge | ~175 tok/s | ~123k |
+| sakamakismile/Qwen3.6-35B-A3B-NVFP4 | edge | ~175 tok/s | ~130k |
 | GadflyII/GLM-4.7-Flash-NVFP4 | edge | ~165 tok/s | ~144k |
 | LilaRest/gemma-4-31B-it-NVFP4-turbo | stable | ~55 tok/s | ~18k |
 
