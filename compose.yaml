@@ -180,6 +180,7 @@ services:
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
       - ${DATA_ROOT}/inputs:/inputs:ro
       - ${DATA_ROOT}/logs/comfyui:/logs
+      - ${DATA_ROOT}/custom_nodes/comfyui:/comfyui/custom_nodes
     networks:
       - rig-net
     labels:
@@ -207,6 +208,7 @@ services:
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
       - ${DATA_ROOT}/inputs:/inputs:ro
       - ${DATA_ROOT}/logs/comfyui:/logs
+      - ${DATA_ROOT}/custom_nodes/comfyui:/comfyui/custom_nodes
     networks:
       - rig-net
     labels:

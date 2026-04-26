@@ -23,4 +23,10 @@ if [[ -f /workflows/extra_model_paths.yaml ]]; then
   args+=(--extra-model-paths-config /workflows/extra_model_paths.yaml)
 fi
 
+if [[ ! -d custom_nodes/ComfyUI-Manager ]]; then
+  echo "Bootstrapping ComfyUI-Manager..."
+  git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager
+  pip3 install -q -r custom_nodes/ComfyUI-Manager/requirements.txt 2>/dev/null || true
+fi
+
 exec "${args[@]}"

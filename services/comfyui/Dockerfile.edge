@@ -63,9 +63,6 @@ RUN pip3 install --no-cache-dir \
     Pillow \
     scipy
 
-# Install common custom nodes
-RUN git clone https://github.com/ltdrdata/ComfyUI-Manager.git custom_nodes/ComfyUI-Manager && \
-    pip3 install --no-cache-dir -r custom_nodes/ComfyUI-Manager/requirements.txt 2>/dev/null || true
 
 ENV COMFYUI_MODEL_PATH=/models
 ENV COMFYUI_OUTPUT_DIR=/outputs
