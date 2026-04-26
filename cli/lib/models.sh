@@ -327,7 +327,8 @@ _models_init() {
         echo -e "\n${BOLD}── ComfyUI models ────────────────────────────────${RESET}"
         _install comfy black-forest-labs/FLUX.1-dev "" diffusion_models
         _install comfy black-forest-labs/FLUX.2-klein "" diffusion_models
-        _install comfy Hippotes/Qwen-Image-2512-nvfp4 "" diffusion_models
+        _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen-image-2512-nvfp4-v2.safetensors diffusion_models
+        _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen_2.5_vl_7b_nvfp4.safetensors clip
         _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4 "" diffusion_models
     }
 
