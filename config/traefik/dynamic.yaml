@@ -97,6 +97,14 @@ http:
         - web
         - websecure
 
+    comfyui-catchall:
+      rule: "PathPrefix(`/`)"
+      priority: 1
+      service: comfyui
+      entryPoints:
+        - web
+        - websecure
+
   services:
     vllm:
       loadBalancer:
@@ -121,7 +129,7 @@ http:
     comfyui:
       loadBalancer:
         healthCheck:
-          path: /comfyui/health
+          path: /
           interval: "10s"
           timeout: "3s"
         servers:
