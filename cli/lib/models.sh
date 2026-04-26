@@ -238,15 +238,15 @@ _models_list() {
     # ── HF models ─────────────────────────────────────────────────────────────
     echo -e "${BOLD}${CYAN}HF models${RESET}  ${DIM}(${models_root}/hf)${RESET}"
     echo ""
-    printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
-    hr 108
+    printf "  ${BOLD}%-68s  %s${RESET}\n" "MODEL" "SIZE"
+    hr 132
     local found_hf=false
     while IFS= read -r name; do
         local org repo size_mib size pad model_f
         org="${name%%/*}"; repo="${name#*/}"
         size_mib=$(du -sk "${models_root}/hf/${name}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
         size=$(fmt_mem "${size_mib:-0}")
-        pad=$(( 44 - ${#org} - 1 - ${#repo} )); (( pad < 0 )) && pad=0
+        pad=$(( 68 - ${#org} - 1 - ${#repo} )); (( pad < 0 )) && pad=0
         model_f="${DIM}${org}/${RESET}${repo}$(printf '%*s' "${pad}" '')"
         printf "  %b  %s\n" "${model_f}" "${size}"
         found_hf=true
@@ -257,8 +257,8 @@ _models_list() {
     # ── Ollama models ──────────────────────────────────────────────────────────
     echo -e "${BOLD}${CYAN}Ollama models${RESET}  ${DIM}(${models_root}/ollama)${RESET}"
     echo ""
-    printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
-    hr 108
+    printf "  ${BOLD}%-68s  %s${RESET}\n" "MODEL" "SIZE"
+    hr 132
     local found_ollama=false
     while IFS= read -r name; do
         local model tag manifest total_bytes size
@@ -267,7 +267,7 @@ _models_list() {
         total_bytes=$(grep -o '"size":[0-9]*' "${manifest}" 2>/dev/null \
             | awk -F: '{s+=$2} END{printf "%d", s+0}')
         size=$(fmt_mem $(( ${total_bytes:-0} / 1024 / 1024 )))
-        printf "  %-44s  %s\n" "${name}" "${size}"
+        printf "  %-68s  %s\n" "${name}" "${size}"
         found_ollama=true
     done < <(_models_names ollama)
     ${found_ollama} || echo -e "  ${DIM}No Ollama models yet — rig models install <source> --type ollama${RESET}"
@@ -278,18 +278,19 @@ _models_list() {
     [[ -n "${subdir_filter}" ]] && comfy_header+="${DIM}  filter: ${subdir_filter}${RESET}"
     echo -e "${comfy_header}"
     echo ""
-    printf "  ${BOLD}%-54s  %s${RESET}\n" "SUBDIR/MODEL" "SIZE"
-    hr 108
+    printf "  ${BOLD}%-68s  %s${RESET}\n" "SUBDIR/MODEL" "SIZE"
+    hr 132
     local found_comfy=false
     while IFS= read -r name; do
         [[ -n "${subdir_filter}" && "${name%%/*}" != "${subdir_filter}" ]] && continue
-        local repo_dir file_count size_mib size s
+        local repo_dir file_count size_mib size s model_label
         repo_dir="${models_root}/comfy/${name}"
         file_count=$(find "${repo_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
         size_mib=$(du -sk "${repo_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
         size=$(fmt_mem "${size_mib:-0}")
         s="$([[ ${file_count} -eq 1 ]] && echo '' || echo 's')"
-        printf "  %-54s  %s\n" "${name}/  ${DIM}(${file_count} file${s})${RESET}" "${size}"
+        model_label="${name}/ (${file_count} file${s})"
+        printf "  %-68s  %s\n" "${model_label}" "${size}"
         found_comfy=true
     done < <(_models_names comfy)
     ${found_comfy} || echo -e "  ${DIM}No ComfyUI models yet — rig models install <source> --type comfy --subdir <subdir>${RESET}"
