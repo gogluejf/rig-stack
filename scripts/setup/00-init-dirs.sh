@@ -37,12 +37,23 @@ create_dirs() {
 }
 
 # ── $MODELS_ROOT — category dirs only ─────────────────────────────────────────
-# Model subdirs are created by `rig models init` / install-model.sh
 echo "Initialising $MODELS_ROOT (category structure)..."
 create_dirs "${MODELS_ROOT}" \
     hf \
-    comfy \
     ollama
+create_dirs "${MODELS_ROOT}/comfy" \
+    checkpoints \
+    diffusion_models \
+    loras \
+    vae \
+    clip \
+    clip_vision \
+    controlnet \
+    upscale_models \
+    embeddings \
+    hypernetworks \
+    style_models \
+    unet
 
 # ── $DATA_ROOT — full runtime tree ────────────────────────────────────────────
 echo ""
@@ -66,6 +77,29 @@ create_dirs "${DATA_ROOT}" \
     qdrant \
     postgres \
     backups
+
+# ── $DATA_ROOT/workflows/comfyui/extra_model_paths.yaml ───────────────────────
+YAML_PATH="${DATA_ROOT}/workflows/comfyui/extra_model_paths.yaml"
+if [[ ! -f "${YAML_PATH}" ]]; then
+    cat > "${YAML_PATH}" <<YAML
+comfyui:
+    checkpoints: ${MODELS_ROOT}/comfy/checkpoints/
+    diffusion_models: ${MODELS_ROOT}/comfy/diffusion_models/
+    loras: ${MODELS_ROOT}/comfy/loras/
+    vae: ${MODELS_ROOT}/comfy/vae/
+    clip: ${MODELS_ROOT}/comfy/clip/
+    clip_vision: ${MODELS_ROOT}/comfy/clip_vision/
+    controlnet: ${MODELS_ROOT}/comfy/controlnet/
+    upscale_models: ${MODELS_ROOT}/comfy/upscale_models/
+    embeddings: ${MODELS_ROOT}/comfy/embeddings/
+    hypernetworks: ${MODELS_ROOT}/comfy/hypernetworks/
+    style_models: ${MODELS_ROOT}/comfy/style_models/
+    unet: ${MODELS_ROOT}/comfy/unet/
+YAML
+    echo -e "  ${GREEN}created${RESET}  ${YAML_PATH}"
+else
+    echo -e "  exists   ${YAML_PATH}"
+fi
 
 echo -e "\n${GREEN}Directories ready.${RESET}"
 echo "  Next: rig models init --minimal   (to download models)"

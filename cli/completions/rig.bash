@@ -146,13 +146,38 @@ _rig_completions() {
             init)
                 COMPREPLY=($(compgen -W "--minimal --all" -- "${cur}"))
                 ;;
-            install)
+            list)
+                local _comfy_subdirs="checkpoints diffusion_models loras vae clip clip_vision controlnet upscale_models embeddings hypernetworks style_models unet"
+                local _type_is_comfy=false
+                for ((i=2; i<cword; i++)); do
+                    [[ "${words[i]}" == "--type" && "${words[i+1]:-}" == "comfy" ]] && _type_is_comfy=true
+                done
                 if [[ "${prev}" == "--type" ]]; then
                     COMPREPLY=($(compgen -W "hf ollama comfy" -- "${cur}"))
+                elif [[ "${prev}" == "--subdir" ]]; then
+                    COMPREPLY=($(compgen -W "${_comfy_subdirs}" -- "${cur}"))
+                else
+                    local flags=""
+                    _rig_contains "--type" "${words[@]}" || flags+="--type "
+                    [[ "${_type_is_comfy}" == true ]] && { _rig_contains "--subdir" "${words[@]}" || flags+="--subdir "; }
+                    [[ -n "${flags}" ]] && COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
+                fi
+                ;;
+            install)
+                local _comfy_subdirs="checkpoints diffusion_models loras vae clip clip_vision controlnet upscale_models embeddings hypernetworks style_models unet"
+                local _type_is_comfy=false
+                for ((i=2; i<cword; i++)); do
+                    [[ "${words[i]}" == "--type" && "${words[i+1]:-}" == "comfy" ]] && _type_is_comfy=true
+                done
+                if [[ "${prev}" == "--type" ]]; then
+                    COMPREPLY=($(compgen -W "hf ollama comfy" -- "${cur}"))
+                elif [[ "${prev}" == "--subdir" ]]; then
+                    COMPREPLY=($(compgen -W "${_comfy_subdirs}" -- "${cur}"))
                 else
                     local flags=""
                     _rig_contains "--file" "${words[@]}" || flags+="--file "
                     _rig_contains "--type" "${words[@]}" || flags+="--type "
+                    [[ "${_type_is_comfy}" == true ]] && { _rig_contains "--subdir" "${words[@]}" || flags+="--subdir "; }
                     [[ -n "${flags}" ]] && COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
                 fi
                 ;;

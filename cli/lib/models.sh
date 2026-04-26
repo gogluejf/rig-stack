@@ -17,6 +17,10 @@ cmd_models() {
             echo -e "  rig models ${BOLD}install${RESET} ${CYAN}<source>${RESET}        ${DIM}install one model${RESET}"
             echo -e "    ${YELLOW_SOFT}--file${RESET} ${CYAN}<path>${RESET}                    ${DIM}install a specific file from the source${RESET}"
             echo -e "    ${YELLOW_SOFT}--type${RESET} ${CYAN}<type>${RESET}                    ${DIM}backend type: hf, ollama, comfy${RESET}"
+            echo -e "    ${YELLOW_SOFT}--subdir${RESET} ${CYAN}<dir>${RESET}                   ${DIM}ComfyUI model subdir (required with --type comfy)${RESET}"
+            echo -e "                                     ${DIM}checkpoints diffusion_models loras vae clip${RESET}"
+            echo -e "                                     ${DIM}clip_vision controlnet upscale_models embeddings${RESET}"
+            echo -e "                                     ${DIM}hypernetworks style_models unet  (default: checkpoints)${RESET}"
             echo ""
             echo -e "  rig models ${BOLD}show${RESET} ${CYAN}<source>${RESET}           ${DIM}show one model${RESET}"
             echo -e "    ${YELLOW_SOFT}--file${RESET} ${CYAN}<path>${RESET}                    ${DIM}show one file under the selected model${RESET}"
@@ -31,18 +35,19 @@ cmd_models() {
             echo -e "${GREEN}Examples:${RESET}"
             echo -e "  rig models init ${YELLOW_SOFT}--minimal${RESET}"
             echo -e "  rig models install ${DIM}sakamakismile/Qwen3.6-27B-NVFP4${RESET}"
-            echo -e "  rig models install ${DIM}TencentARC/GFPGAN${RESET} ${YELLOW_SOFT}--file${RESET} ${DIM}GFPGANv1.4.pth${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET}"
+            echo -e "  rig models install ${DIM}Hippotes/Qwen-Image-2512-nvfp4${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET} ${YELLOW_SOFT}--subdir${RESET} ${DIM}diffusion_models${RESET}"
+            echo -e "  rig models install ${DIM}Hippotes/Qwen-Image-2512-nvfp4${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET} ${YELLOW_SOFT}--subdir${RESET} ${DIM}clip${RESET} ${YELLOW_SOFT}--file${RESET} ${DIM}qwen_2.5_vl_7b_nvfp4.safetensors${RESET}"
+            echo -e "  rig models install ${DIM}TencentARC/GFPGAN${RESET} ${YELLOW_SOFT}--file${RESET} ${DIM}GFPGANv1.4.pth${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET} ${YELLOW_SOFT}--subdir${RESET} ${DIM}upscale_models${RESET}"
             echo -e "  rig models install ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
-            echo -e "  rig models show ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
-            echo -e "  rig models show ${DIM}TencentARC/GFPGAN${RESET} ${YELLOW_SOFT}--file${RESET} ${DIM}GFPGANv1.4.pth${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET}"
-            echo -e "  rig models install ${DIM}black-forest-labs/FLUX.1-dev${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET}"
+            echo -e "  rig models list ${YELLOW_SOFT}--type${RESET} ${DIM}comfy${RESET} ${YELLOW_SOFT}--subdir${RESET} ${DIM}diffusion_models${RESET}"
             echo -e "  rig models remove ${DIM}Qwen/Qwen-Image-2512${RESET}"
             echo -e "  rig models remove ${DIM}phi3:mini${RESET} ${YELLOW_SOFT}--type${RESET} ${DIM}ollama${RESET}"
             echo -e "  rig models scan"
             echo ""
             ;;
         ""|list)
-            _models_list
+            [[ "${1:-}" == "list" ]] && shift
+            _models_list "$@"
             ;;
         init)
             shift
@@ -81,11 +86,13 @@ _models_install() {
     local source=""
     local file=""
     local type=""
+    local subdir=""
 
     while [[ $# -gt 0 ]]; do
         case "${1}" in
-            --file)  file="${2}";  shift 2 ;;
-            --type)  type="${2}";  shift 2 ;;
+            --file)   file="${2}";   shift 2 ;;
+            --type)   type="${2}";   shift 2 ;;
+            --subdir) subdir="${2}"; shift 2 ;;
             -*)
                 echo -e "${RED}Unknown flag: ${1}${RESET}"
                 exit 1
@@ -102,19 +109,18 @@ _models_install() {
         echo "  rig models install <source>"
         echo "  rig models install <source> --file <filename>"
         echo "  rig models install <source> --type ollama"
-        echo "  rig models install <source> --type comfy"
-        echo "  rig models install <source> --type comfy --file <filename>"        
+        echo "  rig models install <source> --type comfy --subdir diffusion_models"
+        echo "  rig models install <source> --type comfy --subdir clip --file <filename>"
         exit 1
     }
 
-
-    # Default to HuggingFace unless a backend is specified explicitly.
     if [[ -z "${type}" ]]; then
         type="hf"
     fi
 
     local -a args=(--type "${type}" --source "${source}")
-    [[ -n "${file}" ]] && args+=(--file "${file}")
+    [[ -n "${file}" ]]   && args+=(--file "${file}")
+    [[ -n "${subdir}" ]] && args+=(--subdir "${subdir}")
 
     bash "${RIG_ROOT}/scripts/models/install-model.sh" "${args[@]}"
 }
@@ -148,13 +154,17 @@ _models_names() {
         fi
     fi
 
-    # ── ComfyUI ── type directory names (non-empty dirs only)
+    # ── ComfyUI ── subdir/repo format (subdir/repo-name)
     if [[ -z "${type_filter}" || "${type_filter}" == "comfy" ]]; then
         if [[ -d "${models_root}/comfy" ]]; then
-            while IFS= read -r -d '' type_dir; do
-                local file_count
-                file_count=$(find "${type_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
-                [[ "${file_count}" -gt 0 ]] && echo "$(basename "${type_dir}")"
+            local _subdir_name _repo_name _file_count
+            while IFS= read -r -d '' _subdir; do
+                _subdir_name="$(basename "${_subdir}")"
+                while IFS= read -r -d '' _repo_dir; do
+                    _repo_name="$(basename "${_repo_dir}")"
+                    _file_count=$(find "${_repo_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+                    [[ "${_file_count}" -gt 0 ]] && echo "${_subdir_name}/${_repo_name}"
+                done < <(find "${_subdir}" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
             done < <(find "${models_root}/comfy" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null | sort -z)
         fi
     fi
@@ -210,6 +220,15 @@ _models_scan() {
 }
 
 _models_list() {
+    local subdir_filter="" type_filter=""
+    while [[ $# -gt 0 ]]; do
+        case "${1}" in
+            --subdir) subdir_filter="${2}"; shift 2 ;;
+            --type)   type_filter="${2}";   shift 2 ;;
+            *) shift ;;
+        esac
+    done
+
     load_env
     local models_root="${MODELS_ROOT:-/models}"
     local ollama_manifests="${models_root}/ollama/manifests/registry.ollama.ai/library"
@@ -255,22 +274,25 @@ _models_list() {
     echo ""
 
     # ── ComfyUI models ────────────────────────────────────────────────────────
-    echo -e "${BOLD}${CYAN}ComfyUI models${RESET}  ${DIM}(${models_root}/comfy)${RESET}"
+    local comfy_header="${BOLD}${CYAN}ComfyUI models${RESET}  ${DIM}(${models_root}/comfy)${RESET}"
+    [[ -n "${subdir_filter}" ]] && comfy_header+="${DIM}  filter: ${subdir_filter}${RESET}"
+    echo -e "${comfy_header}"
     echo ""
-    printf "  ${BOLD}%-44s  %s${RESET}\n" "MODEL" "SIZE"
+    printf "  ${BOLD}%-54s  %s${RESET}\n" "SUBDIR/MODEL" "SIZE"
     hr 108
     local found_comfy=false
     while IFS= read -r name; do
-        local type_dir file_count size_mib size s
-        type_dir="${models_root}/comfy/${name}"
-        file_count=$(find "${type_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
-        size_mib=$(du -sk "${type_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
+        [[ -n "${subdir_filter}" && "${name%%/*}" != "${subdir_filter}" ]] && continue
+        local repo_dir file_count size_mib size s
+        repo_dir="${models_root}/comfy/${name}"
+        file_count=$(find "${repo_dir}" -maxdepth 1 -type f 2>/dev/null | wc -l | tr -d ' ')
+        size_mib=$(du -sk "${repo_dir}" 2>/dev/null | awk '{printf "%.0f", $1/1024}')
         size=$(fmt_mem "${size_mib:-0}")
         s="$([[ ${file_count} -eq 1 ]] && echo '' || echo 's')"
-        printf "  %-44s  %s\n" "${name}/  ${DIM}(${file_count} file${s})${RESET}" "${size}"
+        printf "  %-54s  %s\n" "${name}/  ${DIM}(${file_count} file${s})${RESET}" "${size}"
         found_comfy=true
     done < <(_models_names comfy)
-    ${found_comfy} || echo -e "  ${DIM}No ComfyUI models yet — rig models install <source> --type comfy${RESET}"
+    ${found_comfy} || echo -e "  ${DIM}No ComfyUI models yet — rig models install <source> --type comfy --subdir <subdir>${RESET}"
     echo ""
 }
 
@@ -279,10 +301,10 @@ _models_init() {
     local INSTALL="${RIG_ROOT}/scripts/models/install-model.sh"
 
     _install() {
-        local type="$1" source="$2"
-        local file="${3:-}"
+        local type="$1" source="$2" file="${3:-}" subdir="${4:-}"
         local -a args=(--type "${type}" --source "${source}")
-        [[ -n "${file}" ]] && args+=(--file "${file}")
+        [[ -n "${file}" ]]   && args+=(--file "${file}")
+        [[ -n "${subdir}" ]] && args+=(--subdir "${subdir}")
         bash "${INSTALL}" "${args[@]}"
     }
 
@@ -294,30 +316,18 @@ _models_init() {
         _install hf sakamakismile/Qwen3.6-35B-A3B-NVFP4
         _install hf sakamakismile/Huihui-gemma-4-31B-it-abliterated-v2-NVFP4
 
-        #_install hf nomic-ai/nomic-embed-text-v1.5
-
-        #_install hf unsloth/gemma-4-31B-it-GGUF gemma-4-31B-it-UD-Q4_K_XL.gguf
-        #_install hf google/gemma-4-31B-it tokenizer.json
-        #_install hf google/gemma-4-31B-it tokenizer_config.json
-        #_install hf google/gemma-4-31B-it chat_template.jinja
-        #_install hf google/gemma-4-31B-it config.json        
+        #_install hf nomic-ai/nomic-embed-text-v1.5   
         
-        #_install hf Jackrong/Qwopus3.5-27B-v3.5-GGUF Qwopus3.5-27B-v3.5-Q4_M.gguf
-        #_install hf Jackrong/Qwopus3.5-27B-v3.5 tokenizer.json
-        #_install hf Jackrong/Qwopus3.5-27B-v3.5 tokenizer_config.json
-        #_install hf Jackrong/Qwopus3.5-27B-v3.5 chat_template.jinja
-        #_install hf Jackrong/Qwopus3.5-27B-v3.5 config.json
 
 
     }
 
     minimal_comfy() {
         echo -e "\n${BOLD}── ComfyUI models ────────────────────────────────${RESET}"
-        _install comfy black-forest-labs/FLUX.1-dev
-        _install comfy black-forest-labs/FLUX.2-klein
-        _install comfy Hippotes/Qwen-Image-2512-nvfp4 
-        #_install comfy Qwen/Qwen-Image-Edit-2511
-        _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4
+        _install comfy black-forest-labs/FLUX.1-dev "" diffusion_models
+        _install comfy black-forest-labs/FLUX.2-klein "" diffusion_models
+        _install comfy Hippotes/Qwen-Image-2512-nvfp4 "" diffusion_models
+        _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4 "" diffusion_models
     }
 
     minimal_ollama() {
@@ -343,23 +353,23 @@ _models_init() {
     extra_comfy() {
         echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
 
-        _install comfy black-forest-labs/FLUX.1-Fill-dev
+        _install comfy black-forest-labs/FLUX.1-Fill-dev "" diffusion_models
 
         echo -e "${YELLOW}  FLUX.2 fp8: verify repo slug at huggingface.co/black-forest-labs, then:${RESET}"
-        echo -e "${DIM}  rig models install <repo> --type comfy${RESET}"
+        echo -e "${DIM}  rig models install <repo> --type comfy --subdir diffusion_models${RESET}"
 
         # ControlNet
-        _install comfy Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro
-        _install comfy Shakker-Labs/FLUX.1-dev-ControlNet-Depth
-        _install comfy InstantX/FLUX.1-dev-Controlnet-Canny diffusion_pytorch_model.safetensors
+        _install comfy Shakker-Labs/FLUX.1-dev-ControlNet-Union-Pro "" controlnet
+        _install comfy Shakker-Labs/FLUX.1-dev-ControlNet-Depth "" controlnet
+        _install comfy InstantX/FLUX.1-dev-Controlnet-Canny diffusion_pytorch_model.safetensors controlnet
 
         # Upscalers
-        _install comfy TencentARC/GFPGAN GFPGANv1.4.pth
-        _install comfy ai-forever/Real-ESRGAN RealESRGAN_x4plus.pth
-        _install comfy ai-forever/Real-ESRGAN RealESRGAN_x4plus_anime_6B.pth
+        _install comfy TencentARC/GFPGAN GFPGANv1.4.pth upscale_models
+        _install comfy ai-forever/Real-ESRGAN RealESRGAN_x4plus.pth upscale_models
+        _install comfy ai-forever/Real-ESRGAN RealESRGAN_x4plus_anime_6B.pth upscale_models
 
         # FaceFusion
-        _install comfy ezioruan/inswapper_128.onnx inswapper_128.onnx
+        _install comfy ezioruan/inswapper_128.onnx inswapper_128.onnx checkpoints
         echo -e "${DIM}  ArcFace buffalo_l: auto-downloaded by insightface on first run.${RESET}"
     }
 

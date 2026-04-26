@@ -19,6 +19,9 @@ MODELS_ROOT="${MODELS_ROOT:-/models}"
 TYPE=""
 SOURCE=""
 FILE=""
+SUBDIR=""
+
+COMFY_VALID_SUBDIRS="checkpoints diffusion_models loras vae clip clip_vision controlnet upscale_models embeddings hypernetworks style_models unet"
 
 RED='\033[0;31m'; 
 GREEN='\033[0;32m'; 
@@ -33,6 +36,7 @@ while [[ $# -gt 0 ]]; do
         --type)   TYPE="${2:-}";   shift 2 ;;
         --source) SOURCE="${2:-}"; shift 2 ;;
         --file)   FILE="${2:-}";   shift 2 ;;
+        --subdir) SUBDIR="${2:-}"; shift 2 ;;
         *)
             echo -e "${RED}Unknown argument: $1${RESET}"
             exit 1
@@ -41,7 +45,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ -z "${TYPE}" || -z "${SOURCE}" ]]; then
-    echo "Usage: $0 --type <hf|ollama|comfy> --source <source> [--file <path>]"
+    echo "Usage: $0 --type <hf|ollama|comfy> --source <source> [--file <path>] [--subdir <comfy-subdir>]"
     exit 1
 fi
 
@@ -137,6 +141,13 @@ fi
 
 # ── comfy ─────────────────────────────────────────────────────────────────────
 if [[ "${TYPE}" == "comfy" ]]; then
+    SUBDIR="${SUBDIR:-checkpoints}"
+    if [[ ! " ${COMFY_VALID_SUBDIRS} " =~ " ${SUBDIR} " ]]; then
+        echo -e "${RED}Invalid --subdir '${SUBDIR}'.${RESET}"
+        echo -e "  Valid values: ${COMFY_VALID_SUBDIRS// /, }"
+        exit 1
+    fi
+
     if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-hf$'; then
         echo -e "${CYAN}Starting rig-hf...${RESET}"
         docker compose -f "${ROOT_DIR}/compose.yaml" --profile hf up -d hf
@@ -160,12 +171,12 @@ if [[ "${TYPE}" == "comfy" ]]; then
     done
 
     local_name="$(basename "${SOURCE}")"
-    local_dir="/models/comfy/${local_name}"
+    local_dir="/models/comfy/${SUBDIR}/${local_name}"
 
     echo ""
     echo -e "${CYAN}Downloading comfy model: ${SOURCE}${RESET}"
     [[ -n "${FILE}" ]] && echo -e "  File: ${FILE}"
-    echo -e "  Destination: ${MODELS_ROOT}/comfy/${local_name}"
+    echo -e "  Destination: ${MODELS_ROOT}/comfy/${SUBDIR}/${local_name}"
 
     if docker exec rig-hf sh -lc 'command -v hf >/dev/null 2>&1'; then
         local_args=(hf download "${SOURCE}" --local-dir "${local_dir}")
@@ -175,5 +186,5 @@ if [[ "${TYPE}" == "comfy" ]]; then
     [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}*")
 
     docker exec rig-hf "${local_args[@]}"
-    echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${MODELS_ROOT}/comfy/${local_name}${RESET}"
+    echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${MODELS_ROOT}/comfy/${SUBDIR}/${local_name}${RESET}"
 fi

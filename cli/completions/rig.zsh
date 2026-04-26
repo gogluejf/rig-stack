@@ -317,7 +317,7 @@ _rig_rag() {
 _rig_models_cmd() {
     # rig models [list] | init <mode> | install <src> [--file] [--type] | show <source> | remove <source>
     local -a subcmds=(
-        'list:List installed models (HF, Ollama, ComfyUI)'
+        'list:List installed models (HF, Ollama, ComfyUI) — supports --type and --subdir'
         'init:Install a curated model bundle'
         'install:Install a single model from HuggingFace, Ollama, or ComfyUI'
         'show:Show files and size for a model'
@@ -342,10 +342,36 @@ _rig_models_cmd() {
             )
             _describe 'mode' modes
             ;;
+        list)
+            local _type_is_comfy=false
+            local i
+            for ((i=1; i<${#words[@]}; i++)); do
+                [[ "${words[i]}" == "--type" && "${words[i+1]:-}" == "comfy" ]] && _type_is_comfy=true
+            done
+            if [[ "${_type_is_comfy}" == true ]]; then
+                _arguments \
+                    '--type[Filter by backend type]:type:(hf ollama comfy)' \
+                    '--subdir[Filter ComfyUI models by subdirectory]:subdir:(checkpoints diffusion_models loras vae clip clip_vision controlnet upscale_models embeddings hypernetworks style_models unet)'
+            else
+                _arguments '--type[Filter by backend type]:type:(hf ollama comfy)'
+            fi
+            ;;
         install)
-            _arguments \
-                '--file[Filename to download from the HuggingFace repo]:filename:' \
-                '--type[Force model type]:type:(hf ollama comfy)'
+            local _type_is_comfy=false
+            local i
+            for ((i=1; i<${#words[@]}; i++)); do
+                [[ "${words[i]}" == "--type" && "${words[i+1]:-}" == "comfy" ]] && _type_is_comfy=true
+            done
+            if [[ "${_type_is_comfy}" == true ]]; then
+                _arguments \
+                    '--file[Filename to download from the HuggingFace repo]:filename:' \
+                    '--type[Force model type]:type:(hf ollama comfy)' \
+                    '--subdir[ComfyUI model subdirectory]:subdir:(checkpoints diffusion_models loras vae clip clip_vision controlnet upscale_models embeddings hypernetworks style_models unet)'
+            else
+                _arguments \
+                    '--file[Filename to download from the HuggingFace repo]:filename:' \
+                    '--type[Force model type]:type:(hf ollama comfy)'
+            fi
             ;;
         show|remove)
             local type_val=""
