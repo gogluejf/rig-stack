@@ -188,7 +188,7 @@ _rig_completions() {
 
         case "${sub}" in
             start|stop)
-                COMPREPLY=($(compgen -W "hf comfy-tools qdrant langfuse traefik all" -- "${cur}"))
+                COMPREPLY=($(compgen -W "hf qdrant langfuse traefik all" -- "${cur}"))
                 ;;
         esac
         ;;

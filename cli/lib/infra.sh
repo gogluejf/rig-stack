@@ -21,7 +21,6 @@ cmd_infra() {
             echo -e "  qdrant      ${DIM}Vector database (rig-qdrant)${RESET}"
             echo -e "  langfuse    ${DIM}LLM observability (rig-langfuse + rig-postgres)${RESET}"
             echo -e "  traefik     ${DIM}Unified gateway (rig-traefik)${RESET}"
-            echo -e "  comfy-tools ${DIM}ComfyUI model tools — no GPU (rig-comfy-tools)${RESET}"
             echo -e "  all         ${DIM}All of the above${RESET}"
             echo ""
             echo -e "${GREEN}Examples:${RESET}"
@@ -70,7 +69,6 @@ _infra_status() {
     _infra_row "rig-hf"          "hf"           "HuggingFace model downloader"          "rig-hf"
     _infra_row "rig-qdrant"      "qdrant"       "Vector database for RAG"               "rig-qdrant"
     _infra_row "rig-langfuse"    "langfuse"     "LLM observability & tracing"           "rig-langfuse  rig-postgres"
-    _infra_row "rig-comfy-tools" "comfy-tools"  "ComfyUI model tools (no GPU)"          "rig-comfy-tools"
     echo ""
 }
 
@@ -95,13 +93,6 @@ _infra_start() {
             _infra_wait_ready rig-hf
             echo -e "${GREEN}✓  rig-hf running${RESET}"
             ;;
-        comfy-tools)
-            echo -e "${CYAN}Starting comfy-tools...${RESET}"
-            rig_compose --profile comfy-tools up -d comfy-tools
-            _infra_wait_ready rig-comfy-tools
-            sleep 5  # allow pip install comfy-cli to complete
-            echo -e "${GREEN}✓  rig-comfy-tools running${RESET}"
-            ;;
         qdrant)
             echo -e "${CYAN}Starting qdrant...${RESET}"
             rig_compose --profile rag up -d qdrant
@@ -119,14 +110,13 @@ _infra_start() {
             ;;
         all)
             _infra_start hf
-            _infra_start comfy-tools
             _infra_start qdrant
             _infra_start langfuse
             _infra_start traefik
             ;;
         *)
             echo -e "${RED}Unknown service: ${svc}${RESET}"
-            echo "  Valid: hf comfy-tools qdrant langfuse traefik all"
+            echo "  Valid: hf qdrant langfuse traefik all"
             exit 1
             ;;
     esac
@@ -146,11 +136,6 @@ _infra_stop() {
             rig_compose --profile hf stop hf 2>/dev/null || true
             echo -e "${GREEN}✓  rig-hf stopped${RESET}"
             ;;
-        comfy-tools)
-            echo "Stopping comfy-tools..."
-            rig_compose --profile comfy-tools stop comfy-tools 2>/dev/null || true
-            echo -e "${GREEN}✓  rig-comfy-tools stopped${RESET}"
-            ;;
         qdrant)
             echo "Stopping qdrant..."
             rig_compose --profile rag stop qdrant 2>/dev/null || true
@@ -168,14 +153,13 @@ _infra_stop() {
             ;;
         all)
             _infra_stop hf
-            _infra_stop comfy-tools
             _infra_stop qdrant
             _infra_stop langfuse
             _infra_stop traefik
             ;;
         *)
             echo -e "${RED}Unknown service: ${svc}${RESET}"
-            echo "  Valid: hf comfy-tools qdrant langfuse traefik all"
+            echo "  Valid: hf qdrant langfuse traefik all"
             exit 1
             ;;
     esac
@@ -212,13 +196,3 @@ service_ensure_hf() {
     infra_ensure_hf "$@"
 }
 
-# Called transparently by install-model.sh when rig-comfy-tools is needed.
-# Ensures rig-comfy-tools is running; starts it if not.
-infra_ensure_comfy_tools() {
-    if ! container_running rig-comfy-tools; then
-        echo -e "${CYAN}Starting rig-comfy-tools...${RESET}"
-        rig_compose --profile comfy-tools up -d comfy-tools
-        _infra_wait_ready rig-comfy-tools
-        sleep 5  # allow pip install comfy-cli to complete
-    fi
-}

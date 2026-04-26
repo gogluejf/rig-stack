@@ -6,7 +6,7 @@
 # Supported types:
 #   hf     — download from HuggingFace via rig-hf (auto-started if needed)
 #   ollama — pull via headless docker run (no service required)
-#   comfy  — download via rig-comfy-tools (auto-started if needed)
+#   comfy  — download via rig-hf into /models/comfy (auto-started if needed)
 
 set -euo pipefail
 
@@ -137,23 +137,43 @@ fi
 
 # ── comfy ─────────────────────────────────────────────────────────────────────
 if [[ "${TYPE}" == "comfy" ]]; then
-    # Auto-start rig-comfy-tools if not running (mirrors rig-hf auto-start pattern)
-    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-comfy-tools$'; then
-        echo -e "${CYAN}Starting rig-comfy-tools...${RESET}"
-        docker compose -f "${ROOT_DIR}/compose.yaml" --profile comfy-tools up -d comfy-tools
+    if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-hf$'; then
+        echo -e "${CYAN}Starting rig-hf...${RESET}"
+        docker compose -f "${ROOT_DIR}/compose.yaml" --profile hf up -d hf
         local_attempts=0
-        until docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-comfy-tools$'; do
+        until docker ps --format '{{.Names}}' 2>/dev/null | grep -q '^rig-hf$'; do
             (( local_attempts++ ))
-            [[ ${local_attempts} -ge 30 ]] && { echo -e "${RED}rig-comfy-tools failed to start${RESET}"; exit 1; }
+            [[ ${local_attempts} -ge 30 ]] && { echo -e "${RED}rig-hf failed to start${RESET}"; exit 1; }
             sleep 1
         done
-        sleep 5  # allow pip install comfy-cli to complete
+        sleep 5
     fi
 
-    url="https://huggingface.co/${SOURCE}"
-    [[ -n "${FILE}" ]] && url="https://huggingface.co/${SOURCE}/resolve/main/${FILE}"
+    cli_attempts=0
+    until docker exec rig-hf sh -lc 'command -v hf >/dev/null 2>&1 || command -v huggingface-cli >/dev/null 2>&1'; do
+        (( cli_attempts++ ))
+        [[ ${cli_attempts} -ge 30 ]] && {
+            echo -e "${RED}HF CLI not found in rig-hf.${RESET}"
+            exit 1
+        }
+        sleep 1
+    done
 
-    echo -e "${CYAN}Downloading via comfy-tools: ${url}${RESET}"
-    docker exec rig-comfy-tools comfy model download --url "${url}"
-    echo -e "${GREEN}${BOLD}✓  Downloaded${RESET}"
+    local_name="$(basename "${SOURCE}")"
+    local_dir="/models/comfy/${local_name}"
+
+    echo ""
+    echo -e "${CYAN}Downloading comfy model: ${SOURCE}${RESET}"
+    [[ -n "${FILE}" ]] && echo -e "  File: ${FILE}"
+    echo -e "  Destination: ${MODELS_ROOT}/comfy/${local_name}"
+
+    if docker exec rig-hf sh -lc 'command -v hf >/dev/null 2>&1'; then
+        local_args=(hf download "${SOURCE}" --local-dir "${local_dir}")
+    else
+        local_args=(huggingface-cli download "${SOURCE}" --local-dir "${local_dir}" --local-dir-use-symlinks False)
+    fi
+    [[ -n "${FILE}" ]] && local_args+=(--include "${FILE}*")
+
+    docker exec rig-hf "${local_args[@]}"
+    echo -e "${GREEN}${BOLD}✓  ${SOURCE}${FILE:+ (${FILE})} → ${MODELS_ROOT}/comfy/${local_name}${RESET}"
 fi

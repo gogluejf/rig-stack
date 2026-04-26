@@ -315,8 +315,9 @@ _models_init() {
         echo -e "\n${BOLD}── ComfyUI models ────────────────────────────────${RESET}"
         _install comfy black-forest-labs/FLUX.1-dev
         _install comfy black-forest-labs/FLUX.2-klein
-        _install comfy Qwen/Qwen-Image-2512
-        _install comfy Qwen/Qwen-Image-Edit-2511
+        _install comfy Hippotes/Qwen-Image-2512-nvfp4 
+        #_install comfy Qwen/Qwen-Image-Edit-2511
+        _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4
     }
 
     minimal_ollama() {

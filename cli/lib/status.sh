@@ -421,7 +421,7 @@ _status_plain_state() {
 
 _status_summary() {
     local vllm_container comfy_container
-    local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state comfy_tools_state
+    local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state
     local vllm_model="" ollama_model=""
     local gpu_util="-" gpu_temp="-" cpu_util="-" cpu_temp="-"
     # Memory variables now hold key=value pairs
@@ -434,7 +434,6 @@ _status_summary() {
     local langfuse_vram="-" langfuse_dram="-"
     local postgres_vram="-" postgres_dram="-"
     local hf_vram="-" hf_dram="-"
-    local comfy_tools_vram="-" comfy_tools_dram="-"
 
     vllm_container="$(_status_vllm_container 2>/dev/null || true)"
     comfy_container="$(_status_comfy_container 2>/dev/null || true)"
@@ -448,7 +447,6 @@ _status_summary() {
     postgres_state="$(_status_state "rig-postgres")"
     traefik_state="$(_status_state "rig-traefik")"
     hf_state="$(_status_state "rig-hf")"
-    comfy_tools_state="$(_status_state "rig-comfy-tools")"
 
     if [[ "${vllm_state}" == "running" ]]; then
         vllm_model="$(_status_primary_model_for "vllm")"
@@ -534,14 +532,6 @@ _status_summary() {
             dram) hf_dram="${val}" ;;
         esac
     done < <(_status_memory_for "rig-hf" "CPU")
-
-    # Parse comfy-tools memory
-    while IFS='=' read -r key val; do
-        case "${key}" in
-            vram) comfy_tools_vram="${val}" ;;
-            dram) comfy_tools_dram="${val}" ;;
-        esac
-    done < <(_status_memory_for "rig-comfy-tools" "CPU")
 
     while IFS='=' read -r key val; do
         case "${key}" in
@@ -660,13 +650,6 @@ _status_summary() {
         "$(_status_field 12 "$(_status_value_if_running "${hf_state}" "${hf_vram}")")" \
         "$(_status_field 12 "$(_status_value_if_running "${hf_state}" "${hf_dram}")")" \
         "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
-    printf "  %b %b %b %b %b %b %b\n" \
-        "$(_status_field 12 "comfy-tools")" \
-        "$(_status_field 30 "-")" \
-        "$(_status_field 12 "-")" \
-        "$(_status_field 12 "$(_status_value_if_running "${comfy_tools_state}" "${comfy_tools_vram}")")" \
-        "$(_status_field 12 "$(_status_value_if_running "${comfy_tools_state}" "${comfy_tools_dram}")")" \
-        "$(_status_icon "${comfy_tools_state}")" "$(_status_label "${comfy_tools_state}")"
 
     echo ""
     echo -e "${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
