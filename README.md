@@ -239,6 +239,18 @@ Or to update all images:
 bash scripts/maintenance/update-images.sh
 ```
 
+**Need to rebuild just one image?** You can target any service directly with Docker — useful when you've changed a Dockerfile and don't want to wait for a full rebuild:
+
+```bash
+# Rebuild only the ComfyUI edge image
+docker build --file services/comfyui/Dockerfile.edge --tag rig-comfyui-edge:latest services/comfyui
+
+# Rebuild only the vLLM edge image
+docker build --file services/vllm/Dockerfile.edge --tag rig-vllm-edge:latest services/vllm
+```
+
+The tag must match exactly — that's how `rig comfy start --edge` and `rig serve ... --edge` find the image.
+
 ---
 
 ## Accessing from another machine
