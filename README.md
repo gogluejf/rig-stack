@@ -149,14 +149,15 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 
 **vLLM**
 
-| Model | Container | Throughput | Context |
+| Model | Container | Throughput | KV Cached |
 |---|---|---|---|
+| Lorbus/Qwen3.6-27B-int4-AutoRound | edge | ~115 tok/s | ~64k |
+| palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~205 tok/s | ~102k |
+| sakamakismile/Qwen3.6-35B-A3B-NVFP4 | edge | ~180 tok/s | ~115k |
+| GadflyII/GLM-4.7-Flash-NVFP4 | edge | ~165 tok/s | ~144k |
 | sakamakismile/Qwen3.6-27B-NVFP4 | edge | ~60 tok/s | ~53k |
 | Kbenkhaled/Qwen3.5-27B-NVFP4 | edge | ~65 tok/s | ~48k |
-| palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~205 tok/s | ~125k |
-| sakamakismile/Qwen3.6-35B-A3B-NVFP4 | edge | ~175 tok/s | ~130k |
-| GadflyII/GLM-4.7-Flash-NVFP4 | edge | ~165 tok/s | ~144k |
-| LilaRest/gemma-4-31B-it-NVFP4-turbo | stable | ~55 tok/s | ~18k |
+| sakamakismile/Huihui-gemma-4-31B-it-abliterated-v2-NVFP4 | stable | ~55 tok/s | ~18k |
 
 **Ollama** — Gemma, Llama (CPU and GPU offload)
 

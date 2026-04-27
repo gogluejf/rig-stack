@@ -70,8 +70,8 @@ RUN pip3 install --no-cache-dir \
     ninja
 
 # Build vLLM from nightly index (Blackwell/sm_120 support)
-# Pin to 0.17.1 — confirmed working on RTX 5090 with this model
-RUN pip3 install --no-cache-dir vllm==0.17.1 \
+# Pin to 0.19.0 — confirmed working on RTX 5090 with this model
+RUN pip3 install --no-cache-dir vllm==0.19.0 \
     --index-url https://wheels.vllm.ai/nightly \
     --extra-index-url https://pypi.org/simple
 

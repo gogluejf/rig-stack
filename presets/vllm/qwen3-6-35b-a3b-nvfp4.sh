@@ -2,7 +2,7 @@
 # Preset: qwen3-6-35b-a3b-nvfp4 — Qwen 3.6 35B A3B NVFP4 (single-GPU, edge)
 # Model:  sakamakismile/Qwen3.6-35B-A3B-NVFP4
 # Use:    High-performance agentic preset with reasoning and tool calling.
-# Tested on: RTX 5090 (32 GB VRAM), vLLM edge
+# Tested on: RTX 5090  GPU (single-GPU), vLLM edge
 
 VLLM_ARGS=(
   vllm serve /models/hf/sakamakismile/Qwen3.6-35B-A3B-NVFP4
@@ -15,7 +15,7 @@ VLLM_ARGS=(
   --kv-cache-dtype fp8
   --enable-prefix-caching
   --enable-chunked-prefill 
-  --gpu-memory-utilization 0.88 
+  --gpu-memory-utilization 0.98
   --trust-remote-code
   --reasoning-parser qwen3 
   --host 0.0.0.0

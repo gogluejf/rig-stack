@@ -2,7 +2,7 @@
 # Preset: qwen3-5-27b-nvfp4-creative — more temperature, frequency/presence penalty for creative tasks
 # Model:  Kbenkhaled/Qwen3.5-27B-NVFP4 (fp4 quantized)
 # Use:    Full-context creative chat assistant.
-# Tested on: RTX 5090 (32 GB VRAM), vLLM stable or edge
+# Tested on: RTX 5090  GPU (single-GPU), vLLM edge
 
 VLLM_ARGS=(
   vllm serve /models/hf/Kbenkhaled/Qwen3.5-27B-NVFP4

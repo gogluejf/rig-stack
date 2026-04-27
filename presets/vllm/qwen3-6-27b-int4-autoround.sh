@@ -2,7 +2,10 @@
 # Preset: qwen3-6-27b-int4-autoround — Qwen 3.6 27B AutoRound Int4 (single-GPU), 200k ctx with MTP speculative decoding
 # Model:  Lorbus/Qwen3.6-27B-int4-AutoRound
 # Use:    Ultra-long-context (200k) coding and tool use. AutoRound int4 + FlashInfer + MTP speculative tokens for max throughput.
-# Tested on: RTX 5090 (32 GB VRAM), vLLM stable or edge
+# Tested on: RTX 5090  GPU (single-GPU), vLLM edge
+
+export VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1
+export PYTORCH_ALLOC_CONF=expandable_segments:True
 
 VLLM_ARGS=(
   vllm serve /models/hf/Lorbus/Qwen3.6-27B-int4-AutoRound
@@ -23,7 +26,21 @@ VLLM_ARGS=(
   --enable-chunked-prefill
   --tool-call-parser qwen3_coder
   --speculative-config '{"method":"mtp","num_speculative_tokens":2}'
-  --tensor-parallel-size 1
-  --dtype auto
-  --trust-remote-code
 )
+
+"${VLLM_ARGS[@]}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
