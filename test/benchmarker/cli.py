@@ -52,7 +52,7 @@ _UNSUPPORTED = {"comfyui"}
 
 # Static service → API path mapping (mirrors avail.sh _endpoint)
 _ENDPOINTS: dict[str, str] = {
-    "vllm":    "/v1",
+    "vllm":    "/vllm/v1",
     "ollama":  "/ollama/v1",
     "rag":     "/rag/v1",
     "comfyui": "/comfy",
@@ -110,7 +110,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
     pass_count = fail_count = skip_count = 0
 
     for i, spec in enumerate(specs, 1):
-        endpoint    = _ENDPOINTS.get(spec.service, "/v1")
+        endpoint    = _ENDPOINTS.get(spec.service, "/vllm/v1")
         url         = f"{args.traefik_base.rstrip('/')}{endpoint}/chat/completions"
         started_at  = _display.now_iso()
 

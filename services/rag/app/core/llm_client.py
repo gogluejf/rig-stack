@@ -3,7 +3,7 @@
 import os
 import httpx
 
-CHAT_BASE_URL  = os.getenv("CHAT_BASE_URL",  "http://rig-traefik/v1")
+CHAT_BASE_URL  = os.getenv("CHAT_BASE_URL",  "http://rig-traefik/vllm/v1")
 EMBED_BASE_URL = os.getenv("EMBED_BASE_URL", "http://rig-traefik/ollama/v1")
 
 

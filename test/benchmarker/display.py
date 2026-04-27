@@ -43,7 +43,7 @@ def print_run_header(
     run_index:    int,
     total:        int,
     spec,                 # RunSpec from matrix.py
-    endpoint:     str,    # e.g. "/v1", "/ollama/v1"
+    endpoint:     str,    # e.g. "/vllm/v1", "/ollama/v1"
     vllm_preset:  str,    # flattened preset command (vllm only, else "")
     started_at:   str,    # ISO timestamp set by cli.py before the curl call
     curl_display: str,    # pretty-printed curl command from payload.py

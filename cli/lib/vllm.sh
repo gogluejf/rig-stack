@@ -180,7 +180,7 @@ _serve_start() {
     set_loaded_preset "vllm" "${preset_file}"
 
     echo -e "${GREEN}✓  vLLM running${RESET}"
-    echo -e "  Endpoint : $(_avail_proxy_base)/v1"
+    echo -e "  Endpoint : $(_avail_proxy_base)/vllm/v1"
     echo -e "  Metrics  : http://localhost:${VLLM_PORT:-8000}/metrics"
     echo -e "  Preset   : ${preset_name}"
     echo -e "  Runtime  : GPU"

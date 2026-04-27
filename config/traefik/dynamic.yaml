@@ -53,9 +53,16 @@ http:
         prefixes:
           - /langfuse
 
+    vllm-strip:
+      stripPrefix:
+        prefixes:
+          - /vllm
+
   routers:
     vllm:
-      rule: "PathPrefix(`/v1`) || PathPrefix(`/openai`)"
+      rule: "PathPrefix(`/vllm`)"
+      middlewares:
+        - vllm-strip
       service: vllm
       entryPoints:
         - web

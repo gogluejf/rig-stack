@@ -81,7 +81,9 @@ services:
       - rig-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vllm.rule=PathPrefix(`/v1`) || PathPrefix(`/openai`)"
+      - "traefik.http.routers.vllm.rule=PathPrefix(`/vllm`)"
+      - "traefik.http.middlewares.vllm-strip.stripprefix.prefixes=/vllm"
+      - "traefik.http.routers.vllm.middlewares=vllm-strip"
       - "traefik.http.services.vllm.loadbalancer.server.port=8000"
     logging: *default-logging
     healthcheck:
@@ -124,7 +126,9 @@ services:
       - rig-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vllm.rule=PathPrefix(`/v1`) || PathPrefix(`/openai`)"
+      - "traefik.http.routers.vllm.rule=PathPrefix(`/vllm`)"
+      - "traefik.http.middlewares.vllm-strip.stripprefix.prefixes=/vllm"
+      - "traefik.http.routers.vllm.middlewares=vllm-strip"
       - "traefik.http.services.vllm.loadbalancer.server.port=8000"
     logging: *default-logging
     healthcheck:
@@ -254,7 +258,7 @@ services:
     profiles: [rag]
     restart: unless-stopped
     environment:
-      - CHAT_BASE_URL=http://rig-traefik/v1
+      - CHAT_BASE_URL=http://rig-traefik/vllm/v1
       - EMBED_BASE_URL=http://rig-traefik/ollama/v1
       - QDRANT_HOST=rig-qdrant
       - QDRANT_PORT=6333

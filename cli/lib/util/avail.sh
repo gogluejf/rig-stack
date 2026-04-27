@@ -108,7 +108,7 @@ _avail_proxy_base() {
 # _endpoint <service> — returns canonical OpenAI-compatible base path for a service.
 _endpoint() {
     case "${1:-}" in
-        vllm)    echo "/v1" ;;
+        vllm)    echo "/vllm/v1" ;;
         ollama)  echo "/ollama/v1" ;;
         rag)     echo "/rag/v1" ;;
         comfyui) echo "/comfy" ;;

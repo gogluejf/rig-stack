@@ -3,7 +3,7 @@
 set -euo pipefail
 
 MODEL="${MODEL:-sakamakismile/Qwen3.6-27B-NVFP4}"
-API_URL="${API_URL:-https://localhost/v1/chat/completions}"
+API_URL="${API_URL:-https://localhost/vllm/v1/chat/completions}"
 
 time curl -s "${API_URL}" \
   -H "Content-Type: application/json" \

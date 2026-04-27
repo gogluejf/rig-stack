@@ -59,7 +59,7 @@ All services are exposed under a single Traefik gateway on port 80, or with TLS 
 
 | Component | Stack | Route |
 |---|---|---|
-| LLM inference | vLLM (stable + Blackwell-edge) | `/v1` |
+| LLM inference | vLLM (stable + Blackwell-edge) | `/vllm/v1` |
 | Image/Video generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
 | Utility models | Ollama (CPU/GPU) | `/ollama/v1/` |
 | RAG API | FastAPI + Qdrant | `/rag/v1` |
@@ -105,7 +105,7 @@ rig serve qwen3-6-27b-nvfp4
 # rig serve qwen3-6-27b-nvfp4 --edge
 ```
 
-The LLM endpoint is live at `https://localhost/v1`.
+The LLM endpoint is live at `https://localhost/vllm/v1`.
 
 ![rig presets](docs/rig-presets.png)
 
@@ -263,7 +263,7 @@ Traffic is encrypted by the SSH tunnel itself. No certificate setup needed.
 ```bash
 ssh -L 8080:localhost:80 user@<server-ip>
 # then access via http://localhost:8080
-curl http://localhost:8080/v1/models
+curl http://localhost:8080/vllm/v1/models
 ```
 
 **Secure — SSH tunnel over HTTPS (with trusted certificate)**
@@ -286,7 +286,7 @@ mkcert -install
 ssh -L 8443:localhost:443 user@<server-ip>
 
 # 5. Access via the tunnel
-curl https://localhost:8443/v1/models
+curl https://localhost:8443/vllm/v1/models
 ```
 
 For VS Code extensions (Roo Code, Copilot, etc.) add to `~/.bashrc` and restart VS Code:

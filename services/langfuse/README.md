@@ -33,7 +33,7 @@ To trace vLLM calls via Langfuse, use the Langfuse SDK in your application:
 from langfuse.openai import openai
 
 client = openai.OpenAI(
-    base_url="https://localhost/v1",
+    base_url="https://localhost/vllm/v1",
     api_key="not-needed",
 )
 # All calls are automatically traced
