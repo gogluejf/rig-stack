@@ -107,6 +107,11 @@ rig serve qwen3-6-27b-nvfp4
 
 The LLM endpoint is live at `https://localhost/vllm/v1`.
 
+Try `curl https://localhost/vllm/v1/models | jq` to see your available models
+
+You can test completions with `rig test chat`:
+
+
 ![rig presets](docs/rig-presets.png)
 
 *Switch models and presets in one command — tune quantization, context length, and throughput on the fly.*
