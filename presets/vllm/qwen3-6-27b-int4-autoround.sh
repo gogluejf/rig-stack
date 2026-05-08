@@ -20,7 +20,7 @@ VLLM_ARGS=(
   --max-num-seqs 1
   --skip-mm-profiling
   --quantization auto_round
-  --reasoning-parser qwen3
+#  --reasoning-parser qwen3
   --enable-auto-tool-choice
   --enable-prefix-caching
   --enable-chunked-prefill

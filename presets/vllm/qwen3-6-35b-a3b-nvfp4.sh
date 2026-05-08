@@ -17,7 +17,6 @@ VLLM_ARGS=(
   --enable-chunked-prefill 
   --gpu-memory-utilization 0.98
   --trust-remote-code
-  --reasoning-parser qwen3 
   --host 0.0.0.0
   --port 8000
 )
