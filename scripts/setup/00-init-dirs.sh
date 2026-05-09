@@ -83,8 +83,10 @@ YAML_PATH="${DATA_ROOT}/workflows/comfyui/extra_model_paths.yaml"
 if [[ ! -f "${YAML_PATH}" ]]; then
     cat > "${YAML_PATH}" <<YAML
 comfyui:
+    base_path: ${MODELS_ROOT}
     checkpoints: ${MODELS_ROOT}/comfy/checkpoints/
     diffusion_models: ${MODELS_ROOT}/comfy/diffusion_models/
+    text_encoders: ${MODELS_ROOT}/comfy/clip/
     loras: ${MODELS_ROOT}/comfy/loras/
     vae: ${MODELS_ROOT}/comfy/vae/
     clip: ${MODELS_ROOT}/comfy/clip/
@@ -94,7 +96,6 @@ comfyui:
     embeddings: ${MODELS_ROOT}/comfy/embeddings/
     hypernetworks: ${MODELS_ROOT}/comfy/hypernetworks/
     style_models: ${MODELS_ROOT}/comfy/style_models/
-    unet: ${MODELS_ROOT}/comfy/unet/
 YAML
     echo -e "  ${GREEN}created${RESET}  ${YAML_PATH}"
 else

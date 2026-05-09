@@ -1,0 +1,84 @@
+{
+  "1": {
+    "inputs": {
+      "text": "a beautiful sunset over the ocean, photorealistic"
+    },
+    "class_type": "PrimitiveNode",
+    "_meta": { "title": "Prompt" }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "Qwen-Image-2512-nvfp4/qwen_2.5_vl_7b_nvfp4.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": { "title": "Load CLIP" }
+  },
+  "3": {
+    "inputs": {
+      "unet_name": "Qwen-Image-2512-nvfp4/qwen-image-2512-nvfp4-v2.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": { "title": "Load Diffusion Model" }
+  },
+  "4": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": { "title": "VAE" }
+  },
+  "5": {
+    "inputs": {
+      "clip": [ "2", 0 ],
+      "prompt": [ "1", 0 ],
+      "vae": [ "4", 0 ]
+    },
+    "class_type": "TextEncodeQwenImageEdit",
+    "_meta": { "title": "Encode Prompt" }
+  },
+  "6": {
+    "inputs": {
+      "width": 896,
+      "height": 1152,
+      "layers": 3,
+      "batch_size": 1
+    },
+    "class_type": "EmptyQwenImageLayeredLatentImage",
+    "_meta": { "title": "Empty Qwen Latent" }
+  },
+  "7": {
+    "inputs": {
+      "model": [ "3", 0 ],
+      "positive": [ "5", 0 ],
+      "negative": [ "5", 0 ],
+      "latent_image": [ "6", 0 ],
+      "steps": 5,
+      "cfg": 4,
+      "scheduler": "karras",
+      "sampler_name": "euler",
+      "denoise": 1,
+      "seed": 42
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "KSampler" }
+  },
+  "8": {
+    "inputs": {
+      "samples": [ "7", 0 ],
+      "vae": [ "4", 0 ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "VAE Decode" }
+  },
+  "9": {
+    "inputs": {
+      "images": [ "8", 0 ],
+      "filename_prefix": "qwen_image"
+    },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save Image" }
+  }
+}

@@ -9,3 +9,5 @@ comfyui:
     ipadapter: /models/ipadapter
     facerestore_models: /models/facerestore_models
     insightface: /models/insightface
+    diffusion_models: /models/diffusion_models
+    text_encoders: /models/clip

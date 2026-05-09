@@ -329,6 +329,7 @@ _models_init() {
         _install comfy black-forest-labs/FLUX.2-klein "" diffusion_models
         _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen-image-2512-nvfp4-v2.safetensors diffusion_models
         _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen_2.5_vl_7b_nvfp4.safetensors clip
+        _install comfy Comfy-Org/Qwen-Image_ComfyUI "split_files/vae/qwen_image_vae.safetensors" vae
         _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4 "" diffusion_models
     }
 
