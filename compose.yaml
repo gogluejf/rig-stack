@@ -154,7 +154,7 @@ services:
       - ${MODELS_ROOT}/comfy:/models
       - ${DATA_ROOT}/outputs/comfyui:/outputs
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
-      - ${DATA_ROOT}/inputs:/inputs:ro
+      - ${DATA_ROOT}/inputs:/inputs
       - ${DATA_ROOT}/logs/comfyui:/logs
     networks:
       - rig-net
@@ -182,7 +182,7 @@ services:
       - ${MODELS_ROOT}/comfy:/models
       - ${DATA_ROOT}/outputs/comfyui:/outputs
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
-      - ${DATA_ROOT}/inputs:/inputs:ro
+      - ${DATA_ROOT}/inputs:/inputs
       - ${DATA_ROOT}/logs/comfyui:/logs
       - ${DATA_ROOT}/custom_nodes/comfyui:/comfyui/custom_nodes
     networks:
@@ -210,7 +210,7 @@ services:
       - ${MODELS_ROOT}/comfy:/models
       - ${DATA_ROOT}/outputs/comfyui:/outputs
       - ${DATA_ROOT}/workflows/comfyui:/workflows:ro
-      - ${DATA_ROOT}/inputs:/inputs:ro
+      - ${DATA_ROOT}/inputs:/inputs
       - ${DATA_ROOT}/logs/comfyui:/logs
       - ${DATA_ROOT}/custom_nodes/comfyui:/comfyui/custom_nodes
     networks:
