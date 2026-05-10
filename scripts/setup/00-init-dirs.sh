@@ -84,18 +84,17 @@ if [[ ! -f "${YAML_PATH}" ]]; then
     cat > "${YAML_PATH}" <<YAML
 comfyui:
     base_path: ${MODELS_ROOT}
-    checkpoints: ${MODELS_ROOT}/comfy/checkpoints/
-    diffusion_models: ${MODELS_ROOT}/comfy/diffusion_models/
-    text_encoders: ${MODELS_ROOT}/comfy/clip/
-    loras: ${MODELS_ROOT}/comfy/loras/
-    vae: ${MODELS_ROOT}/comfy/vae/
-    clip: ${MODELS_ROOT}/comfy/clip/
-    clip_vision: ${MODELS_ROOT}/comfy/clip_vision/
-    controlnet: ${MODELS_ROOT}/comfy/controlnet/
-    upscale_models: ${MODELS_ROOT}/comfy/upscale_models/
-    embeddings: ${MODELS_ROOT}/comfy/embeddings/
-    hypernetworks: ${MODELS_ROOT}/comfy/hypernetworks/
-    style_models: ${MODELS_ROOT}/comfy/style_models/
+    checkpoints: ${MODELS_ROOT}/comfy/checkpoints
+    clip: ${MODELS_ROOT}/comfy/clip
+    controlnet: ${MODELS_ROOT}/comfy/controlnet
+    loras: ${MODELS_ROOT}/comfy/loras
+    upscale_models: ${MODELS_ROOT}/comfy/upscale_models
+    vae: ${MODELS_ROOT}/comfy/vae
+    ipadapter: ${MODELS_ROOT}/comfy/ipadapter
+    facerestore_models: ${MODELS_ROOT}/comfy/facerestore_models
+    insightface: ${MODELS_ROOT}/comfy/insightface
+    diffusion_models: ${MODELS_ROOT}/comfy/diffusion_models
+    text_encoders: ${MODELS_ROOT}/comfy/clip
 YAML
     echo -e "  ${GREEN}created${RESET}  ${YAML_PATH}"
 else
