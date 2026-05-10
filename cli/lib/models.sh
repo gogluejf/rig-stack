@@ -345,8 +345,8 @@ _models_init() {
 
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
-        _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
         _install hf Lorbus/Qwen3.6-27B-int4-AutoRound
+        _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
         _install hf LilaRest/gemma-4-31B-it-NVFP4-turbo # text only, no vision
         _install hf GadflyII/GLM-4.7-Flash-NVFP4
         _install hf Kbenkhaled/Qwen3.5-27B-NVFP4
@@ -355,6 +355,8 @@ _models_init() {
 
     extra_comfy() {
         echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
+
+        _install comfy sci4ai/Qwen-Image-2512-Abliterated-TextEncode "" diffusion_models
 
         _install comfy black-forest-labs/FLUX.1-Fill-dev "" diffusion_models
 

@@ -1,0 +1,126 @@
+{
+  "1": {
+    "inputs": {
+      "image": "source_face.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Source Face Image"
+    }
+  },
+  "2": {
+    "inputs": {
+      "image": "target_image.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Target Image"
+    }
+  },
+  "3": {
+    "inputs": {
+      "clip_name": "Qwen-Image-2512-nvfp4/qwen_2.5_vl_7b_nvfp4.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load Qwen CLIP"
+    }
+  },
+  "4": {
+    "inputs": {
+      "unet_name": "Qwen-Image-Edit-2511-NVFP4/qwen_image_edit_2511_nvfp4.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Qwen Image Edit Model"
+    }
+  },
+  "5": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load Qwen VAE"
+    }
+  },
+  "6": {
+    "inputs": {
+      "clip": ["3", 0],
+      "prompt": "Edit image 1 only. Keep image 1 as the target photo: same body, pose, clothing, lighting, background, camera angle, and composition. Use image 2 only as the face identity reference. Replace the head face/hair  in image 1 with the head identity from image 2. Do not modify image 2.",
+      "vae": ["5", 0],
+      "image1": ["1", 0],
+      "image2": ["2", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "Positive Edit Conditioning"
+    }
+  },
+  "7": {
+    "inputs": {
+      "clip": ["3", 0],
+      "prompt": "",
+      "vae": ["5", 0],
+      "image1": ["1", 0],
+      "image2": ["2", 0]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "Negative Edit Conditioning"
+    }
+  },
+  "8": {
+    "inputs": {
+      "width": 896,
+      "height": 1152,
+      "layers": 1,
+      "batch_size": 1
+    },
+    "class_type": "EmptyQwenImageLayeredLatentImage",
+    "_meta": {
+      "title": "Target-size Latent"
+    }
+  },
+  "9": {
+    "inputs": {
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["8", 0],
+      "seed": 42,
+      "steps": 35,
+      "cfg": 3.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "10": {
+    "inputs": {
+      "samples": ["9", 0],
+      "vae": ["5", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "Decode"
+    }
+  },
+  "11": {
+    "inputs": {
+      "images": ["10", 0],
+      "filename_prefix": "qwen_face_replace"
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}

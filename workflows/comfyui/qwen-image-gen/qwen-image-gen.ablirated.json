@@ -1,12 +1,12 @@
 {
   "1": {
     "inputs": {
-      "unet_name": "Qwen-Image-2512-nvfp4/qwen-image-2512-nvfp4-v2.safetensors",
+      "unet_name": "Qwen-Image-2512-Abliterated-TextEncode",
       "weight_dtype": "default"
     },
     "class_type": "UNETLoader",
     "_meta": {
-      "title": "Load Diffusion Model"
+      "title": "Load Sharded Diffusion Model"
     }
   },
   "2": {
@@ -31,28 +31,22 @@
   },
   "4": {
     "inputs": {
-      "text": "a beautiful sunset over the ocean, photorealistic, high detail, natural light",
-      "clip": [
-        "2",
-        0
-      ]
+      "text": "a beautiful sunset over the ocean, photorealistic, high detail",
+      "clip": ["2", 0]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "Positive Gen Prompt"
+      "title": "Positive Prompt"
     }
   },
   "5": {
     "inputs": {
       "text": "",
-      "clip": [
-        "2",
-        0
-      ]
+      "clip": ["2", 0]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "Negative Gen Prompt"
+      "title": "Empty Negative Prompt"
     }
   },
   "6": {
@@ -63,27 +57,15 @@
     },
     "class_type": "EmptySD3LatentImage",
     "_meta": {
-      "title": "Empty SD3 Latent"
+      "title": "Empty Latent"
     }
   },
   "7": {
     "inputs": {
-      "model": [
-        "1",
-        0
-      ],
-      "positive": [
-        "4",
-        0
-      ],
-      "negative": [
-        "5",
-        0
-      ],
-      "latent_image": [
-        "6",
-        0
-      ],
+      "model": ["1", 0],
+      "positive": ["4", 0],
+      "negative": ["5", 0],
+      "latent_image": ["6", 0],
       "seed": 42,
       "steps": 40,
       "cfg": 3.5,
@@ -98,27 +80,18 @@
   },
   "8": {
     "inputs": {
-      "samples": [
-        "7",
-        0
-      ],
-      "vae": [
-        "3",
-        0
-      ]
+      "samples": ["7", 0],
+      "vae": ["3", 0]
     },
     "class_type": "VAEDecode",
     "_meta": {
-      "title": "VAE Decode"
+      "title": "Decode"
     }
   },
   "9": {
     "inputs": {
-      "images": [
-        "8",
-        0
-      ],
-      "filename_prefix": "qwen_t2i"
+      "images": ["8", 0],
+      "filename_prefix": "qwen_other_model"
     },
     "class_type": "SaveImage",
     "_meta": {
