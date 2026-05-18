@@ -351,6 +351,9 @@ services:
     volumes:
       - ${MODELS_ROOT}/hf:/models/hf
       - ${MODELS_ROOT}/comfy:/models/comfy
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
     networks:
       - rig-net
     logging: *default-logging
