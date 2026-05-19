@@ -356,8 +356,6 @@ _models_init() {
     extra_comfy() {
         echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
 
-        _install comfy sci4ai/Qwen-Image-2512-Abliterated-TextEncode "" diffusion_models
-
         _install comfy black-forest-labs/FLUX.1-Fill-dev "" diffusion_models
 
         echo -e "${YELLOW}  FLUX.2 fp8: verify repo slug at huggingface.co/black-forest-labs, then:${RESET}"

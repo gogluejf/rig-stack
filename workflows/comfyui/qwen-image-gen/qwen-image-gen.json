@@ -32,10 +32,7 @@
   "4": {
     "inputs": {
       "text": "a beautiful sunset over the ocean, photorealistic, high detail, natural light",
-      "clip": [
-        "2",
-        0
-      ]
+      "clip": ["2",0]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
@@ -45,10 +42,7 @@
   "5": {
     "inputs": {
       "text": "",
-      "clip": [
-        "2",
-        0
-      ]
+        "clip": ["2",0]
     },
     "class_type": "CLIPTextEncode",
     "_meta": {
