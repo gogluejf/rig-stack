@@ -6,7 +6,7 @@
 #               Prompts before steps that require a reboot.
 #
 # What it expects:
-#   - Ubuntu 24.04 (or set OS_FAMILY=debian in .env for Debian-family)
+#   - Ubuntu or Debian-family Linux
 #   - Run as a non-root user with sudo access
 #   - .env file exists (copy .env.example first)
 #
@@ -45,6 +45,31 @@ if [[ "$(uname)" != "Linux" ]]; then
     exit 1
 fi
 
+# ── Runtime detection ─────────────────────────────────────────────────────────
+_detect_gpu() {
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        local name
+        name=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+        [[ -n "$name" ]] && echo "$name" && return
+    fi
+    if command -v lspci >/dev/null 2>&1; then
+        local name
+        name=$(lspci 2>/dev/null | grep -i nvidia | grep -iE 'VGA|3D|Display' \
+            | sed 's/.*: //' | head -1)
+        [[ -n "$name" ]] && echo "$name" && return
+    fi
+    echo "unknown"
+}
+
+_detect_os() {
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        echo "${PRETTY_NAME:-${NAME} ${VERSION_ID}}"
+    else
+        echo "Linux (unknown)"
+    fi
+}
+
 # ── Load .env ─────────────────────────────────────────────────────────────────
 if [[ -f "${SCRIPT_DIR}/.env" ]]; then
     set -a
@@ -56,6 +81,9 @@ else
     echo -e " If you have an Hugginface token (required for some gated models), set HF_TOKEN in your .env."
     exit 1
 fi
+
+DETECTED_GPU=$(_detect_gpu)
+DETECTED_OS=$(_detect_os)
 
 run_step() {
     local script="$1"
@@ -122,8 +150,8 @@ prompt_reboot() {
 
 echo -e "${BOLD}"
 echo "  ┌─────────────────────────────────────────┐"
-echo "  │         rig-stack  install.sh           │"
-echo "  │   RTX 5090 · Ubuntu 24.04 · Docker AI   │"
+echo "           rig-stack  install.sh           "
+echo "     ${DETECTED_GPU} · ${DETECTED_OS} · Docker AI   "
 echo "  └─────────────────────────────────────────┘"
 echo -e "${RESET}"
 
@@ -134,8 +162,8 @@ fi
 echo -e "  Models root : ${MODELS_ROOT}"
 echo -e "  Data root   : ${DATA_ROOT}"
 echo -e "  Docker root : ${DOCKER_ROOT}"
-echo -e "  GPU         : ${GPU_MODEL}"
-echo -e "  OS          : ${OS_FAMILY} ${OS_VERSION}"
+echo -e "  GPU         : ${DETECTED_GPU}"
+echo -e "  OS          : ${DETECTED_OS}"
 
 echo ""
 read -rp "Proceed with installation? [y/N] " confirm
