@@ -16,6 +16,7 @@ Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them
 | [controlnet](controlnet/) | Pose/depth/canny conditioned generation |
 | [facefusion](facefusion/) | Face swap and enhancement |
 | [starvector](starvector/) | Raster → SVG vector conversion |
+| [wan2.2-i2v](wan2.2-i2v/) | Wan 2.2 image-to-video, dual-pass with Lightx2v LoRA |
 
 ## Quick start for any workflow
 

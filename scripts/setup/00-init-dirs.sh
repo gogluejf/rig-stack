@@ -94,6 +94,7 @@ comfyui:
     facerestore_models: ${MODELS_ROOT}/comfy/facerestore_models
     insightface: ${MODELS_ROOT}/comfy/insightface
     diffusion_models: ${MODELS_ROOT}/comfy/diffusion_models
+    clip_vision: ${MODELS_ROOT}/comfy/clip_vision
     text_encoders: ${MODELS_ROOT}/comfy/clip
 YAML
     echo -e "  ${GREEN}created${RESET}  ${YAML_PATH}"

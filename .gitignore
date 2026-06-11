@@ -11,6 +11,9 @@ config/models-registry.tsv
 .preset.loaded.*
 config/traefik/certs/
 
+# Plans (local working notes)
+plans/
+
 # OS
 .DS_Store
 Thumbs.db

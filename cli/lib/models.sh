@@ -374,6 +374,14 @@ _models_init() {
         # FaceFusion
         _install comfy ezioruan/inswapper_128.onnx inswapper_128.onnx checkpoints
         echo -e "${DIM}  ArcFace buffalo_l: auto-downloaded by insightface on first run.${RESET}"
+
+        # Wan 2.2 I2V — WanVideoWrapper workflow
+        _install comfy Kijai/WanVideo_comfy_fp8_scaled "I2V/Wan2_2-I2V-A14B-HIGH_fp8_e4m3fn_scaled_KJ.safetensors" diffusion_models
+        _install comfy Kijai/WanVideo_comfy_fp8_scaled "I2V/Wan2_2-I2V-A14B-LOW_fp8_e4m3fn_scaled_KJ.safetensors" diffusion_models
+        _install comfy Kijai/WanVideo_comfy "Wan2_1_VAE_bf16.safetensors" vae
+        _install comfy Kijai/WanVideo_comfy "umt5-xxl-enc-bf16.safetensors" clip
+        _install comfy h94/IP-Adapter "models/image_encoder/model.safetensors" clip_vision
+        _install comfy Kijai/WanVideo_comfy "Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank256_bf16.safetensors" loras
     }
 
     extra_ollama() {
