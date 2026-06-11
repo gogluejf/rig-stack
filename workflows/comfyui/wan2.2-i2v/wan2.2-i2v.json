@@ -878,7 +878,7 @@
         "bf16",
         "fp8_e4m3fn_scaled",
         "offload_device",
-        "sageattn"
+        "sdpa"
       ],
       "shape": 1
     },
@@ -1017,7 +1017,7 @@
         "bf16",
         "fp8_e4m3fn_scaled",
         "offload_device",
-        "sageattn"
+        "sdpa"
       ],
       "shape": 1
     },
@@ -1156,7 +1156,7 @@
         "bf16",
         "fp8_e4m3fn_scaled",
         "offload_device",
-        "sageattn"
+        "sdpa"
       ],
       "shape": 1
     },
@@ -1375,7 +1375,7 @@
         "bf16",
         "fp8_e4m3fn_scaled",
         "offload_device",
-        "sageattn"
+        "sdpa"
       ],
       "shape": 1
     },
