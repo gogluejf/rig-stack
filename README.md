@@ -156,6 +156,7 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 
 | Model | Container | Throughput | KV Cached |
 |---|---|---|---|
+| unsloth/Qwen3.6-27B-NVFP4 | edge | ~125 tok/s | ~170k |
 | Lorbus/Qwen3.6-27B-int4-AutoRound | edge | ~115 tok/s | ~64k |
 | palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4 | edge | ~205 tok/s | ~102k |
 | sakamakismile/Qwen3.6-35B-A3B-NVFP4 | edge | ~180 tok/s | ~115k |

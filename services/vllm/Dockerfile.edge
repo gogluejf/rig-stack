@@ -19,7 +19,7 @@
 # Expected build time: 20-40 minutes (compiles CUDA extensions).
 
 # Step 1: PyTorch nightly base with CUDA 13.x
-FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS base
+FROM nvidia/cuda:13.0.0-devel-ubuntu24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -53,32 +53,42 @@ RUN pip3 install --no-cache-dir \
     torchaudio \
     --index-url https://download.pytorch.org/whl/cu130
 
-# Verify torch install; arch list can be empty in non-GPU build contexts.
-RUN python3 -c "import torch; archs = torch.cuda.get_arch_list(); print('Torch CUDA:', torch.version.cuda, 'CUDA archs:', archs); (archs and ('sm_120' in archs or any('12' in a for a in archs))) or (not archs and print('WARN: empty arch list during build context; runtime GPU check required'))"
-
-# Step 3: Install vLLM from nightly index (sm_120 support merged post-0.6)
-# To update: change the version pin below and rebuild with:
-#   docker compose build vllm-edge
-# or: scripts/setup/04-build-edge-images.sh
+# Step 3: Install vLLM nightly (Blackwell / CUDA 13)
 ENV TORCH_CUDA_ARCH_LIST="8.0 8.6 8.9 9.0 12.0"
 ENV VLLM_INSTALL_PUNICA_KERNELS=1
+ENV HF_HOME=/root/.cache/huggingface
+ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
+ENV UV_BREAK_SYSTEM_PACKAGES=1
 
 RUN pip3 install --no-cache-dir \
     packaging \
     setuptools \
     wheel \
-    ninja
+    ninja \
+    uv
 
-# Build vLLM from nightly index (Blackwell/sm_120 support)
-# Pin to 0.19.0 — confirmed working on RTX 5090 with this model
-RUN pip3 install --no-cache-dir vllm==0.19.0 \
-    --index-url https://wheels.vllm.ai/nightly \
-    --extra-index-url https://pypi.org/simple
+RUN uv pip install \
+    --system \
+    --pre \
+    --upgrade \
+    vllm \
+    --extra-index-url https://wheels.vllm.ai/nightly/cu130
 
-ENV HF_HOME=/root/.cache/huggingface
-ENV VLLM_WORKER_MULTIPROC_METHOD=spawn
+# Keep pinned for Qwen compatibility
+RUN pip3 install --no-cache-dir "transformers==5.5.0"
 
-RUN pip3 install --no-cache-dir "transformers>=5.2.0"
+# Verify install
+RUN python3 - <<'PY'
+import importlib.metadata
+import torch
+import transformers
+import vllm
+
+print("Torch:", torch.__version__)
+print("CUDA:", torch.version.cuda)
+print("vLLM:", importlib.metadata.version("vllm"))
+print("Transformers:", transformers.__version__)
+PY
 
 COPY entrypoint.sh /usr/local/bin/entrypoint-vllm.sh
 RUN chmod +x /usr/local/bin/entrypoint-vllm.sh
