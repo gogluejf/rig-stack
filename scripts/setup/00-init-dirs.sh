@@ -59,6 +59,7 @@ create_dirs "${MODELS_ROOT}/comfy" \
 echo ""
 echo "Initialising $DATA_ROOT ..."
 create_dirs "${DATA_ROOT}" \
+    moet-packs/deepseek-v4-flash \
     inputs \
     outputs/vllm \
     outputs/comfyui \

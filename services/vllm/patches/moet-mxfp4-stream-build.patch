@@ -1,0 +1,136 @@
+--- a/vllm/model_executor/layers/quantization/mxfp4.py
++++b/vllm/model_executor/layers/quantization/mxfp4.py
+@@ -625,16 +625,20 @@
+         if moe_w2_cubit.is_w2_layer(getattr(layer, "layer_name", "")):
+             if moe_w2_cubit.plan_pack_skip(layer):
+                 return
+-            for pname in ("w13_weight", "w13_weight_scale", "w2_weight",
+-                          "w2_weight_scale"):
+-                p_ = getattr(layer, pname)
+-                attrs = {k: getattr(p_, k) for k in ("weight_loader",)
+-                         if hasattr(p_, k)}
+-                newp = torch.nn.Parameter(p_.data.cpu(), requires_grad=False)
+-                layer.register_parameter(pname, newp)
+-                set_weight_attrs(newp, attrs)
+-                if pname.endswith("_scale"):
+-                    newp.quant_method = "block"
++# First boot: build and persist one completed layer at a time.
++# Fall back to the upstream all-layer CPU staging path only when
++# streaming cannot be armed or is explicitly disabled.
++if not moe_w2_cubit.arm_mxfp4_stream_build(layer):
++for pname in ("w13_weight", "w13_weight_scale", "w2_weight",
++"w2_weight_scale"):
++p_ = getattr(layer, pname)
++attrs = {k: getattr(p_, k) for k in ("weight_loader",)
++if hasattr(p_, k)}
++newp = torch.nn.Parameter(p_.data.cpu(), requires_grad=False)
++layer.register_parameter(pname, newp)
++set_weight_attrs(newp, attrs)
++if pname.endswith("_scale"):
++newp.quant_method = "block"
+ 
+     def _setup_kernel(
+         self,
+@@ -745,7 +749,8 @@
+         if moe_w2_cubit.is_w2_layer(getattr(layer, "layer_name", "")):
+             key = getattr(
+                 layer, "_moe_w2_create_key", len(moe_w2_cubit._LAYERS))
+-            moe_w2_cubit.build_layer_planes(layer, key)
++if not getattr(layer, "_moe_w2_stream_built", False):
++moe_w2_cubit.build_layer_planes(layer, key)
+             layer._moe_w2_key = key
+             return
+ 
+--- a/vllm/model_executor/layers/quantization/utils/moe_w2_cubit.py
++++b/vllm/model_executor/layers/quantization/utils/moe_w2_cubit.py
+@@ -825,6 +825,90 @@
+     return True
+ 
+ 
++
++class _Mxfp4StreamLoader:
++"""MXFP4 counterpart of _StreamLoader for DeepSeek-V4-Flash.
++
++The checkpoint contributes w1+w3 loads to fused w13 and one w2 load per
++expert.  Build and release a layer as soon as its four packed tensors are
++complete, keeping first-boot CPU staging bounded to layers in flight.
++"""
++
++def __init__(self, layer, pname, inner):
++self._layer = layer
++self._pname = pname
++self._inner = inner
++
++def __call__(self, param, loaded_weight, *args, **kwargs):
++if param.data.numel() == 0:
++shape = self._layer._moe_w2_stream_shapes[self._pname]
++param.data = torch.empty(shape, dtype=param.data.dtype,
++device="cpu")
++ret = self._inner(param, loaded_weight, *args, **kwargs)
++ok = (ret is True) if kwargs.get("return_success") else True
++if not ok:
++return ret
++pending = self._layer._moe_w2_pending
++if pending.get(self._pname, 0) <= 0:
++raise RuntimeError(
++f"moe_w2 MXFP4 stream-build: {self._pname} load arrived "
++"after the layer was built; set "
++"VLLM_MOE_W2_STREAM_BUILD=0 and report the checkpoint")
++pending[self._pname] -= 1
++if all(v == 0 for v in pending.values()):
++key = self._layer._moe_w2_create_key
++build_layer_planes(self._layer, key)
++# load_weights keeps references to the original Parameters.  Drop
++# their storage in place; replacing layer attributes is not enough.
++for original in self._layer._moe_w2_stream_orig:
++original.data = torch.empty(0, dtype=original.data.dtype,
++device="cpu")
++self._layer._moe_w2_stream_orig = ()
++self._layer._moe_w2_stream_built = True
++logger.info("moe_w2: MXFP4 layer key %d stream-built during load",
++key)
++return ret
++
++
++def arm_mxfp4_stream_build(layer) -> bool:
++"""Arm low-RAM first-boot streaming for MXFP4 checkpoints (DS4 Flash)."""
++global _stream_logged
++if not (_STREAM and enabled()):
++return False
++_layer_contract(layer)
++try:
++E = layer.w13_weight.shape[0]
++except Exception:
++return False
++expected = {
++"w13_weight": 2 * E,
++"w13_weight_scale": 2 * E,
++"w2_weight": E,
++"w2_weight_scale": E,
++}
++wrappers = {}
++for pname in expected:
++param = getattr(layer, pname, None)
++inner = getattr(param, "weight_loader", None)
++if param is None or inner is None:
++return False
++wrappers[pname] = (param, _Mxfp4StreamLoader(layer, pname, inner))
++layer._moe_w2_pending = expected
++layer._moe_w2_stream_orig = tuple(getattr(layer, p) for p in expected)
++layer._moe_w2_stream_shapes = {
++pname: tuple(getattr(layer, pname).shape) for pname in expected}
++for pname in expected:
++param = getattr(layer, pname)
++param.data = torch.empty(0, dtype=param.data.dtype, device="cpu")
++for _, (param, wrapper) in wrappers.items():
++param.weight_loader = wrapper
++if not _stream_logged:
++_stream_logged = True
++logger.info(
++"moe_w2 MXFP4 STREAM-BUILD armed: layer staging materializes "
++"lazily and is released after each completed layer")
++return True
++
+ def _try_skip_requant(layer, layer_key: int, E: int, N13: int, K13: int,
+                       N2: int, K2: int, param_names) -> bool:
+     """Boot-from-pack: when every host store this config serves from already

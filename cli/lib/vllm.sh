@@ -7,8 +7,9 @@ cmd_serve() {
             echo -e "\n${BOLD}rig serve${RESET} — start vLLM inference$"
             echo ""
             echo -e "${GREEN}Usage:${RESET}"
-            echo -e "  rig ${BOLD}serve${RESET} ${BOLD}[start]${RESET} ${CYAN}[<preset>]${RESET} ${YELLOW_SOFT}[--edge]${RESET}  ${DIM}start vLLM (uses active preset if none given)${RESET}"
+            echo -e "  rig ${BOLD}serve${RESET} ${BOLD}[start]${RESET} ${CYAN}[<preset>]${RESET} ${YELLOW_SOFT}[--edge|--moet]${RESET}  ${DIM}start vLLM (uses active preset if none given)${RESET}"
             echo -e "    ${YELLOW_SOFT}--edge${RESET}                               ${DIM}use Blackwell/sm_120 edge container${RESET}"
+            echo -e "    ${YELLOW_SOFT}--moet${RESET}                               ${DIM}use pinned vLLM-Moet container${RESET}"
             echo ""
             echo -e "  rig serve ${BOLD}stop${RESET}                         ${DIM}stop vLLM${RESET}"
             echo ""
@@ -21,6 +22,7 @@ cmd_serve() {
             echo -e "${GREEN}Examples:${RESET}"
             echo -e "  rig serve ${DIM}qwen3-6-27b-nvfp4${RESET}"
             echo -e "  rig serve ${DIM}gemma-4-31B-it-NVFP4-turbo${RESET} ${YELLOW_SOFT}--edge${RESET}"
+            echo -e "  rig serve ${DIM}deepseek-v4-flash-moet-5090${RESET} ${YELLOW_SOFT}--moet${RESET}"
             echo -e "  rig serve"
             echo -e "  rig serve preset list"
             echo -e "  rig serve preset set ${DIM}qwen3-6-27b-nvfp4${RESET}"
@@ -119,15 +121,19 @@ _serve_list() {
 _serve_start() {
     local preset_name=""
     local edge=false
+    local moet=false
     local arg
     for arg in "$@"; do
         case "${arg}" in
             --edge)
                 edge=true
                 ;;
+            --moet)
+                moet=true
+                ;;
             --*)
                 echo -e "${RED}Unknown flag for 'rig serve': ${arg}${RESET}"
-                echo "Usage: rig serve [<preset>] [--edge]"
+                echo "Usage: rig serve [<preset>] [--edge|--moet]"
                 exit 1
                 ;;
             *)
@@ -135,12 +141,18 @@ _serve_start() {
                     preset_name="${arg}"
                 else
                     echo -e "${RED}Unexpected extra argument: ${arg}${RESET}"
-                    echo "Usage: rig serve [<preset>] [--edge]"
+                    echo "Usage: rig serve [<preset>] [--edge|--moet]"
                     exit 1
                 fi
                 ;;
         esac
     done
+
+    if $edge && $moet; then
+        echo -e "${RED}Choose one vLLM build: default stable, --edge, or --moet.${RESET}"
+        echo "Usage: rig serve [<preset>] [--edge|--moet]"
+        exit 1
+    fi
 
     # Fall back to active preset if none given
     if [[ -z "${preset_name}" ]]; then
@@ -162,17 +174,38 @@ _serve_start() {
         exit 1
     fi
 
+    local preset_build="general"
+    grep -q '^# Build: moet$' "${preset_file}" && preset_build="moet"
+    if [[ "${preset_build}" == "moet" ]] && ! $moet; then
+        echo -e "${RED}Preset '${preset_name}' requires the specialized --moet container.${RESET}"
+        echo "  rig serve ${preset_name} --moet"
+        exit 1
+    fi
+    if $moet && [[ "${preset_build}" != "moet" ]]; then
+        echo -e "${RED}Preset '${preset_name}' is not marked for the specialized Moet runtime.${RESET}"
+        echo "Use: rig serve deepseek-v4-flash-moet-5090 --moet"
+        exit 1
+    fi
+
     require_docker
-    set_active_preset "vllm" "${preset_file}"
 
     local profile="vllm-stable"
     local build_label="stable"
-    $edge && profile="vllm-edge"
-    $edge && build_label="edge"
+    if $edge; then
+        profile="vllm-edge"
+        build_label="edge"
+    elif $moet; then
+        profile="vllm-moet"
+        build_label="moet"
+        _serve_moet_preflight "${preset_file}"
+    fi
 
-    if container_running "rig-vllm-stable" || container_running "rig-vllm-edge"; then
+    set_active_preset "vllm" "${preset_file}"
+
+    if container_running "rig-vllm-stable" || container_running "rig-vllm-edge" || container_running "rig-vllm-moet"; then
         echo -e "${DIM}Stopping vLLM...${RESET}"
-        rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
+        rig_compose --profile vllm-stable --profile vllm-edge --profile vllm-moet \
+            stop vllm-stable vllm-edge vllm-moet 2>/dev/null || true
     fi
 
     echo -e "${CYAN}Starting ${profile} with preset '${preset_name}'...${RESET}"
@@ -193,10 +226,52 @@ _serve_start() {
     echo -e "  ${YELLOW}${BOLD}Logs     : Check status in the logs \"docker logs -f rig-${profile}${RESET}\""
 }
 
+_serve_moet_preflight() {
+    local preset_file="$1"
+    local model_path pack_path available_kb required_kb
+    model_path="${MODELS_ROOT:-/models}/hf/deepseek-ai/DeepSeek-V4-Flash"
+    pack_path="${DATA_ROOT:-/data}/moet-packs/deepseek-v4-flash"
+
+    if [[ ! -f "${model_path}/model.safetensors.index.json" ]]; then
+        echo -e "${RED}DeepSeek V4 Flash is missing or incomplete at:${RESET}"
+        echo "  ${model_path}"
+        exit 1
+    fi
+
+    if ! docker image inspect rig-vllm-moet:latest >/dev/null 2>&1; then
+        echo -e "${RED}Moet image not found: rig-vllm-moet:latest${RESET}"
+        echo "Build it first: bash scripts/setup/05-build-moet-image.sh"
+        exit 1
+    fi
+
+    mkdir -p "${pack_path}" 2>/dev/null || {
+        echo -e "${RED}Cannot create writable Moet pack directory:${RESET} ${pack_path}"
+        echo "Create it with: sudo mkdir -p ${pack_path} && sudo chown -R ${USER}:${USER} ${pack_path}"
+        exit 1
+    }
+    [[ -w "${pack_path}" ]] || {
+        echo -e "${RED}Moet pack directory is not writable:${RESET} ${pack_path}"
+        exit 1
+    }
+
+    # First pack creation needs ~75 GB; require 90 GiB free as safety headroom.
+    if ! find "${pack_path}" -maxdepth 1 -type f -name '*.pack' -print -quit 2>/dev/null | grep -q .; then
+        available_kb=$(df -Pk "${pack_path}" | awk 'NR==2 {print $4}')
+        required_kb=$((90 * 1024 * 1024))
+        if (( available_kb < required_kb )); then
+            echo -e "${RED}Not enough free space for first Moet pack creation.${RESET}"
+            echo "  Required: at least 90 GiB free"
+            echo "  Available: $((available_kb / 1024 / 1024)) GiB"
+            exit 1
+        fi
+    fi
+}
+
 _serve_stop() {
     require_docker
     echo "Stopping vLLM..."
-    rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
+    rig_compose --profile vllm-stable --profile vllm-edge --profile vllm-moet \
+        stop vllm-stable vllm-edge vllm-moet 2>/dev/null || true
     echo -e "${GREEN}✓  vLLM stopped.${RESET}"
 }
 

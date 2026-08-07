@@ -10,6 +10,7 @@
 #
 # Optional flags:
 #   --rebuild-stable   Also rebuild vllm-stable + comfyui-stable + comfyui-cpu
+#   --rebuild-moet     Rebuild the separately pinned vllm-moet image
 #   --force            Rebuild local images without prompts
 #   --help             Show usage
 #
@@ -23,6 +24,7 @@ ROOT_DIR="${SCRIPT_DIR}/../.."
 GREEN='\033[0;32m'; CYAN='\033[0;36m'; RESET='\033[0m'
 
 REBUILD_STABLE=false
+REBUILD_MOET=false
 FORCE=false
 
 while [[ $# -gt 0 ]]; do
@@ -31,17 +33,21 @@ while [[ $# -gt 0 ]]; do
             REBUILD_STABLE=true
             shift
             ;;
+        --rebuild-moet)
+            REBUILD_MOET=true
+            shift
+            ;;
         --force)
             FORCE=true
             shift
             ;;
         --help|-h)
-            echo "Usage: bash scripts/maintenance/update-images.sh [--rebuild-stable] [--force]"
+            echo "Usage: bash scripts/maintenance/update-images.sh [--rebuild-stable] [--rebuild-moet] [--force]"
             exit 0
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: bash scripts/maintenance/update-images.sh [--rebuild-stable] [--force]"
+            echo "Usage: bash scripts/maintenance/update-images.sh [--rebuild-stable] [--rebuild-moet] [--force]"
             exit 1
             ;;
     esac
@@ -60,6 +66,15 @@ if $FORCE; then
     bash "${ROOT_DIR}/scripts/setup/04-build-edge-images.sh" --force
 else
     bash "${ROOT_DIR}/scripts/setup/04-build-edge-images.sh"
+fi
+
+if $REBUILD_MOET; then
+    echo -e "\n${CYAN}Rebuilding pinned vLLM-Moet image...${RESET}"
+    if $FORCE; then
+        bash "${ROOT_DIR}/scripts/setup/05-build-moet-image.sh" --force
+    else
+        bash "${ROOT_DIR}/scripts/setup/05-build-moet-image.sh"
+    fi
 fi
 
 if $REBUILD_STABLE; then
