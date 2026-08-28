@@ -18,37 +18,37 @@ No cloud. No per-token costs. Just fast, secure local inference that unleashes y
 
 ## Features
 
-- **Native CLI**  
+- **Native CLI**
   Manage your entire AI stack with a single command. Switch presets, move models between CPU/GPU, and control all services with a fast, composable CLI.
 
-- **Single endpoint**  
+- **Single endpoint**
   Multiple inference services routed through Traefik on port 80 and 443. One host, one entry point.
 
-- **Observability**  
+- **Observability**
   One command to see endpoint availability, current system configuration, and memory distribution: `rig status`.
 
-- **Unified model registry**  
+- **Unified model registry**
   Manage models across vLLM, Ollama, and ComfyUI from one interface — no more model sprawl.
 
-- **Inference presets**  
+- **Inference presets**
   Define multiple configs for the same model (quantization, context length, throughput) and switch instantly with `rig serve <preset>`.
 
-- **Smart GPU/CPU split**  
+- **Smart GPU/CPU split**
   Place each model on GPU or CPU based on your needs. Optimize your rig for the current workload and switch configurations in one command.
 
-- **Edge and specialized MoE GPU builds**
-  Use the Blackwell edge image for general RTX 5090 inference, or the separately pinned Moet runtime to serve DeepSeek V4 Flash through tiered VRAM/RAM/NVMe expert caching.
+- **Edge GPU builds**
+  Unlock 40–60% more performance on modern GPUs (e.g. RTX 5090) with containerized nightly PyTorch builds. Use stable for compatibility, or switch to edge for maximum throughput.
 
-- **Built-in RAG**  
+- **Built-in RAG**
   `/rag` endpoint powered by Qdrant, ready to plug into apps.
 
-- **Self-hosted prompt observability**  
+- **Self-hosted prompt observability**
   Langfuse traces every request. Nothing leaves your network.
 
-- **Trusted-network design**  
+- **Trusted-network design**
   No auth overhead, no cloud dependency.
 
-- **Containerized stack**  
+- **Containerized stack**
   Docker-based, reproducible, easy to start, easy to evolve.
 
 ---
@@ -59,7 +59,7 @@ All services are exposed under a single Traefik gateway on port 80, or with TLS 
 
 | Component | Stack | Route |
 |---|---|---|
-| LLM inference | vLLM (stable + Blackwell-edge + pinned Moet) | `/vllm/v1` |
+| LLM inference | vLLM (stable + Blackwell-edge) | `/vllm/v1` |
 | Image/Video generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
 | Utility models | Ollama (CPU/GPU) | `/ollama/v1/` |
 | RAG API | FastAPI + Qdrant | `/rag/v1` |
@@ -103,8 +103,6 @@ rig models init --minimal
 rig serve qwen3-6-27b-nvfp4
 # On Blackwell (RTX 50xx)? Squeeze every FLOP out of your card:
 # rig serve qwen3-6-27b-nvfp4 --edge
-# DeepSeek V4 Flash on one RTX 5090:
-# rig serve deepseek-v4-flash-moet-5090 --moet
 ```
 
 The LLM endpoint is live at `https://localhost/vllm/v1`.
@@ -166,7 +164,6 @@ A single endpoint, multiple services. Traefik routes incoming requests to the ri
 | sakamakismile/Qwen3.6-27B-NVFP4 | edge | ~60 tok/s | ~53k |
 | Kbenkhaled/Qwen3.5-27B-NVFP4 | edge | ~65 tok/s | ~48k |
 | sakamakismile/Huihui-gemma-4-31B-it-abliterated-v2-NVFP4 | stable | ~55 tok/s | ~18k |
-| deepseek-ai/DeepSeek-V4-Flash | moet | ~10–12 tok/s observed | 196k experimental |
 
 **Ollama** — Gemma, Llama (CPU and GPU offload)
 
@@ -235,24 +232,6 @@ See `presets/README.md` for the full parameter reference.
 
 ---
 
-## How to build the Moet image
-
-DeepSeek V4 Flash uses a separately pinned runtime. Initialize the upstream
-submodule, then build it without changing the general-purpose edge image:
-
-```bash
-git submodule update --init --recursive
-bash scripts/setup/05-build-moet-image.sh
-rig serve deepseek-v4-flash-moet-5090 --moet
-```
-
-The original checkpoint is read from
-`${MODELS_ROOT}/hf/deepseek-ai/DeepSeek-V4-Flash`. Generated compressed expert
-packs are written persistently to
-`${DATA_ROOT}/moet-packs/deepseek-v4-flash` (about 154 GiB for the base + bit-exact split-FP4 packs).
-
-The current single-sequence preset serves an experimental 196,608-token window, sized below the observed 219,957-token KV-cache capacity with a 13 GiB GPU expert cache. The upstream single-RTX-5090 recipe is quality-validated only at 32K; larger windows may reduce performance and have not been quality-validated.
-
 ## How to rebuild edge images
 
 Edge images (Blackwell/sm_120) need to be rebuilt when PyTorch nightly or vLLM updates significantly:
@@ -277,7 +256,7 @@ docker build --file services/comfyui/Dockerfile.edge --tag rig-comfyui-edge:late
 docker build --file services/vllm/Dockerfile.edge --tag rig-vllm-edge:latest services/vllm
 ```
 
-The tags must match exactly. The Moet image uses `rig-vllm-moet:latest` and is selected by `rig serve ... --moet`.
+The tag must match exactly — that's how `rig comfy start --edge` and `rig serve ... --edge` find the image.
 
 ---
 

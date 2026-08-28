@@ -36,7 +36,7 @@ rig ollama start nomic-embed-text
 rig ollama start nomic-embed-text phi3-mini
 
 # Three models — fills VRAM slots
-rig ollama start nomic-embed-text phi3-mini deepseek-r1-7b --gpu
+rig ollama start nomic-embed-text phi3-mini --gpu
 ```
 
 See `presets/ollama/README.md` for the full model catalogue.

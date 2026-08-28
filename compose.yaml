@@ -1,8 +1,8 @@
 # rig-stack — Docker Compose
 #
 # All services are profile-gated. Only what you start runs.
-# Profiles: vllm-stable, vllm-edge, vllm-moet, comfyui-stable,
-#           comfyui-cpu, comfyui-edge, ollama, rag, observability, hf
+# Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-cpu,
+#           comfyui-edge, ollama, rag, observability, hf
 #
 # Traefik always runs as the unified gateway.
 #
@@ -137,52 +137,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 90s
-
-  # ── vLLM-Moet (DeepSeek V4 / Blackwell sm_120) ────────────────────────────
-  vllm-moet:
-    build:
-      context: .
-      dockerfile: services/vllm/Dockerfile.moet
-    image: rig-vllm-moet:latest
-    container_name: rig-vllm-moet
-    profiles: [vllm-moet]
-    restart: unless-stopped
-    <<: *gpu-runtime
-    shm_size: '16gb'
-    ports:
-      - "${VLLM_PORT:-8000}:8000"
-    environment:
-      - VLLM_NO_USAGE_STATS=1
-      - VLLM_DO_NOT_TRACK=1
-      - HF_HOME=/models/hf/.cache
-    env_file:
-      - .env
-    volumes:
-      - ./.preset.active.vllm:/preset/vllm.sh:ro
-      - ${MODELS_ROOT}:/models:ro
-      - ${MODELS_ROOT}/hf/.cache:/models/hf/.cache
-      - ${DATA_ROOT}/moet-packs/deepseek-v4-flash:/packs
-      - ${DATA_ROOT}/.cache/torch:/root/.cache/torch
-      - ${DATA_ROOT}/.cache/vllm:/root/.cache/vllm
-      - ${DATA_ROOT}/.cache/flashinfer:/root/.cache/flashinfer
-      - ${DATA_ROOT}/.cache/triton:/root/.triton
-      - ${DATA_ROOT}/outputs/vllm:/outputs
-      - ${DATA_ROOT}/logs/vllm:/logs
-    networks:
-      - rig-net
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.vllm.rule=PathPrefix(`/vllm`)"
-      - "traefik.http.middlewares.vllm-strip.stripprefix.prefixes=/vllm"
-      - "traefik.http.routers.vllm.middlewares=vllm-strip"
-      - "traefik.http.services.vllm.loadbalancer.server.port=8000"
-    logging: *default-logging
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 180s
 
   # ── ComfyUI stable ────────────────────────────────────────────────────────
   comfyui-stable:

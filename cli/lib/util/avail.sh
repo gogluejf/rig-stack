@@ -39,7 +39,7 @@ _service_runtime() {
 # _container_avail <service> — returns candidate container names for a service.
 _container_avail() {
     case "${1:-}" in
-        vllm)    printf '%s\n' "rig-vllm-stable" "rig-vllm-edge" "rig-vllm-moet" ;;
+        vllm)    printf '%s\n' "rig-vllm-stable" "rig-vllm-edge" ;;
         ollama)  printf '%s\n' "rig-ollama" ;;
         rag)     printf '%s\n' "rig-rag-api" ;;
         comfyui) printf '%s\n' "rig-comfyui-stable" "rig-comfyui-edge" "rig-comfyui-cpu" ;;
@@ -67,7 +67,6 @@ _container_build() {
     case "${container}" in
         rig-vllm-stable|rig-comfyui-stable) echo "stable" ;;
         rig-vllm-edge|rig-comfyui-edge)     echo "edge" ;;
-        rig-vllm-moet)                       echo "moet" ;;
         rig-comfyui-cpu)                    echo "cpu" ;;
         *)                                  echo "-" ;;
     esac

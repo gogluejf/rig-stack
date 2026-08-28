@@ -18,13 +18,13 @@ _rig_preset_items() {
     root="$(_rig_root)" || return
     local active_name=""
     local link="${root}/.preset.active.${service}"
-    [[ -L "${link}" ]] && active_name="$(basename "$(readlink "${link}")" .sh)"
+    [[ -L "${link}" ]] && active_name="$(basename "$(readlink "${link}")" .env)"
 
     local f name desc
     local -a items=()
-    for f in "${root}/presets/${service}/"*.sh; do
+    for f in "${root}/presets/${service}/"*.env; do
         [[ -f "${f}" ]] || continue
-        name="$(basename "${f}" .sh)"
+        name="$(basename "${f}" .env)"
         desc="$(grep -m1 '^# Use:' "${f}" 2>/dev/null | sed 's/^# Use: *//')"
         [[ "${name}" == "${active_name}" ]] && desc="(active) ${desc}"
         items+=("${name}:${desc}")
@@ -207,14 +207,13 @@ _rig_benchmark() {
 # ── Per-command completions ───────────────────────────────────────────────────
 
 _rig_serve() {
-    # rig serve [<preset>|stop|preset] [--edge|--moet] [--help]
+    # rig serve [<preset>|stop|preset] [--edge] [--help]
     local -a subcmds=(
         'stop:Stop vLLM container'
         'preset:Manage active preset'
     )
     local -a opts=(
-        '(-m --moet)'{-e,--edge}'[Use Blackwell/sm_120 edge container]'
-        '(-e --edge)'{-m,--moet}'[Use pinned vLLM-Moet container]'
+        '--edge[Use Blackwell/sm_120 edge container]'
         '--help[Show help]'
     )
     _arguments -C \

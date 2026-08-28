@@ -62,7 +62,7 @@ _rig_completions() {
         presets="$(_rig_presets vllm 2>/dev/null)"
 
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "${presets} start stop preset --edge --moet --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${presets} start stop preset --edge --help" -- "${cur}"))
             return
         fi
 
@@ -76,20 +76,18 @@ _rig_completions() {
                 fi
                 ;;
             start)
-                # Explicit start — offer presets, then one runtime mode
+                # Explicit start — offer presets at cword=3, then --edge
                 if [[ "${cword}" -eq 3 ]]; then
-                    COMPREPLY=($(compgen -W "${presets} --edge --moet" -- "${cur}"))
+                    COMPREPLY=($(compgen -W "${presets} --edge" -- "${cur}"))
                 else
-                    if ! _rig_contains "--edge" "${words[@]}" && ! _rig_contains "--moet" "${words[@]}"; then
-                        COMPREPLY=($(compgen -W "--edge --moet" -- "${cur}"))
-                    fi
+                    _rig_contains "--edge" "${words[@]}" || \
+                        COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
                 fi
                 ;;
             *)
-                # Preset given as shortcut — offer one runtime mode
-                if ! _rig_contains "--edge" "${words[@]}" && ! _rig_contains "--moet" "${words[@]}"; then
-                    COMPREPLY=($(compgen -W "--edge --moet" -- "${cur}"))
-                fi
+                # Preset given as shortcut — offer --edge if not yet present
+                _rig_contains "--edge" "${words[@]}" || \
+                    COMPREPLY=($(compgen -W "--edge" -- "${cur}"))
                 ;;
         esac
         ;;

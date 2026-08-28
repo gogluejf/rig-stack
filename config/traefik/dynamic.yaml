@@ -122,7 +122,6 @@ http:
         servers:
           - url: "http://rig-vllm-stable:8000"
           - url: "http://rig-vllm-edge:8000"
-          - url: "http://rig-vllm-moet:8000"
 
     rag:
       loadBalancer:

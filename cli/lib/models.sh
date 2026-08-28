@@ -337,7 +337,6 @@ _models_init() {
         echo -e "\n${BOLD}── Ollama models ─────────────────────────────────${RESET}"
         _install ollama nomic-embed-text
         _install ollama phi3:mini
-        _install ollama deepseek-coder:6.7b
         _install ollama mistral:7b
     }
 
@@ -345,7 +344,6 @@ _models_init() {
 
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
-        _install hf deepseek-ai/DeepSeek-V4-Flash
         _install hf unsloth/Qwen3.6-27B-NVFP4
         _install hf Lorbus/Qwen3.6-27B-int4-AutoRound
         _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
@@ -409,8 +407,6 @@ _models_init() {
         _install ollama codellama:7b
         _install ollama codegemma:7b
 
-        _install ollama deepseek-r1:7b
-        _install ollama deepseek-r1:14b
 
         _install ollama gemma4:31b
     }
