@@ -313,7 +313,7 @@ _models_init() {
 
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
-        _install hf unsloth/Qwen3.6-27B-NVFP4
+        _install hf unsloth/Qwen3.8-27B-NVFP4
         _install hf sakamakismile/Qwen3.6-35B-A3B-NVFP4
         _install hf sakamakismile/Huihui-gemma-4-31B-it-abliterated-v2-NVFP4
 
@@ -346,6 +346,7 @@ _models_init() {
     extra_hf() {
         echo -e "\n${BOLD}── HF models (additional) ────────────────────────${RESET}"
         _install hf deepseek-ai/DeepSeek-V4-Flash
+        _install hf unsloth/Qwen3.6-27B-NVFP4
         _install hf Lorbus/Qwen3.6-27B-int4-AutoRound
         _install hf palmfuture/Qwen3.6-35B-A3B-GPTQ-Int4
         _install hf nvidia/Qwen3.6-27B-NVFP4
