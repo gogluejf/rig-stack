@@ -11,6 +11,7 @@ cmd_serve() {
             echo -e "    ${YELLOW_SOFT}--edge${RESET}                               ${DIM}use Blackwell/sm_120 edge container${RESET}"
             echo ""
             echo -e "  rig serve ${BOLD}stop${RESET}                         ${DIM}stop vLLM${RESET}"
+            echo -e "  rig serve ${BOLD}logs${RESET}                         ${DIM}follow logs for the running vLLM container${RESET}"
             echo ""
             echo -e "  rig serve preset ${BOLD}list${RESET}                  ${DIM}list available presets${RESET}"
             echo ""
@@ -33,6 +34,9 @@ cmd_serve() {
             ;;
         stop)
             _serve_stop
+            ;;
+        logs)
+            _serve_logs
             ;;
         preset)
             shift
@@ -163,16 +167,24 @@ _serve_start() {
     fi
 
     require_docker
-    set_active_preset "vllm" "${preset_file}"
 
     local profile="vllm-stable"
     local build_label="stable"
     $edge && profile="vllm-edge"
     $edge && build_label="edge"
 
+    # Build a missing local image before switching away from another backend.
+    if ! docker image inspect "rig-${profile}:latest" >/dev/null 2>&1; then
+        echo -e "${CYAN}Building ${profile} image for first use...${RESET}"
+        rig_compose --profile "${profile}" build "${profile}"
+    fi
+
+    _stop_ninfer_container
+    set_active_preset "vllm" "${preset_file}"
+
     if container_running "rig-vllm-stable" || container_running "rig-vllm-edge"; then
         echo -e "${DIM}Stopping vLLM...${RESET}"
-        rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
+        _stop_vllm_containers
     fi
 
     echo -e "${CYAN}Starting ${profile} with preset '${preset_name}'...${RESET}"
@@ -196,8 +208,18 @@ _serve_start() {
 _serve_stop() {
     require_docker
     echo "Stopping vLLM..."
-    rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
+    _stop_vllm_containers
     echo -e "${GREEN}✓  vLLM stopped.${RESET}"
+}
+
+_serve_logs() {
+    local container
+    container="$(_container_running vllm 2>/dev/null || true)"
+    [[ -n "${container}" ]] || {
+        echo -e "${RED}No vLLM container is running. Start it first with: rig serve${RESET}"
+        return 1
+    }
+    _follow_container_logs "${container}"
 }
 
 _serve_preset() {

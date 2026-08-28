@@ -15,6 +15,7 @@ cmd_infra() {
             echo -e "  rig infra ${BOLD}start${RESET} ${CYAN}<service|all>${RESET}           ${DIM}start one or all services${RESET}"
             echo ""
             echo -e "  rig infra ${BOLD}stop${RESET} ${CYAN}<service|all>${RESET}            ${DIM}stop one or all services${RESET}"
+            echo -e "  rig infra ${BOLD}logs${RESET} ${CYAN}<service>${RESET}               ${DIM}follow logs for one infrastructure container${RESET}"
             echo ""
             echo -e "${GREEN}Services:${RESET}"
             echo -e "  hf          ${DIM}HuggingFace downloader (rig-hf)${RESET}"
@@ -41,6 +42,10 @@ cmd_infra() {
         stop)
             shift
             _infra_stop "${1:-}"
+            ;;
+        logs)
+            shift
+            _infra_logs "${1:-}"
             ;;
         *)
             echo -e "${RED}Unknown infra subcommand: ${1}${RESET}"
@@ -163,6 +168,29 @@ _infra_stop() {
             exit 1
             ;;
     esac
+}
+
+_infra_logs() {
+    local svc="${1:-}"
+    [[ -n "${svc}" ]] || {
+        echo -e "${RED}Service name required.${RESET}"
+        echo "  rig infra logs <hf|qdrant|langfuse|postgres|traefik>"
+        return 1
+    }
+    local container
+    case "${svc}" in
+        hf)       container=rig-hf ;;
+        qdrant)   container=rig-qdrant ;;
+        langfuse) container=rig-langfuse ;;
+        postgres) container=rig-postgres ;;
+        traefik)  container=rig-traefik ;;
+        *)
+            echo -e "${RED}Unknown service: ${svc}${RESET}"
+            echo "  Valid: hf qdrant langfuse postgres traefik"
+            return 1
+            ;;
+    esac
+    _follow_container_logs "${container}"
 }
 
 _infra_wait_ready() {

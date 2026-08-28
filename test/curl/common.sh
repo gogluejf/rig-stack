@@ -25,9 +25,9 @@ load_env
 require_service() {
   local service="${1:-}"
   case "${service}" in
-    vllm|ollama|rag) ;;
+    vllm|ninfer|ollama|rag) ;;
     *)
-      printf >&2 '%bUnknown service: "%s". Valid values: vllm, ollama, rag%b\n' \
+      printf >&2 '%bUnknown service: "%s". Valid values: vllm, ninfer, ollama, rag%b\n' \
         "${RED}" "${service}" "${RESET}"
       exit 1 ;;
   esac

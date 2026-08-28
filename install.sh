@@ -2,7 +2,7 @@
 # rig-stack install.sh
 #
 # What it does: Orchestrates a full rig-stack setup on a fresh server.
-#               Runs scripts/setup/00 through 05 in order.
+#               Runs the required setup scripts in order.
 #               Prompts before steps that require a reboot.
 #
 # What it expects:
@@ -13,7 +13,7 @@
 # What it changes:
 #   - Installs NVIDIA driver, Docker CE, NVIDIA Container Toolkit
 #   - Creates $MODELS_ROOT and $DATA_ROOT directory trees
-#   - Builds edge Docker images
+#   - Service images are pulled or built lazily on first service start
 #   - Installs rig CLI to /usr/local/bin/rig
 #
 # Usage:
@@ -204,7 +204,6 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 run_step "${SETUP_DIR}/03-install-nvidia-toolkit.sh"  "03 — NVIDIA Container Toolkit"
-run_step "${SETUP_DIR}/04-build-edge-images.sh"       "04 — Build edge images"
 run_step "${SETUP_DIR}/05-install-cli.sh"             "05 — Install rig CLI"
 run_step "${SETUP_DIR}/06-install-security-tools.sh" "06 — Security tools"
 

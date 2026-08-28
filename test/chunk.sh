@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stream mode: see every raw JSONL chunk as the model generates
-# Run: ./test/chunk.sh [--service vllm|ollama|rag] [--thinking] [optional custom prompt]
+# Run: ./test/chunk.sh [--service vllm|ninfer|ollama|rag] [--thinking] [optional custom prompt]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/curl/common.sh"
@@ -33,8 +33,13 @@ _DATA="$(jq -nc \
   --arg model "${MODEL}" \
   --arg system "${SYSTEM_PROMPT}" \
   --arg user "${USER_PROMPT}" \
+  --arg service "${SERVICE}" \
   --argjson enable_thinking "${ENABLE_THINKING}" \
-  '{model:$model,stream:true,max_tokens:150,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:[{role:"system",content:$system},{role:"user",content:$user}]}')"
+  '({model:$model,stream:true,max_tokens:150,messages:[{role:"system",content:$system},{role:"user",content:$user}]})
+   + (if $service == "ninfer"
+      then {enable_thinking:$enable_thinking}
+      else {chat_template_kwargs:{enable_thinking:$enable_thinking}}
+      end)')"
 
 save_curl "${_DATA}" "-sN"
 show_curl_line

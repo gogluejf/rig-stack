@@ -1,7 +1,7 @@
 # rig-stack — Docker Compose
 #
 # All services are profile-gated. Only what you start runs.
-# Profiles: vllm-stable, vllm-edge, comfyui-stable, comfyui-cpu,
+# Profiles: vllm-stable, vllm-edge, ninfer, comfyui-stable, comfyui-cpu,
 #           comfyui-edge, ollama, rag, observability, hf
 #
 # Traefik always runs as the unified gateway.
@@ -138,6 +138,42 @@ services:
       retries: 5
       start_period: 90s
 
+  # ── NInfer (RTX 5090 / sm_120a) ───────────────────────────────────────────
+  ninfer:
+    build:
+      context: ./services/ninfer
+      dockerfile: Dockerfile
+      args:
+        NINFER_UPSTREAM_COMMIT: 6e8b2e2ad5d53597c3ba8e7989f9546d40b921fc
+    image: rig-ninfer:latest
+    container_name: rig-ninfer
+    profiles: [ninfer]
+    restart: unless-stopped
+    <<: *gpu-runtime
+    ports:
+      - "${NINFER_PORT:-8081}:8080"
+    env_file:
+      - .env
+    volumes:
+      - ./.preset.active.ninfer:/preset/ninfer.sh:ro
+      - ${MODELS_ROOT}:/models:ro
+      - ${DATA_ROOT}/logs/ninfer:/logs
+    networks:
+      - rig-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ninfer.rule=PathPrefix(`/ninfer`)"
+      - "traefik.http.middlewares.ninfer-strip.stripprefix.prefixes=/ninfer"
+      - "traefik.http.routers.ninfer.middlewares=ninfer-strip"
+      - "traefik.http.services.ninfer.loadbalancer.server.port=8080"
+    logging: *default-logging
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
   # ── ComfyUI stable ────────────────────────────────────────────────────────
   comfyui-stable:
     build:
@@ -258,7 +294,7 @@ services:
     profiles: [rag]
     restart: unless-stopped
     environment:
-      - CHAT_BASE_URL=http://rig-traefik/vllm/v1
+      - CHAT_BASE_URL=http://rig-traefik/inference/v1
       - EMBED_BASE_URL=http://rig-traefik/ollama/v1
       - QDRANT_HOST=rig-qdrant
       - QDRANT_PORT=6333

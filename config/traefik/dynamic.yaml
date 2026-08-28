@@ -53,12 +53,40 @@ http:
         prefixes:
           - /langfuse
 
+    ninfer-strip:
+      stripPrefix:
+        prefixes:
+          - /ninfer
+
+    inference-strip:
+      stripPrefix:
+        prefixes:
+          - /inference
+
     vllm-strip:
       stripPrefix:
         prefixes:
           - /vllm
 
   routers:
+    ninfer:
+      rule: "PathPrefix(`/ninfer`)"
+      middlewares:
+        - ninfer-strip
+      service: ninfer
+      entryPoints:
+        - web
+        - websecure
+
+    inference:
+      rule: "PathPrefix(`/inference`)"
+      middlewares:
+        - inference-strip
+      service: inference
+      entryPoints:
+        - web
+        - websecure
+
     vllm:
       rule: "PathPrefix(`/vllm`)"
       middlewares:
@@ -113,6 +141,26 @@ http:
         - websecure
 
   services:
+    ninfer:
+      loadBalancer:
+        healthCheck:
+          path: /health
+          interval: "10s"
+          timeout: "3s"
+        servers:
+          - url: "http://rig-ninfer:8080"
+
+    inference:
+      loadBalancer:
+        healthCheck:
+          path: /health
+          interval: "10s"
+          timeout: "3s"
+        servers:
+          - url: "http://rig-vllm-stable:8000"
+          - url: "http://rig-vllm-edge:8000"
+          - url: "http://rig-ninfer:8080"
+
     vllm:
       loadBalancer:
         healthCheck:

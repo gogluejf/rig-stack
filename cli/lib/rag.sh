@@ -10,6 +10,7 @@ cmd_rag() {
             echo -e "  rig rag ${BOLD}[start]${RESET}                   ${DIM}start RAG API + Qdrant${RESET}"
             echo ""
             echo -e "  rig rag ${BOLD}stop${RESET}                      ${DIM}stop RAG API + Qdrant${RESET}"
+            echo -e "  rig rag ${BOLD}logs${RESET}                      ${DIM}follow RAG API logs${RESET}"
             echo ""
             echo -e "  rig rag ${BOLD}status${RESET}                    ${DIM}show RAG API health${RESET}"
             echo ""
@@ -31,6 +32,9 @@ cmd_rag() {
             echo "Stopping RAG API..."
             rig_compose --profile rag stop rag-api qdrant 2>/dev/null || true
             echo -e "${GREEN}✓  RAG stopped.${RESET}"
+            ;;
+        logs)
+            _follow_container_logs rig-rag-api
             ;;
         status)
             local url="$(_avail_proxy_base)/rag/health"

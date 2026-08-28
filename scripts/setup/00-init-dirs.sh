@@ -68,6 +68,7 @@ create_dirs "${DATA_ROOT}" \
     lora/training \
     lora/output \
     logs/vllm \
+    logs/ninfer \
     logs/comfyui \
     logs/ollama \
     logs/rag \

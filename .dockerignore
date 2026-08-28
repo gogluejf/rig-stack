@@ -1,0 +1,9 @@
+# Keep local runtime data and unrelated project files out of Docker contexts.
+.git
+.squid-os
+.env
+.preset.active.*
+.preset.loaded.*
+test/benchmark/logs
+**/__pycache__
+*.pyc

@@ -99,7 +99,7 @@ cmd_benchmark() {
     # Normalize service alias and verify it is available
     if [[ -n "${service}" ]]; then
         case "${service}" in
-            vllm|ollama|rag|comfyui) ;;
+            vllm|ninfer|ollama|rag|comfyui) ;;
             *)
                 echo -e "${RED}Unknown service: ${service}${RESET}"; return 1
                 ;;
@@ -225,8 +225,7 @@ _benchmark_build_services_json() {
 
         runtime="$(_service_runtime "${svc}")"
         build="$(_container_build "${svc}" 2>/dev/null || echo "-")"
-        preset_name="-"
-        [[ "${svc}" == "vllm" ]] && preset_name="$(_vllm_preset_name 2>/dev/null || echo "-")"
+        preset_name="$(_service_preset_name "${svc}" 2>/dev/null || echo "-")"
 
         # JSON-encode the model list via Python (handles special characters safely)
         models_json="$(printf '%s\n' "${models}" | python3 -c '

@@ -42,6 +42,27 @@ container_status() {
     fi
 }
 
+# Stop all vLLM variants without changing preset state.
+_stop_vllm_containers() {
+    rig_compose --profile vllm-stable --profile vllm-edge stop vllm-stable vllm-edge 2>/dev/null || true
+}
+
+# Stop NInfer without changing preset state.
+_stop_ninfer_container() {
+    rig_compose --profile ninfer stop ninfer 2>/dev/null || true
+}
+
+# _follow_container_logs <container> — follow logs for an existing container.
+_follow_container_logs() {
+    local container="$1"
+    require_docker
+    if ! docker container inspect "${container}" >/dev/null 2>&1; then
+        echo -e "${RED}Container '${container}' does not exist. Start the service first.${RESET}" >&2
+        return 1
+    fi
+    docker logs --follow "${container}"
+}
+
 # rig_compose — runs docker compose with the stack compose file and .env.
 rig_compose() {
     docker compose --file "${RIG_ROOT}/compose.yaml" --env-file "${RIG_ROOT}/.env" "$@"

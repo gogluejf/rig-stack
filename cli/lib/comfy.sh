@@ -12,6 +12,7 @@ cmd_comfy() {
             echo -e "    ${YELLOW_SOFT}--edge${RESET}                           ${DIM}use Blackwell/sm_120 edge mode${RESET}"
             echo ""
             echo -e "  rig comfy ${BOLD}stop${RESET}                     ${DIM}stop ComfyUI${RESET}"
+            echo -e "  rig comfy ${BOLD}logs${RESET}                     ${DIM}follow logs for the running ComfyUI container${RESET}"
             echo ""
             echo -e "  rig comfy ${BOLD}list${RESET}                     ${DIM}list installed ComfyUI models${RESET}"
             echo ""
@@ -32,6 +33,9 @@ cmd_comfy() {
             ;;
         stop)
             _comfy_stop
+            ;;
+        logs)
+            _comfy_logs
             ;;
         list)
             _comfy_list
@@ -120,6 +124,16 @@ _comfy_stop() {
     echo "Stopping ComfyUI..."
     rig_compose --profile comfyui-stable --profile comfyui-edge --profile comfyui-cpu stop comfyui-stable comfyui-edge comfyui-cpu 2>/dev/null || true
     echo -e "${GREEN}✓  ComfyUI stopped.${RESET}"
+}
+
+_comfy_logs() {
+    local container
+    container="$(_container_running comfyui 2>/dev/null || true)"
+    [[ -n "${container}" ]] || {
+        echo -e "${RED}No ComfyUI container is running. Start it first with: rig comfy${RESET}"
+        return 1
+    }
+    _follow_container_logs "${container}"
 }
 
 _comfy_list() {

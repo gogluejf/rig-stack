@@ -4,7 +4,7 @@
 
 Built for developers and researchers who want production-grade local inference on NVIDIA hardware — without cloud overhead, per-token costs, or vendor lock-in.
 
-RigStack is an open-source CLI that unifies Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
+RigStack is an open-source CLI that unifies NInfer, Ollama, vLLM, and ComfyUI behind a single interface and routes everything through one endpoint using Traefik.
 
 It is designed to have your private AI stack running in minutes — secure by default, fully observable, so you can focus on building rather than configuring.
 
@@ -60,6 +60,8 @@ All services are exposed under a single Traefik gateway on port 80, or with TLS 
 | Component | Stack | Route |
 |---|---|---|
 | LLM inference | vLLM (stable + Blackwell-edge) | `/vllm/v1` |
+| Specialized RTX 5090 inference | NInfer (pinned CUDA 13.1 build) | `/ninfer/v1` |
+| Active primary inference | vLLM or NInfer | `/inference/v1` |
 | Image/Video generation | ComfyUI (CPU + stable + Blackwell-edge) | `/comfy` |
 | Utility models | Ollama (CPU/GPU) | `/ollama/v1/` |
 | RAG API | FastAPI + Qdrant | `/rag/v1` |
@@ -105,9 +107,32 @@ rig serve qwen3-6-27b-nvfp4
 # rig serve qwen3-6-27b-nvfp4 --edge
 ```
 
-The LLM endpoint is live at `https://localhost/vllm/v1`.
+The vLLM endpoint is live at `https://localhost/vllm/v1`.
 
-Try `curl https://localhost/vllm/v1/models | jq` to see your available models
+### NInfer on RTX 5090
+
+NInfer requires 64-bit Linux, an NVIDIA GeForce RTX 5090 (`sm_120a`), and CUDA 13.1+. The initial Qwen3.8-27B NVFP4 artifact is 20.02 GiB.
+
+```bash
+# Download the exact self-contained version-2 artifact
+rig models install neroued/Qwen3.8-27B-nvfp4-NInfer \
+  --file qwen3_8_27b_nvfp4.ninfer
+
+# Start the resident model; the pinned image builds automatically on first use
+rig ninfer qwen3-8-27b-nvfp4
+```
+
+Endpoints:
+
+- Explicit proxy: `https://localhost/ninfer/v1`
+- Active primary proxy: `https://localhost/inference/v1`
+- Direct host endpoint: `http://localhost:8081/v1`
+
+`rig ninfer` stops vLLM after NInfer preflight succeeds. `rig serve` similarly stops NInfer after vLLM preflight succeeds. Direct Compose usage bypasses this mutual-exclusion policy. ComfyUI and GPU Ollama capacity remain the operator's responsibility.
+
+The initial NInfer preset enables Vision, MTP3, two active request lanes, FP8 KV, and a 240,000-token logical context/shared KV pool. These allocations are startup-fixed. If local runtime validation shows memory pressure, reduce context and KV capacity together.
+
+Try `curl https://localhost/vllm/v1/models | jq` to see your available vLLM models
 
 You can test completions with `rig test chat`:
 
@@ -231,6 +256,10 @@ rig serve my-preset
 See `presets/README.md` for the full parameter reference.
 
 ---
+
+## NInfer source pinning
+
+NInfer is pinned because upstream is young and active. Its Docker build fetches and verifies the exact commit declared by `NINFER_UPSTREAM_COMMIT` in `compose.yaml` and `services/ninfer/Dockerfile`. Users do not need Git submodules or a separate image-build command. Updating the pin requires reviewing upstream changes, changing both declarations, and revalidating the Dockerfile, executable `--help`, server flags, API routes, model compatibility, and runtime memory profile.
 
 ## How to rebuild edge images
 

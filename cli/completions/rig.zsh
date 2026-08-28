@@ -18,13 +18,13 @@ _rig_preset_items() {
     root="$(_rig_root)" || return
     local active_name=""
     local link="${root}/.preset.active.${service}"
-    [[ -L "${link}" ]] && active_name="$(basename "$(readlink "${link}")" .env)"
+    [[ -L "${link}" ]] && active_name="$(basename "$(readlink "${link}")" .sh)"
 
     local f name desc
     local -a items=()
-    for f in "${root}/presets/${service}/"*.env; do
+    for f in "${root}/presets/${service}/"*.sh; do
         [[ -f "${f}" ]] || continue
-        name="$(basename "${f}" .env)"
+        name="$(basename "${f}" .sh)"
         desc="$(grep -m1 '^# Use:' "${f}" 2>/dev/null | sed 's/^# Use: *//')"
         [[ "${name}" == "${active_name}" ]] && desc="(active) ${desc}"
         items+=("${name}:${desc}")
@@ -48,6 +48,7 @@ _rig_complete_presets() {
 _rig_commands() {
     local -a cmds=(
         'serve:Start vLLM inference server'
+        'ninfer:Manage RTX 5090 NInfer serving'
         'comfy:Manage ComfyUI image generation'
         'ollama:Manage Ollama (local models)'
         'rag:Manage RAG API and Qdrant'
@@ -62,65 +63,30 @@ _rig_commands() {
 }
 
 _rig_test() {
-    # Live service list — only running OpenAI-compatible services.
-    local raw_services
-    local -a avail_services=()
-    raw_services="$(rig test _service_avail 2>/dev/null)"
-    while IFS= read -r svc; do
-        [[ -n "${svc}" ]] && avail_services+=("${svc}")
-    done <<< "${raw_services}"
-
-    # First non-flag word after 'test' is treated as <service>.
-    local service_arg=""
-    local w
-    for (( w=2; w<CURRENT; w++ )); do
-        local ww="${words[w]}"
-        if [[ "${ww}" != --* && -z "${service_arg}" ]]; then
-            service_arg="${ww}"
-        fi
-    done
-
-    # If previous token is --vision, complete local file paths.
-    if [[ "${words[CURRENT-1]}" == "--vision" ]]; then
-        _files
-        return
-    fi
-
-    # Mode flags are mutually exclusive; once one is present, hide the others.
-    local has_chat=false has_prompt=false has_chunk=false has_vision=false
-    local token
-    for token in "${words[@]}"; do
-        [[ "${token}" == "--chat" ]] && has_chat=true
-        [[ "${token}" == "--prompt" ]] && has_prompt=true
-        [[ "${token}" == "--chunk" ]] && has_chunk=true
-        [[ "${token}" == "--vision" ]] && has_vision=true
-    done
-
-    local -a mode_flags=()
-    if [[ "${has_chat}" == false && "${has_prompt}" == false && "${has_chunk}" == false && "${has_vision}" == false ]]; then
-        mode_flags=(
-            '--chat[Interactive chat loop (default)]'
-            '--prompt[Single non-streaming prompt response]'
-            '--chunk[Stream raw JSONL chunks]'
-            '--vision[Run vision test with an image path]:image path:_files'
-        )
-    fi
-
+    local subcmd="${words[2]:-}"
     if (( CURRENT == 2 )); then
-        _describe 'running service' avail_services
-        _arguments -s \
-            '--help[Show help]' \
-            ${mode_flags:+${mode_flags[@]}}
+        _values 'test' \
+            'chat[Interactive chat loop]' \
+            'prompt[Single non-streaming prompt]' \
+            'chunk[Stream raw JSONL chunks]' \
+            'vision[Vision inference test]' \
+            '--help[Show help]'
         return
     fi
 
-    if [[ -z "${service_arg}" ]]; then
-        _describe 'running service' avail_services
+    local -a flags=(
+        '--vllm[Target vLLM]'
+        '--ninfer[Target NInfer]'
+        '--ollama[Target Ollama]'
+        '--rag[Target RAG]'
+        '--thinking[Enable model thinking]'
+        '--help[Show help]'
+    )
+    if [[ "${subcmd}" == "vision" ]]; then
+        _arguments -s '1:image path:_files' "${flags[@]}"
+    else
+        _arguments -s "${flags[@]}"
     fi
-
-    _arguments -s \
-        '--help[Show help]' \
-        ${mode_flags:+${mode_flags[@]}}
 }
 
 _rig_benchmark() {
@@ -189,7 +155,7 @@ _rig_benchmark() {
 
     if [[ "${words[2]}" == "logs" ]]; then
         if [[ "${words[CURRENT-1]}" == "--service" ]]; then
-            _values 'service' vllm ollama rag
+            _values 'service' vllm ninfer ollama rag
         else
             _values 'logs flags' '--service[Filter log by service name]'
         fi
@@ -210,6 +176,7 @@ _rig_serve() {
     # rig serve [<preset>|stop|preset] [--edge] [--help]
     local -a subcmds=(
         'stop:Stop vLLM container'
+        'logs:Follow logs for the running vLLM container'
         'preset:Manage active preset'
     )
     local -a opts=(
@@ -248,11 +215,43 @@ _rig_serve() {
     esac
 }
 
+_rig_ninfer() {
+    local -a subcmds=(
+        'start:Start NInfer with a preset'
+        'stop:Stop NInfer'
+        'logs:Follow NInfer logs'
+        'preset:Manage NInfer presets'
+    )
+    _arguments -C \
+        '--help[Show help]' \
+        '1: :->arg1' \
+        '*:: :->args'
+    case "${state}" in
+    arg1)
+        _describe 'subcommand' subcmds
+        _rig_complete_presets ninfer
+        ;;
+    args)
+        if [[ "${words[1]}" == "start" ]]; then
+            _rig_complete_presets ninfer
+        elif [[ "${words[1]}" == "preset" ]]; then
+            local -a preset_subcmds=('list:List presets' 'set:Set active preset' 'show:Show preset')
+            if (( CURRENT == 3 )); then
+                _describe 'preset subcommand' preset_subcmds
+            elif [[ "${words[2]}" == "set" || "${words[2]}" == "show" ]]; then
+                _rig_complete_presets ninfer
+            fi
+        fi
+        ;;
+    esac
+}
+
 _rig_comfy() {
     # rig comfy start [--cpu|--edge] | stop | list | workflows
     local -a subcmds=(
         'start:Start ComfyUI'
         'stop:Stop ComfyUI container'
+        'logs:Follow logs for the running ComfyUI container'
         'list:List installed ComfyUI models'
         'workflows:List saved workflow JSON files'
     )
@@ -280,6 +279,7 @@ _rig_ollama() {
     local -a subcmds=(
         'start:Start Ollama server'
         'stop:Stop Ollama container'
+        'logs:Follow Ollama logs'
         'list:List installed Ollama models'
     )
     _arguments -C \
@@ -303,6 +303,7 @@ _rig_rag() {
     local -a subcmds=(
         'start:Start RAG API + Qdrant'
         'stop:Stop RAG API + Qdrant'
+        'logs:Follow RAG API logs'
         'status:Show RAG API health'
     )
     _arguments -C \
@@ -399,6 +400,7 @@ _rig_infra() {
         'status:Show all infrastructure services (running / stopped)'
         'start:Start an infrastructure service'
         'stop:Stop an infrastructure service'
+        'logs:Follow one infrastructure container'
     )
     local -a services=(
         'hf:HuggingFace downloader (rig-hf)'
@@ -421,6 +423,16 @@ _rig_infra() {
         start|stop)
             _describe 'service' services
             ;;
+        logs)
+            local -a log_services=(
+                'hf:HuggingFace downloader'
+                'qdrant:Vector database'
+                'langfuse:Observability application'
+                'postgres:Langfuse database'
+                'traefik:Unified gateway'
+            )
+            _describe 'service' log_services
+            ;;
         esac
         ;;
     esac
@@ -441,6 +453,7 @@ _rig() {
     subcmd)
         case "${words[1]}" in
         serve)   _rig_serve ;;
+        ninfer)  _rig_ninfer ;;
         comfy)   _rig_comfy ;;
         ollama)  _rig_ollama ;;
         rag)     _rig_rag ;;
@@ -448,7 +461,11 @@ _rig() {
         infra)   _rig_infra ;;
         benchmark) _rig_benchmark ;;
         test)    _rig_test ;;
-        status|stats) ;;
+        status)
+            _arguments '--vllm[Detailed vLLM view]' '--ninfer[Detailed NInfer view]' '--ollama[Detailed Ollama view]' '--comfy[Detailed ComfyUI view]' '--rag[Detailed RAG view]' '--help[Show help]'
+            ;;
+        stats) ;;
+
         esac
         ;;
     esac

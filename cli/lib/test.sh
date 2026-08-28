@@ -39,9 +39,9 @@ cmd_test() {
                 _test_help
                 return 0
                 ;;
-            --vllm|--ollama|--rag)
+            --vllm|--ninfer|--ollama|--rag)
                 if [[ ${service_count} -gt 0 ]]; then
-                    echo -e "${RED}Choose one service flag only: --vllm | --ollama | --rag${RESET}"
+                    echo -e "${RED}Choose one service flag only: --vllm | --ninfer | --ollama | --rag${RESET}"
                     return 1
                 fi
                 service="${1#--}"
@@ -68,6 +68,18 @@ cmd_test() {
                 ;;
         esac
     done
+
+    # Without an explicit flag, follow the sole running primary inference backend.
+    if [[ ${service_count} -eq 0 ]]; then
+        local vllm_running=false ninfer_running=false
+        [[ -n "$(_container_running vllm 2>/dev/null || true)" ]] && vllm_running=true
+        [[ -n "$(_container_running ninfer 2>/dev/null || true)" ]] && ninfer_running=true
+        if [[ "${vllm_running}" == true && "${ninfer_running}" == false ]]; then
+            service="vllm"
+        elif [[ "${ninfer_running}" == true && "${vllm_running}" == false ]]; then
+            service="ninfer"
+        fi
+    fi
 
     local _avail_list
     _avail_list="$(_service_openai_avail 2>/dev/null || true)"
@@ -116,7 +128,7 @@ _test_help() {
     echo -e "    ${CYAN}chunk${RESET}                             ${DIM}stream raw JSONL chunks${RESET}"
     echo -e "    ${CYAN}vision${RESET} ${CYAN}<img_path>${RESET}                 ${DIM}vision inference test${RESET}"
     echo ""
-    echo -e "    ${YELLOW_SOFT}--vllm${RESET} | ${YELLOW_SOFT}--ollama${RESET} | ${YELLOW_SOFT}--rag${RESET}         ${DIM}service target (default: --vllm)${RESET}"
+    echo -e "    ${YELLOW_SOFT}--vllm${RESET} | ${YELLOW_SOFT}--ninfer${RESET} | ${YELLOW_SOFT}--ollama${RESET} | ${YELLOW_SOFT}--rag${RESET}  ${DIM}service target (auto-detects sole primary backend)${RESET}"
     echo -e "    ${YELLOW_SOFT}--thinking${RESET}                        ${DIM}pass enable_thinking to the model${RESET}"
     echo -e "    ${YELLOW_SOFT}--help${RESET}                            ${DIM}show this help${RESET}"
     echo ""

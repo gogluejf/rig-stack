@@ -7,9 +7,9 @@ cmd_status() {
     local detail=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --vllm|--ollama|--comfy|--rag)
+            --vllm|--ninfer|--ollama|--comfy|--rag)
                 if [[ -n "${detail}" ]]; then
-                    echo -e "${RED}Choose one detail flag only: --vllm | --ollama | --comfy | --rag${RESET}"
+                    echo -e "${RED}Choose one detail flag only: --vllm | --ninfer | --ollama | --comfy | --rag${RESET}"
                     exit 1
                 fi
                 detail="$1"
@@ -29,6 +29,7 @@ cmd_status() {
 
     case "${detail}" in
         --vllm)   _status_detail_vllm ;;
+        --ninfer) _status_detail_ninfer ;;
         --ollama) _status_detail_ollama ;;
         --comfy)  _status_detail_comfy ;;
         --rag)    _status_detail_rag ;;
@@ -42,6 +43,7 @@ _status_help() {
     echo -e "${GREEN}Usage:${RESET}"
     echo -e "  rig ${BOLD}status${RESET}                            ${DIM}show overall stack status${RESET}"
     echo -e "    ${YELLOW_SOFT}--vllm${RESET}                              ${DIM}detailed vLLM view${RESET}"
+    echo -e "    ${YELLOW_SOFT}--ninfer${RESET}                            ${DIM}detailed NInfer view${RESET}"
     echo -e "    ${YELLOW_SOFT}--ollama${RESET}                            ${DIM}detailed Ollama view${RESET}"
     echo -e "    ${YELLOW_SOFT}--comfy${RESET}                             ${DIM}detailed ComfyUI view${RESET}"
     echo -e "    ${YELLOW_SOFT}--rag${RESET}                               ${DIM}detailed RAG API view${RESET}"
@@ -420,12 +422,13 @@ _status_plain_state() {
 }
 
 _status_summary() {
-    local vllm_container comfy_container
-    local vllm_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state
-    local vllm_model="" ollama_model=""
+    local vllm_container ninfer_container comfy_container
+    local vllm_state ninfer_state comfy_state ollama_state rag_state qdrant_state langfuse_state postgres_state traefik_state hf_state
+    local vllm_model="" ninfer_model="" ollama_model=""
     local gpu_util="-" gpu_temp="-" cpu_util="-" cpu_temp="-"
     # Memory variables now hold key=value pairs
     local vllm_vram="-" vllm_dram="-"
+    local ninfer_vram="-" ninfer_dram="-"
     local comfy_vram="-" comfy_dram="-"
     local ollama_vram="-" ollama_dram="-"
     local rag_vram="-" rag_dram="-"
@@ -436,9 +439,11 @@ _status_summary() {
     local hf_vram="-" hf_dram="-"
 
     vllm_container="$(_status_vllm_container 2>/dev/null || true)"
+    ninfer_container="$(_container_running ninfer 2>/dev/null || true)"
     comfy_container="$(_status_comfy_container 2>/dev/null || true)"
 
     vllm_state="$(_status_state "${vllm_container}")"
+    ninfer_state="$(_status_state "${ninfer_container}")"
     comfy_state="$(_status_state "${comfy_container}")"
     ollama_state="$(_status_state "rig-ollama")"
     rag_state="$(_status_state "rig-rag-api")"
@@ -452,6 +457,11 @@ _status_summary() {
         vllm_model="$(_status_primary_model_for "vllm")"
     fi
     [[ -n "${vllm_model}" ]] || vllm_model="-"
+
+    if [[ "${ninfer_state}" == "running" ]]; then
+        ninfer_model="$(_status_primary_model_for "ninfer")"
+    fi
+    [[ -n "${ninfer_model}" ]] || ninfer_model="-"
 
     if [[ "${ollama_state}" == "running" ]]; then
         ollama_model="$(_status_ollama_warm_models)"
@@ -468,6 +478,14 @@ _status_summary() {
             dram) vllm_dram="${val}" ;;
         esac
     done < <(_status_memory_for "${vllm_container}" "$(_service_runtime "vllm")")
+
+    # Parse ninfer memory
+    while IFS='=' read -r key val; do
+        case "${key}" in
+            vram) ninfer_vram="${val}" ;;
+            dram) ninfer_dram="${val}" ;;
+        esac
+    done < <(_status_memory_for "${ninfer_container}" "$(_service_runtime "ninfer")")
 
     # Parse comfy memory
     while IFS='=' read -r key val; do
@@ -576,6 +594,15 @@ _status_summary() {
         "$(_status_field 12 "$(_status_value_if_running "${vllm_state}" "${vllm_dram}")")" \
         "$(_status_icon "${vllm_state}")" "$(_status_label "${vllm_state}")"
     printf "  %b %b %b %b %b %b %b %b %b\n" \
+        "$(_status_field 12 "ninfer")" \
+        "$(_status_field 24 "$(_status_value_if_running "${ninfer_state}" "${ninfer_model}")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${ninfer_state}" "$(_service_runtime "ninfer")")")" \
+        "$(_status_field 8  "$(_status_value_if_running "${ninfer_state}" "$(_container_build "ninfer")")")" \
+        "$(_status_field 16 "$(_status_value_if_running "${ninfer_state}" "$(_endpoint "ninfer")")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${ninfer_state}" "${ninfer_vram}")")" \
+        "$(_status_field 12 "$(_status_value_if_running "${ninfer_state}" "${ninfer_dram}")")" \
+        "$(_status_icon "${ninfer_state}")" "$(_status_label "${ninfer_state}")"
+    printf "  %b %b %b %b %b %b %b %b %b\n" \
         "$(_status_field 12 "ollama")" \
         "$(_status_field 24 "$(_status_value_if_running "${ollama_state}" "${ollama_model}")")" \
         "$(_status_field 8  "$(_status_value_if_running "${ollama_state}" "$(_status_ollama_runtime)")")" \
@@ -652,7 +679,11 @@ _status_summary() {
         "$(_status_icon "${hf_state}")" "$(_status_label "${hf_state}")"
 
     echo ""
-    echo -e "${DIM}Details: rig status --vllm | --ollama | --comfy | --rag${RESET}"
+    if [[ "${vllm_state}" == "running" && "${ninfer_state}" == "running" ]]; then
+        echo -e "${RED}${BOLD}WARNING: vLLM and NInfer are both running and competing for GPU ownership.${RESET}"
+        echo ""
+    fi
+    echo -e "${DIM}Details: rig status --vllm | --ninfer | --ollama | --comfy | --rag${RESET}"
     echo ""
 }
 
@@ -766,6 +797,67 @@ _status_detail_vllm() {
     _status_print_triptych "${endpoints}" "${aux}" "${models}"
     echo ""
 
+}
+
+_status_detail_ninfer() {
+    local container="rig-ninfer" state model="-" preset="-" health="-" label="-"
+    local vram="-" dram="-" gpu_temp="-" gpu_util="-" models="-"
+    state="$(_status_state "${container}")"
+    if [[ "${state}" == "running" ]]; then
+        model="$(_status_primary_model_for ninfer)"; [[ -n "${model}" ]] || model="-"
+        preset="$(get_loaded_preset_name ninfer)"; [[ -n "${preset}" ]] || preset="-"
+        health="$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}unknown{{end}}' "${container}" 2>/dev/null || true)"
+        label="$(docker image inspect --format '{{index .Config.Labels "org.rig-stack.ninfer.upstream"}}' rig-ninfer:latest 2>/dev/null || true)"
+        models="$(_model_avail ninfer)"; [[ -n "${models}" ]] || models="-"
+    fi
+    _status_prefetch_container_stats
+    while IFS='=' read -r key val; do
+        case "${key}" in vram) vram="${val}" ;; dram) dram="${val}" ;; esac
+    done < <(_status_memory_for "${container}" GPU)
+    while IFS='=' read -r key val; do
+        case "${key}" in temp) gpu_temp="${val}" ;; util) gpu_util="${val}" ;; esac
+    done < <(_host_gpu_metrics)
+
+    echo ""
+    print_header "NInfer status"
+    hr 108
+    _status_metadata_line "status" "$(_status_icon "${state}") $(_status_label "${state}")"
+    _status_metadata_line "container" "$(_status_value_if_running "${state}" "${container}")"
+    _status_metadata_line "image" "$(_status_value_if_running "${state}" "rig-ninfer:latest")"
+    _status_metadata_line "upstream" "$(_status_value_if_running "${state}" "${label}")"
+    _status_metadata_line "runtime" "$(_status_value_if_running "${state}" "GPU")"
+    _status_metadata_line "build" "$(_status_value_if_running "${state}" "specialized")"
+    _status_metadata_line "health" "$(_status_value_if_running "${state}" "${health}")"
+    _status_metadata_line "preset" "$(_status_value_if_running "${state}" "${preset}")"
+    _status_metadata_line "active model" "$(_status_value_if_running "${state}" "${model}")"
+    _status_metadata_line "route" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/ninfer/v1")"
+    _status_metadata_line "canonical" "$(_status_value_if_running "${state}" "$(_avail_proxy_base)/inference/v1")"
+    _status_metadata_line "direct" "$(_status_value_if_running "${state}" "http://localhost:${NINFER_PORT:-8081}/v1")"
+    _status_metadata_line "VRAM usage" "$(_status_value_if_running "${state}" "${vram}")"
+    _status_metadata_line "DRAM usage" "$(_status_value_if_running "${state}" "${dram}")"
+    _status_metric_line "gpu temp" "$(_status_value_if_running "${state}" "${gpu_temp}")"
+    _status_metric_line "gpu util" "$(_status_value_if_running "${state}" "${gpu_util}")"
+
+    local preset_file="${RIG_ROOT}/.preset.loaded.ninfer"
+    if [[ "${state}" == "running" && -f "${preset_file}" ]]; then
+        echo ""
+        print_header "NInfer configuration"
+        hr 108
+        local flag value
+        for flag in --max-context --kv-capacity --max-concurrency --kv-dtype --device-state-slots --host-state-slots --host-kv-mib --spec --draft-tokens; do
+            value="$(awk -v f="${flag}" '$1 == f {print $2; exit}' "${preset_file}")"
+            _status_metadata_line "${flag#--}" "${value:--}"
+        done
+    fi
+
+    echo ""
+    print_header "Endpoints"
+    echo ""
+    _status_print_triptych \
+        $'GET  /ninfer/v1/models\nPOST /ninfer/v1/chat/completions\nPOST /ninfer/v1/responses\nPOST /ninfer/v1/messages' \
+        $'GET  /health\nPOST /v1/responses/input_tokens\nPOST /v1/messages/count_tokens' \
+        "${models}"
+    echo ""
 }
 
 _status_detail_ollama() {

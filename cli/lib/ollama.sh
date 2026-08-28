@@ -11,6 +11,7 @@ cmd_ollama() {
             echo -e "    ${YELLOW_SOFT}--gpu${RESET}                            ${DIM}use GPU mode${RESET}"
             echo ""
             echo -e "  rig ollama ${BOLD}stop${RESET}                    ${DIM}stop Ollama${RESET}"
+            echo -e "  rig ollama ${BOLD}logs${RESET}                    ${DIM}follow Ollama logs${RESET}"
             echo ""
             echo -e "  rig ollama ${BOLD}list${RESET}                    ${DIM}list installed Ollama models${RESET}"
             echo ""
@@ -27,6 +28,9 @@ cmd_ollama() {
             ;;
         stop)
             _ollama_stop
+            ;;
+        logs)
+            _follow_container_logs rig-ollama
             ;;
         list)
             _ollama_list

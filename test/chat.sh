@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Interactive chat: see the full conversation flow (system → user → assistant)
-# Run: ./test/chat.sh [--service vllm|ollama|rag] [--thinking]
+# Run: ./test/chat.sh [--service vllm|ninfer|ollama|rag] [--thinking]
 
 set -euo pipefail
 
@@ -48,8 +48,13 @@ while true; do
 
   _req_json="$(jq \
     --arg model "${MODEL}" \
+    --arg service "${SERVICE}" \
     --argjson enable_thinking "${ENABLE_THINKING}" \
-    '{model:$model,stream:true,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
+    '({model:$model,stream:true,messages:.})
+     + (if $service == "ninfer"
+        then {enable_thinking:$enable_thinking}
+        else {chat_template_kwargs:{enable_thinking:$enable_thinking}}
+        end)' \
     "${_msgs_file}")"
 
   printf '\n'

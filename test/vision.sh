@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vision analysis: extract 5 dominant elements from an image
-# Run: ./test/vision.sh <image_path> [--service vllm|ollama|rag] [--thinking]
+# Run: ./test/vision.sh <image_path> [--service vllm|ninfer|ollama|rag] [--thinking]
 
 set -euo pipefail
 
@@ -73,8 +73,13 @@ jq -n \
 
 _req_json="$(jq \
   --arg model "${MODEL}" \
+  --arg service "${SERVICE}" \
   --argjson enable_thinking "${ENABLE_THINKING}" \
-  '{model:$model,stream:true,max_tokens:300,chat_template_kwargs:{enable_thinking:$enable_thinking},messages:.}' \
+  '({model:$model,stream:true,max_tokens:300,messages:.})
+   + (if $service == "ninfer"
+      then {enable_thinking:$enable_thinking}
+      else {chat_template_kwargs:{enable_thinking:$enable_thinking}}
+      end)' \
   "${_msgs_file}")"
 
 stream_response

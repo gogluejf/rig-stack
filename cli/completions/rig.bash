@@ -49,7 +49,7 @@ _rig_completions() {
 
     # ── Level 1: top-level command ────────────────────────────────────────────
     if [[ "${cword}" -eq 1 ]]; then
-        COMPREPLY=($(compgen -W "serve comfy ollama rag models infra status stats benchmark test --help" -- "${cur}"))
+        COMPREPLY=($(compgen -W "serve ninfer comfy ollama rag models infra status stats benchmark test --help" -- "${cur}"))
         return
     fi
 
@@ -62,7 +62,7 @@ _rig_completions() {
         presets="$(_rig_presets vllm 2>/dev/null)"
 
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "${presets} start stop preset --edge --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "${presets} start stop logs preset --edge --help" -- "${cur}"))
             return
         fi
 
@@ -92,10 +92,32 @@ _rig_completions() {
         esac
         ;;
 
+    # ── rig ninfer ───────────────────────────────────────────────────────────
+    ninfer)
+        local presets
+        presets="$(_rig_presets ninfer 2>/dev/null)"
+        if [[ "${cword}" -eq 2 ]]; then
+            COMPREPLY=($(compgen -W "${presets} start stop logs preset --help" -- "${cur}"))
+            return
+        fi
+        case "${sub}" in
+            preset)
+                if [[ "${cword}" -eq 3 ]]; then
+                    COMPREPLY=($(compgen -W "list set show" -- "${cur}"))
+                elif [[ "${cword}" -eq 4 && ( "${words[3]}" == "set" || "${words[3]}" == "show" ) ]]; then
+                    COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
+                fi
+                ;;
+            start)
+                [[ "${cword}" -eq 3 ]] && COMPREPLY=($(compgen -W "${presets}" -- "${cur}"))
+                ;;
+        esac
+        ;;
+
     # ── rig comfy ─────────────────────────────────────────────────────────────
     comfy)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop list workflows --cpu --edge --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop logs list workflows --cpu --edge --help" -- "${cur}"))
             return
         fi
 
@@ -114,7 +136,7 @@ _rig_completions() {
     # ── rig ollama ────────────────────────────────────────────────────────────
     ollama)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop list --gpu --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop logs list --gpu --help" -- "${cur}"))
             return
         fi
 
@@ -132,7 +154,7 @@ _rig_completions() {
     # ── rig rag ───────────────────────────────────────────────────────────────
     rag)
         [[ "${cword}" -eq 2 ]] && \
-            COMPREPLY=($(compgen -W "start stop status --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop logs status --help" -- "${cur}"))
         ;;
 
     # ── rig models ────────────────────────────────────────────────────────────
@@ -207,7 +229,7 @@ _rig_completions() {
     # ── rig infra ─────────────────────────────────────────────────────────────
     infra)
         if [[ "${cword}" -eq 2 ]]; then
-            COMPREPLY=($(compgen -W "start stop status --help" -- "${cur}"))
+            COMPREPLY=($(compgen -W "start stop logs status --help" -- "${cur}"))
             return
         fi
 
@@ -215,12 +237,15 @@ _rig_completions() {
             start|stop)
                 COMPREPLY=($(compgen -W "hf qdrant langfuse traefik all" -- "${cur}"))
                 ;;
+            logs)
+                COMPREPLY=($(compgen -W "hf qdrant langfuse postgres traefik" -- "${cur}"))
+                ;;
         esac
         ;;
 
     # ── rig status / stats ────────────────────────────────────────────────────
     status)
-        [[ "${cword}" -eq 2 ]] && COMPREPLY=($(compgen -W "--vllm --ollama --comfy --rag --help" -- "${cur}"))
+        [[ "${cword}" -eq 2 ]] && COMPREPLY=($(compgen -W "--vllm --ninfer --ollama --comfy --rag --help" -- "${cur}"))
         ;;
     stats)
         [[ "${cword}" -eq 2 ]] && COMPREPLY=($(compgen -W "--help" -- "${cur}"))
@@ -277,7 +302,7 @@ _rig_completions() {
 
         if [[ "${sub}" == "logs" ]]; then
             if [[ "${prev}" == "--service" ]]; then
-                COMPREPLY=($(compgen -W "vllm ollama rag" -- "${cur}"))
+                COMPREPLY=($(compgen -W "vllm ninfer ollama rag" -- "${cur}"))
             else
                 _rig_contains "--service" "${words[@]}" || \
                     COMPREPLY=($(compgen -W "--service" -- "${cur}"))
@@ -326,7 +351,7 @@ _rig_completions() {
                 if [[ "${has_img}" == false && "${cur}" != --* ]]; then
                     COMPREPLY=($(compgen -f -- "${cur}"))
                 else
-                    local flags="--vllm --ollama --rag --help"
+                    local flags="--vllm --ninfer --ollama --rag --help"
                     _rig_contains "--thinking" "${words[@]}" || flags+=" --thinking"
                     COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
                 fi

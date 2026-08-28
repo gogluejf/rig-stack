@@ -313,6 +313,7 @@ _models_init() {
 
     minimal_hf() {
         echo -e "\n${BOLD}── HF models ─────────────────────────────────────${RESET}"
+        _install hf neroued/Qwen3.8-27B-nvfp4-NInfer qwen3_8_27b_nvfp4.ninfer
         _install hf unsloth/Qwen3.8-27B-NVFP4
         _install hf sakamakismile/Qwen3.6-35B-A3B-NVFP4
         _install hf sakamakismile/Huihui-gemma-4-31B-it-abliterated-v2-NVFP4

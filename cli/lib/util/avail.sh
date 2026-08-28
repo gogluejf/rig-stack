@@ -3,9 +3,9 @@
 
 # ── Service registry ──────────────────────────────────────────────────────────
 
-# _service — returns the four canonical service names.
+# _service — returns the canonical service names.
 _service() {
-    printf '%s\n' "vllm" "ollama" "rag" "comfyui"
+    printf '%s\n' "vllm" "ninfer" "ollama" "rag" "comfyui"
 }
 
 # _service_avail — returns services currently running/callable.
@@ -40,6 +40,7 @@ _service_runtime() {
 _container_avail() {
     case "${1:-}" in
         vllm)    printf '%s\n' "rig-vllm-stable" "rig-vllm-edge" ;;
+        ninfer)  printf '%s\n' "rig-ninfer" ;;
         ollama)  printf '%s\n' "rig-ollama" ;;
         rag)     printf '%s\n' "rig-rag-api" ;;
         comfyui) printf '%s\n' "rig-comfyui-stable" "rig-comfyui-edge" "rig-comfyui-cpu" ;;
@@ -67,6 +68,7 @@ _container_build() {
     case "${container}" in
         rig-vllm-stable|rig-comfyui-stable) echo "stable" ;;
         rig-vllm-edge|rig-comfyui-edge)     echo "edge" ;;
+        rig-ninfer)                         echo "specialized" ;;
         rig-comfyui-cpu)                    echo "cpu" ;;
         *)                                  echo "-" ;;
     esac
@@ -79,7 +81,7 @@ _container_runtime() {
     [[ -n "${container}" ]] || { echo "-"; return 0; }
 
     case "${1:-}" in
-        vllm)    echo "gpu" ;;
+        vllm|ninfer) echo "gpu" ;;
         ollama)
             if [[ "$(container_runtime_name "${container}")" == "nvidia" ]]; then
                 echo "gpu"
@@ -109,6 +111,7 @@ _avail_proxy_base() {
 _endpoint() {
     case "${1:-}" in
         vllm)    echo "/vllm/v1" ;;
+        ninfer)  echo "/ninfer/v1" ;;
         ollama)  echo "/ollama/v1" ;;
         rag)     echo "/rag/v1" ;;
         comfyui) echo "/comfy" ;;
@@ -125,24 +128,27 @@ _endpoints_avail() {
     done < <(_service_avail)
 }
 
-# _vllm_preset_name — returns the active vLLM preset name (symlink basename without extension).
-_vllm_preset_name() {
-    local link="${RIG_ROOT}/.preset.active.vllm"
+# _service_preset_name <service> — returns a service's active preset name.
+_service_preset_name() {
+    local link="${RIG_ROOT}/.preset.active.${1}"
     [[ -L "${link}" ]] || { echo "-"; return 0; }
-    local name; name="$(basename "$(readlink "${link}")")"
-    echo "${name%.*}"
+    basename "$(readlink "${link}")" .sh
 }
 
-# _vllm_preset_command_flat — returns active vLLM preset command flattened to one line.
-_vllm_preset_command_flat() {
-    if declare -F _get_preset_command_flat >/dev/null 2>&1; then
-        _get_preset_command_flat 2>/dev/null || true
-        return 0
-    fi
-
-    local preset_active="${RIG_ROOT}/.preset.active.vllm"
+# _service_preset_command_flat <service> — flattens a service preset.
+_service_preset_command_flat() {
+    local preset_active="${RIG_ROOT}/.preset.active.${1}"
     [[ -f "${preset_active}" ]] || return 0
     tr '\n' ' ' < "${preset_active}" | sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
+# Compatibility wrappers.
+_vllm_preset_name() {
+    _service_preset_name vllm
+}
+
+_vllm_preset_command_flat() {
+    _service_preset_command_flat vllm
 }
 
 # ── Model availability ────────────────────────────────────────────────────────
@@ -168,7 +174,7 @@ except Exception:
 _model_avail() {
     local container
     case "${1:-}" in
-        vllm|ollama|rag)
+        vllm|ninfer|ollama|rag)
             # All three expose OpenAI-compatible /models; endpoint comes from _endpoint.
             curl -sf "$(_avail_proxy_base)$(_endpoint "${1}")/models" 2>/dev/null \
                 | _avail_json_model_ids | sed '/^$/d' || true
@@ -199,6 +205,17 @@ _model_active() {
             local preset_active="${RIG_ROOT}/.preset.active.vllm"
             [[ -f "${preset_active}" ]] || return 0
             grep -m1 -- '--served-model-name' "${preset_active}" 2>/dev/null | awk '{print $NF}'
+            ;;
+        ninfer)
+            active="$(_model_avail "ninfer")"
+            if [[ -n "${active}" ]]; then
+                printf '%s\n' "${active}"
+                return 0
+            fi
+            local ninfer_preset="${RIG_ROOT}/.preset.loaded.ninfer"
+            [[ -f "${ninfer_preset}" ]] || ninfer_preset="${RIG_ROOT}/.preset.active.ninfer"
+            [[ -f "${ninfer_preset}" ]] || return 0
+            grep -m1 '^NINFER_MODEL_ID=' "${ninfer_preset}" | cut -d= -f2- | tr -d '"'
             ;;
         ollama)
             container="$(_container_running "ollama" 2>/dev/null || true)"
