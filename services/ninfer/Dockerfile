@@ -4,7 +4,7 @@ FROM nvidia/cuda:13.1.2-devel-ubuntu24.04 AS build
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG NINFER_REPOSITORY=https://github.com/Neroued/ninfer.git
-ARG NINFER_UPSTREAM_COMMIT=6e8b2e2ad5d53597c3ba8e7989f9546d40b921fc
+ARG NINFER_UPSTREAM_COMMIT=412b11f3e58cda66748b5da4d684ae76f2ccab64
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
@@ -39,7 +39,7 @@ RUN cmake -S . -B /build -G Ninja \
 FROM nvidia/cuda:13.1.2-runtime-ubuntu24.04
 
 ARG DEBIAN_FRONTEND=noninteractive
-ARG NINFER_UPSTREAM_COMMIT=6e8b2e2ad5d53597c3ba8e7989f9546d40b921fc
+ARG NINFER_UPSTREAM_COMMIT=412b11f3e58cda66748b5da4d684ae76f2ccab64
 LABEL org.rig-stack.ninfer.upstream="${NINFER_UPSTREAM_COMMIT}" \
       org.rig-stack.ninfer.cuda="13.1.2"
 

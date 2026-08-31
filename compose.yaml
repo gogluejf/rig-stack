@@ -144,7 +144,7 @@ services:
       context: ./services/ninfer
       dockerfile: Dockerfile
       args:
-        NINFER_UPSTREAM_COMMIT: 6e8b2e2ad5d53597c3ba8e7989f9546d40b921fc
+        NINFER_UPSTREAM_COMMIT: 412b11f3e58cda66748b5da4d684ae76f2ccab64
     image: rig-ninfer:latest
     container_name: rig-ninfer
     profiles: [ninfer]
