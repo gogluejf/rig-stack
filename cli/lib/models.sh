@@ -328,10 +328,9 @@ _models_init() {
         echo -e "\n${BOLD}── ComfyUI models ────────────────────────────────${RESET}"
         _install comfy black-forest-labs/FLUX.1-dev "" diffusion_models
         _install comfy black-forest-labs/FLUX.2-klein "" diffusion_models
-        _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen-image-2512-nvfp4-v2.safetensors diffusion_models
-        _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen_2.5_vl_7b_nvfp4.safetensors clip
-        _install comfy Comfy-Org/Qwen-Image_ComfyUI "split_files/vae/qwen_image_vae.safetensors" vae
-        _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4 "" diffusion_models
+        _install comfy Comfy-Org/Qwen-Image-2.1 "diffusion_models/qwen_image_2.1_int8_convrot.safetensors" diffusion_models
+        _install comfy Comfy-Org/Qwen-Image-2.1 "text_encoders/qwen3vl_8b_int8_convrot.safetensors" clip
+        _install comfy Comfy-Org/Qwen-Image-2.1 "vae/qwen_image_2.1_vae_bf16.safetensors" vae
     }
 
     minimal_ollama() {
@@ -357,6 +356,12 @@ _models_init() {
 
     extra_comfy() {
         echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
+
+        # Legacy Qwen Image generation/editing models. Qwen-Image 2.1 is in minimal.
+        _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen-image-2512-nvfp4-v2.safetensors diffusion_models
+        _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen_2.5_vl_7b_nvfp4.safetensors clip
+        _install comfy Comfy-Org/Qwen-Image_ComfyUI "split_files/vae/qwen_image_vae.safetensors" vae
+        _install comfy Bedovyy/Qwen-Image-Edit-2511-NVFP4 "" diffusion_models
 
         _install comfy black-forest-labs/FLUX.1-Fill-dev "" diffusion_models
 
