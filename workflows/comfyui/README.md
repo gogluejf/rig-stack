@@ -11,6 +11,7 @@ Exported workflow JSON files go to `$DATA_ROOT/workflows/comfyui/` — list them
 |---|---|
 | [flux2-generation](flux2-generation/) | FLUX.2 text-to-image |
 | [gfpgan-upscale](gfpgan-upscale/) | Face restoration + Real-ESRGAN upscale |
+| [qwen-image-2.1](qwen-image-2.1/) | Qwen-Image 2.1 native generation and image editing |
 | [qwen-image-gen](qwen-image-gen/) | Qwen-Image-2512 text-to-image (DiT) |
 | [qwen-image-edit](qwen-image-edit/) | Qwen-Image-Edit-2511 instruction-guided editing (DiT) |
 | [controlnet](controlnet/) | Pose/depth/canny conditioned generation |
