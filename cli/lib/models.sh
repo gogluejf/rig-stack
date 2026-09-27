@@ -357,6 +357,10 @@ _models_init() {
     extra_comfy() {
         echo -e "\n${BOLD}── ComfyUI models (additional) ───────────────────${RESET}"
 
+        # Qwen-Image 2.1 optional prompt enhancers.
+        _install comfy Comfy-Org/Qwen-Image-2.1 "text_encoders/qwen3.5_9b_qwen_image_2.1_pe_t2i.int8_convrot.safetensors" clip
+        _install comfy Comfy-Org/Qwen-Image-2.1 "text_encoders/qwen3.5_9b_qwen_image_2.1_pe_i2i.int8_convrot.safetensors" clip
+
         # Legacy Qwen Image generation/editing models. Qwen-Image 2.1 is in minimal.
         _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen-image-2512-nvfp4-v2.safetensors diffusion_models
         _install comfy Hippotes/Qwen-Image-2512-nvfp4 qwen_2.5_vl_7b_nvfp4.safetensors clip
