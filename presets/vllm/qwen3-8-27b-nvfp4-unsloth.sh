@@ -14,7 +14,7 @@ VLLM_ARGS=(
   --tool-call-parser qwen3_coder
   --reasoning-parser qwen3
   --tensor-parallel-size 1
-  --max-model-len 171000
+  --max-model-len 169000
   --max-num-seqs 1
   --max-num-batched-tokens 4096
   --kv-cache-dtype fp8
