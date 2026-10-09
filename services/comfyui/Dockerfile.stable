@@ -13,6 +13,8 @@ ENV COMFYUI_INPUT_DIR=/inputs
 
 EXPOSE 8188
 
+RUN python -m pip install --no-cache-dir --upgrade --pre comfyui-manager
+
 COPY entrypoint.sh /usr/local/bin/entrypoint-comfyui.sh
 RUN chmod +x /usr/local/bin/entrypoint-comfyui.sh
 
