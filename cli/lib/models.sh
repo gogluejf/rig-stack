@@ -393,6 +393,11 @@ _models_init() {
         _install comfy Kijai/WanVideo_comfy "umt5-xxl-enc-bf16.safetensors" clip
         _install comfy h94/IP-Adapter "models/image_encoder/model.safetensors" clip_vision
         _install comfy Kijai/WanVideo_comfy "Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank256_bf16.safetensors" loras
+
+        # Stable Audio 3 — SFX generation
+        _install comfy Comfy-Org/stable-audio-3 "checkpoints/stable_audio_3_small_sfx.safetensors" checkpoints
+        _install comfy Comfy-Org/stable-audio-3 "text_encoders/t5gemma_b_b_ul2.safetensors" clip
+        _install comfy Comfy-Org/Qwen3.5 "text_encoders/qwen3.5_2b_bf16.safetensors" clip
     }
 
     extra_ollama() {
