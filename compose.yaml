@@ -60,7 +60,7 @@ services:
     <<: *gpu-runtime
     shm_size: '16gb'
     ports:
-      - "${VLLM_PORT:-8000}:8000"
+      - "127.0.0.1:${VLLM_PORT:-8000}:8000"
     environment:
       - VLLM_NO_USAGE_STATS=1
       - VLLM_DO_NOT_TRACK=1
@@ -105,7 +105,7 @@ services:
     <<: *gpu-runtime
     shm_size: '16gb'
     ports:
-      - "${VLLM_PORT:-8000}:8000"
+      - "127.0.0.1:${VLLM_PORT:-8000}:8000"
     environment:
       - VLLM_NO_USAGE_STATS=1
       - VLLM_DO_NOT_TRACK=1
@@ -151,7 +151,7 @@ services:
     restart: unless-stopped
     <<: *gpu-runtime
     ports:
-      - "${NINFER_PORT:-8081}:8080"
+      - "127.0.0.1:${NINFER_PORT:-8081}:8080"
     env_file:
       - .env
     volumes:

@@ -40,3 +40,7 @@ build/
 # Logs (runtime, not config)
 *.log
 test/benchmark/logs/
+
+# Local notes & one-off install scripts
+SECURITY-NOTE.md
+install-*.sh
